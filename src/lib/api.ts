@@ -39,12 +39,19 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
+  // На shared-хостинге (cPanel/Apache) методы PUT/PATCH/DELETE часто запрещены.
+  // Поэтому «на проводе» всегда POST, а настоящий метод передаётся заголовком
+  // X-HTTP-Method-Override — его понимают и Node-сервер, и PHP-API.
+  const realMethod = (opts.method ?? "GET").toUpperCase();
+  const override = ["PUT", "PATCH", "DELETE"].includes(realMethod);
   let res: Response;
   try {
     res = await fetch(API_URL + path, {
       ...opts,
+      method: override ? "POST" : realMethod,
       headers: {
         "Content-Type": "application/json",
+        ...(override ? { "X-HTTP-Method-Override": realMethod } : {}),
         ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}),
         ...(opts.headers ?? {}),
       },

@@ -1,0 +1,24 @@
+# js://master — PHP API
+# Направляет все запросы /api/* в index.php и разрешает PUT/PATCH/DELETE.
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  # Разрешаем «не-GET/POST» методы, если хостинг их ограничивает
+  RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization},L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^ index.php [QSA,L]
+</IfModule>
+
+<IfModule mod_authz_core.c>
+  <Limit GET POST PUT PATCH DELETE OPTIONS>
+    Require all granted
+  </Limit>
+</IfModule>
+
+# Не отдаём наружу конфигурацию
+<FilesMatch "^(config|lib)\.php$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+</FilesMatch>
