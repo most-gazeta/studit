@@ -3,6 +3,7 @@ import { getLessonPosition } from "../data/course";
 import type { ProgressState } from "../hooks/useProgress";
 import { Rich } from "../lib/markdown";
 import { CodeBlock } from "./CodeBlock";
+import { BrowserLab } from "./BrowserLab";
 import { Quiz } from "./Quiz";
 import { Task } from "./Task";
 import { Reveal } from "../hooks/useReveal";
@@ -38,6 +39,8 @@ function BlockView({ block }: { block: Block }) {
       return <Rich md={block.md} />;
     case "code":
       return <CodeBlock code={block.code} title={block.title} norun={block.norun} />;
+    case "browser":
+      return <BrowserLab title={block.title} presets={block.presets} />;
     default:
       return <Callout block={block} />;
   }

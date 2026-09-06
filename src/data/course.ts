@@ -1,6 +1,7 @@
 import type { Lesson, Level } from "../lib/types";
 import { juniorLessons } from "./junior";
 import { middleLessons } from "./middle";
+import { browserLessons } from "./browser";
 import { seniorLessons } from "./senior";
 import { extraJunior, extraMiddle, extraSenior } from "./extra";
 
@@ -22,6 +23,15 @@ export const levels: Level[] = [
       "Замыкания, this, прототипы, промисы, модули и все коллекции языка — то, что отличает пишущего код от понимающего его.",
     accent: "#4cc3ff",
     lessons: [...middleLessons, ...extraMiddle],
+  },
+  {
+    id: "browser",
+    title: "Browser",
+    label: "DOM, события и формы",
+    tagline:
+      "Язык встречает окружение: дерево документа, события, геометрия, формы и загрузка страницы. Код становится интерфейсом.",
+    accent: "#ffa94d",
+    lessons: browserLessons,
   },
   {
     id: "senior",

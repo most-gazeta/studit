@@ -1,8 +1,14 @@
-export type BlockKind = "text" | "code" | "tip" | "warn" | "info";
+export type BlockKind = "text" | "code" | "browser" | "tip" | "warn" | "info";
+
+export interface BrowserPreset {
+  name: string;
+  code: string;
+}
 
 export type Block =
   | { kind: "text"; md: string }
   | { kind: "code"; title?: string; code: string; norun?: boolean }
+  | { kind: "browser"; title?: string; presets: BrowserPreset[] }
   | { kind: "tip" | "warn" | "info"; title: string; md: string };
 
 export interface QuizQuestion {
@@ -32,7 +38,7 @@ export interface Lesson {
   tasks: Task[];
 }
 
-export type LevelId = "junior" | "middle" | "senior";
+export type LevelId = "junior" | "middle" | "browser" | "senior";
 
 export interface Level {
   id: LevelId;

@@ -42,7 +42,7 @@ export function Home({
         <Reveal>
           <div className="chip border-js/30 text-js bg-js/5 mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-js glow-pulse" />
-            интерактивный курс · 3 уровня · ECMA-262
+            интерактивный курс · 4 уровня · язык + браузер
           </div>
           <h1 className="font-display font-extrabold text-[clamp(2rem,4.6vw,3.4rem)] leading-[1.08] tracking-tight text-ink">
             JavaScript
@@ -131,7 +131,7 @@ export function Home({
           <div className="flex items-end justify-between flex-wrap gap-4 mb-8">
             <div>
               <h2 className="font-display font-bold text-2xl sm:text-3xl text-ink">Карта курса</h2>
-              <p className="text-mute mt-2 text-[14.5px]">Три уровня, один путь. Урок открыт, когда пройден квиз и все задания.</p>
+              <p className="text-mute mt-2 text-[14.5px]">Четыре уровня, один путь: язык → ядро → браузер → инженерия. Урок закрывается, когда пройден квиз и все задания.</p>
             </div>
             <div className="font-mono text-[12px] text-dim">
               {doneCount === totalLessons ? "// маршрут завершён" : "// рекомендуемый порядок — сверху вниз"}
