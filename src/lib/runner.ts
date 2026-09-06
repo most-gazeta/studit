@@ -1,7 +1,8 @@
 /**
- * Песочница для выполнения JavaScript в Web Worker.
- * Перехватывает console.*, поддерживает тесты через __test(),
- * завершает зависший код по таймауту.
+ * Песочница для выполнения JavaScript и Python в Web Worker.
+ * - JS: нативно, перехват console.*, тесты через __test()
+ * - Python: через Pyodide (CDN), перехват stdout/stderr, тесты через __test()
+ * Зависший код завершается по таймауту (worker.terminate()).
  */
 
 export interface LogEntry {
@@ -24,8 +25,22 @@ export interface RunResult {
   duration: number;
 }
 
+export type RunLanguage = "javascript" | "python";
+
+export interface RunOptions {
+  language?: RunLanguage;
+  timeoutMs?: number;
+}
+
+const PYODIDE_VERSION = "v0.26.4";
+const PYODIDE_CDN = `https://cdn.jsdelivr.net/pyodide/${PYODIDE_VERSION}/full/`;
+
 const WORKER_SRC = `
 self.onmessage = async function (e) {
+  var lang = e.data.language || "javascript";
+  var code = e.data.code || "";
+  var tests = e.data.tests || "";
+
   var fmt = function (v) {
     try {
       if (typeof v === "string") return v;
@@ -47,6 +62,46 @@ self.onmessage = async function (e) {
       return s === undefined ? String(v) : s;
     } catch (err) { return String(v); }
   };
+
+  /* ================= Python (Pyodide) ================= */
+  if (lang === "python") {
+    try {
+      self.postMessage({ type: "log", level: "info", text: "⟳ Загружаем интерпретатор Python (Pyodide)…" });
+      importScripts("__PYODIDE_CDN__pyodide.js");
+      var py = await loadPyodide({ indexURL: "__PYODIDE_CDN__" });
+      py.setStdout({ batched: function (s) { self.postMessage({ type: "log", level: "log", text: s }); } });
+      py.setStderr({ batched: function (s) { self.postMessage({ type: "log", level: "error", text: s }); } });
+
+      var prelude = [
+        "__results = []",
+        "def __test(name, fn, expected):",
+        "    try:",
+        "        actual = fn()",
+        "        __results.append({'name': name, 'pass': bool(actual == expected), 'actual': repr(actual), 'expected': repr(expected)})",
+        "    except Exception as e:",
+        "        __results.append({'name': name, 'pass': False, 'actual': repr(e), 'expected': repr(expected)})",
+      ].join("\\n");
+
+      py.runPython(prelude + "\\n" + code + "\\n" + tests);
+
+      var results = py.globals.get("__results").toJs({ dict_converter: Object.fromEntries });
+      for (var i = 0; i < results.length; i++) {
+        var r = results[i];
+        self.postMessage({
+          type: "test",
+          result: { name: r.name, pass: r.pass === true, actual: r.actual, expected: r.expected },
+        });
+      }
+      self.postMessage({ type: "done", error: null });
+    } catch (err) {
+      var msg = String((err && err.message) || err);
+      self.postMessage({ type: "log", level: "error", text: msg });
+      self.postMessage({ type: "done", error: msg });
+    }
+    return;
+  }
+
+  /* ================= JavaScript ================= */
   ["log", "info", "warn", "error"].forEach(function (level) {
     console[level] = function () {
       var args = Array.prototype.slice.call(arguments);
@@ -79,13 +134,10 @@ self.onmessage = async function (e) {
     }
   };
   globalThis.sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
-  globalThis.load = function (id) {
-    return new Promise(function (resolve) {
-      setTimeout(function () { resolve({ id: id, name: "Юзер " + id }); }, 15);
-    });
+  globalThis.load = async function (id) {
+    await new Promise(function (r) { setTimeout(r, 15); });
+    return { id: id, name: "Юзер " + id };
   };
-  var code = e.data.code || "";
-  var tests = e.data.tests || "";
   var full = 'return (async function () {\\n' + code + '\\n' + tests + '\\n})();';
   try {
     var fn = new Function(full);
@@ -102,18 +154,16 @@ let blobUrl: string | null = null;
 
 function workerUrl(): string {
   if (!blobUrl) {
-    blobUrl = URL.createObjectURL(
-      new Blob([WORKER_SRC], { type: "application/javascript" })
-    );
+    const src = WORKER_SRC.split("__PYODIDE_CDN__").join(PYODIDE_CDN);
+    blobUrl = URL.createObjectURL(new Blob([src], { type: "application/javascript" }));
   }
   return blobUrl;
 }
 
-export function runCode(
-  userCode: string,
-  tests = "",
-  timeoutMs = 3000
-): Promise<RunResult> {
+export function runCode(userCode: string, tests = "", opts: RunOptions = {}): Promise<RunResult> {
+  const language: RunLanguage = opts.language ?? "javascript";
+  const timeoutMs = opts.timeoutMs ?? (language === "python" ? 30000 : 3000);
+
   return new Promise((resolve) => {
     let worker: Worker;
     try {
@@ -151,7 +201,10 @@ export function runCode(
     const timer = setTimeout(() => {
       finish({
         timedOut: true,
-        error: "Превышено время выполнения (3 c). Возможно, бесконечный цикл.",
+        error:
+          language === "python"
+            ? "Превышено время (30 c): загрузка интерпретатора или бесконечный цикл."
+            : "Превышено время выполнения (3 c). Возможно, бесконечный цикл.",
       });
     }, timeoutMs);
 
@@ -169,6 +222,6 @@ export function runCode(
       finish({ error: e.message || "Ошибка выполнения" });
     };
 
-    worker.postMessage({ code: userCode, tests });
+    worker.postMessage({ code: userCode, tests, language });
   });
 }

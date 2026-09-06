@@ -28,11 +28,15 @@ export interface Task {
   solution: string;
 }
 
+export type LessonLanguage = "javascript" | "python";
+
 export interface Lesson {
   id: string;
   title: string;
   subtitle: string;
   minutes: number;
+  /** язык примеров и песочницы урока (по умолчанию JavaScript) */
+  language?: LessonLanguage;
   blocks: Block[];
   quiz: QuizQuestion[];
   tasks: Task[];
