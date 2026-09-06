@@ -9,7 +9,7 @@ interface Line {
 const SCRIPT: Line[] = [
   { kind: "cmd", text: 'const путь = ["junior", "middle", "senior"];' },
   { kind: "cmd", text: "const навыки = путь.flatMap(уровень => учить(уровень));" },
-  { kind: "out", text: "// 21 урок · 42 задания · 120+ автотестов" },
+  { kind: "out", text: "// 26 уроков · 52 задания · 160+ автотестов" },
   { kind: "cmd", text: "навыки.at(-1)" },
   { kind: "ok", text: '"уверенный JavaScript-инженер"' },
 ];

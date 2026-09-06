@@ -2,6 +2,7 @@ import type { Lesson, Level } from "../lib/types";
 import { juniorLessons } from "./junior";
 import { middleLessons } from "./middle";
 import { seniorLessons } from "./senior";
+import { extraJunior, extraMiddle, extraSenior } from "./extra";
 
 export const levels: Level[] = [
   {
@@ -9,27 +10,27 @@ export const levels: Level[] = [
     title: "Junior",
     label: "Основы языка",
     tagline:
-      "Синтаксис, типы, функции и коллекции. Фундамент, без которого всё остальное — карточный домик.",
+      "Синтаксис, типы, функции, коллекции и культура кода. Фундамент, без которого всё остальное — карточный домик.",
     accent: "#3ddc97",
-    lessons: juniorLessons,
+    lessons: [...juniorLessons, ...extraJunior],
   },
   {
     id: "middle",
     title: "Middle",
     label: "Ядро языка",
     tagline:
-      "Замыкания, this, прототипы, промисы и модули — то, что отличает пишущего код от понимающего его.",
+      "Замыкания, this, прототипы, промисы, модули и все коллекции языка — то, что отличает пишущего код от понимающего его.",
     accent: "#4cc3ff",
-    lessons: middleLessons,
+    lessons: [...middleLessons, ...extraMiddle],
   },
   {
     id: "senior",
     title: "Senior",
     label: "Глубина и инженерия",
     tagline:
-      "Event Loop, метпрограммирование, память, ФП и архитектура. Мышление, за которое платят больше.",
+      "Event Loop, метпрограммирование, прототипы до самого дна, память, ФП и архитектура. Мышление, за которое платят больше.",
     accent: "#ff7a8f",
-    lessons: seniorLessons,
+    lessons: [...seniorLessons, ...extraSenior],
   },
 ];
 
