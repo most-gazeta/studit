@@ -34,6 +34,16 @@ const app = express();
 app.use(cors({ origin: process.env.FRONTEND_ORIGIN || "*" }));
 app.use(express.json({ limit: "2mb" }));
 
+// Shared-хостинг часто блокирует PUT/PATCH/DELETE, поэтому фронтенд шлёт
+// POST с заголовком X-HTTP-Method-Override — приводим метод в соответствие.
+app.use((req, _res, next) => {
+  const override = req.headers["x-http-method-override"];
+  if (req.method === "POST" && ["PUT", "PATCH", "DELETE"].includes(override)) {
+    req.method = override;
+  }
+  next();
+});
+
 // Фронтенд шлёт PUT/PATCH/DELETE как POST + X-HTTP-Method-Override
 // (на shared-хостинге Apache часто режет «не-GET/POST» методы).
 app.use((req, _res, next) => {

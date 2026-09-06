@@ -1,0 +1,31 @@
+# js://master API — Apache (cPanel)
+
+# Запрет листинга каталога
+Options -Indexes
+
+# REST-пути /api/... → api.php (нужен mod_rewrite, включён на cPanel по умолчанию)
+# Правило работает и в корне сайта, и в подпапке /api (префикс необязателен)
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(?:api/)?(.*)$ api.php?path=$1 [QSA,L]
+
+# Некоторые конфигурации PHP (CGI/FPM) теряют заголовок Authorization —
+# пробрасываем его в переменную окружения (helpers.php её подхватит)
+SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
+
+# Служебные файлы с секретами недоступны по прямой ссылке
+<IfModule mod_authz_core.c>
+  <FilesMatch "^(config|db|jwt|helpers|seed)\.php$">
+    Require all denied
+  </FilesMatch>
+</IfModule>
+<IfModule !mod_authz_core.c>
+  <FilesMatch "^(config|db|jwt|helpers|seed)\.php$">
+    Order allow,deny
+    Deny from all
+  </FilesMatch>
+</IfModule>
+
+# seed.php должен открываться один раз для инициализации —
+# временно закомментируйте блок FilesMatch выше (или запустите через SSH: php seed.php?key=...)
