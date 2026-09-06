@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { remoteMode, getToken, apiSaveProgress } from "../lib/api";
 
 export interface ProgressEvent {
   ts: number;
@@ -113,6 +114,18 @@ export function useProgress(storageId: string) {
     }
     writeProgress(storageId, state);
   }, [storageId, state]);
+
+  // Серверный режим: отложенная синхронизация с MySQL через API
+  useEffect(() => {
+    if (!remoteMode || storageId === "guest" || !getToken()) return;
+    const t = setTimeout(() => {
+      apiSaveProgress(state).catch(() => {
+        /* офлайн — данные останутся локально, отправятся при следующем изменении */
+      });
+    }, 900);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, storageId]);
 
   const answerQuiz = useCallback(
     (

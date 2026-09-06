@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  computeUserStats, deleteUser, getUsers, reseedDemo,
+  computeUserStats, deleteUser, getUsers, reseedDemo, remoteMode,
   resetUserProgress, timeAgo, updateUser, type User, type UserStats,
 } from "../lib/auth";
+import { apiAdminStats, apiAdminSetRole, apiAdminReset, apiAdminDelete } from "../lib/api";
 import { flatLessons, levels, totalLessons } from "../data/course";
 import { Avatar } from "./Dashboard";
 import {
@@ -42,16 +43,34 @@ function ProgressBar({ percent, accent = "#f7df1e" }: { percent: number; accent?
 }
 
 export function AdminPanel({ currentUser, onHome, onLogout }: { currentUser: User; onHome: () => void; onLogout: () => void }) {
-  const [refresh, setRefresh] = useState(0);
   const [query, setQuery] = useState("");
   const [profileId, setProfileId] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<string | null>(null); // "delete" | "reset" | "reseed" | "wipe"
-
-  const stats = useMemo<UserStats[]>(
-    () => getUsers().map(computeUserStats),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [refresh]
+  const [loading, setLoading] = useState(remoteMode);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [stats, setStats] = useState<UserStats[]>(() =>
+    remoteMode ? [] : getUsers().map(computeUserStats)
   );
+
+  const refresh = useCallback(async () => {
+    if (remoteMode) {
+      setLoading(true);
+      setLoadError(null);
+      try {
+        setStats(await apiAdminStats());
+      } catch (e) {
+        setLoadError(e instanceof Error ? e.message : "Не удалось загрузить данные");
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      setStats(getUsers().map(computeUserStats));
+    }
+  }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   const filtered = stats.filter(
     (s) =>
@@ -107,11 +126,19 @@ export function AdminPanel({ currentUser, onHome, onLogout }: { currentUser: Use
     URL.revokeObjectURL(a.href);
   };
 
-  const act = (fn: () => void) => () => {
-    fn();
+  /** Выполняет действие (локально или через API) и обновляет данные */
+  const act = (fn: () => void | Promise<void>) => async () => {
+    await fn();
     setConfirm(null);
-    setRefresh((r) => r + 1);
+    await refresh();
   };
+
+  const setRole = (id: string, role: "user" | "admin") =>
+    remoteMode ? apiAdminSetRole(id, role) : Promise.resolve(updateUser(id, { role })).then(() => undefined);
+  const resetProgress = (id: string) =>
+    remoteMode ? apiAdminReset(id) : Promise.resolve(resetUserProgress(id));
+  const removeUser = (id: string) =>
+    remoteMode ? apiAdminDelete(id) : Promise.resolve(deleteUser(id));
 
   return (
     <div className="max-w-6xl mx-auto px-5 sm:px-8 py-8 pb-16">
@@ -122,7 +149,12 @@ export function AdminPanel({ currentUser, onHome, onLogout }: { currentUser: Use
         </span>
         <div>
           <h1 className="font-display font-bold text-[1.5rem] text-ink leading-tight">Панель администратора</h1>
-          <p className="font-mono text-[12px] text-dim">пользователи · успех · аналитика курса</p>
+          <p className="font-mono text-[12px] text-dim">
+            пользователи · успех · аналитика курса
+            <span className={`ml-2 px-1.5 py-0.5 rounded border text-[10px] ${remoteMode ? "border-mint/40 text-mint" : "border-line text-dim"}`}>
+              {remoteMode ? "MySQL API" : "localStorage"}
+            </span>
+          </p>
         </div>
         <div className="ml-auto flex items-center gap-2">
           <button onClick={exportCsv} className="btn-ghost py-2 px-3 text-[12.5px]">
@@ -173,7 +205,24 @@ export function AdminPanel({ currentUser, onHome, onLogout }: { currentUser: Use
                 </tr>
               </thead>
               <tbody>
-                {filtered.length === 0 && (
+                {loading && (
+                  <tr>
+                    <td colSpan={6} className="px-5 py-10 text-center">
+                      <span className="inline-flex items-center gap-2.5 font-mono text-[12.5px] text-mute">
+                        <span className="w-4 h-4 border-2 border-js/30 border-t-js rounded-full spin-slow" />
+                        загружаем из базы…
+                      </span>
+                    </td>
+                  </tr>
+                )}
+                {!loading && loadError && (
+                  <tr>
+                    <td colSpan={6} className="px-5 py-8 text-center font-mono text-[12.5px] text-coral">
+                      {loadError} · <button className="underline" onClick={() => refresh()}>повторить</button>
+                    </td>
+                  </tr>
+                )}
+                {!loading && !loadError && filtered.length === 0 && (
                   <tr>
                     <td colSpan={6} className="px-5 py-8 text-center text-dim font-mono text-[12.5px]">
                       никто не найден по запросу «{query}»
@@ -251,7 +300,15 @@ export function AdminPanel({ currentUser, onHome, onLogout }: { currentUser: Use
           <div className="panel p-5">
             <h2 className="font-display font-bold text-[15px] text-ink mb-3">Сервис</h2>
             <div className="space-y-2">
-              {confirm === "reseed" ? (
+              <button onClick={() => refresh()} className="w-full btn-ghost py-2 px-3 text-[12.5px] justify-between">
+                <span className="flex items-center gap-2"><IconSearch className="w-4 h-4" /> Обновить данные</span>
+              </button>
+              {remoteMode && (
+                <p className="font-mono text-[10.5px] text-mint leading-relaxed pt-1">
+                  режим: сервер + MySQL · демо-данные создаются командой <span className="text-ink">npm run seed</span>
+                </p>
+              )}
+              {!remoteMode && confirm === "reseed" ? (
                 <div className="rounded-lg border border-amber/40 bg-amber/5 p-3 pop-in">
                   <p className="text-[12px] text-[#ffe3bd] mb-2">Демо-студенты будут пересозданы с исходным прогрессом. Продолжить?</p>
                   <div className="flex gap-2">
@@ -259,11 +316,11 @@ export function AdminPanel({ currentUser, onHome, onLogout }: { currentUser: Use
                     <button onClick={() => setConfirm(null)} className="flex-1 py-1.5 rounded-md border border-line text-mute text-[12px]">Отмена</button>
                   </div>
                 </div>
-              ) : (
+              ) : !remoteMode ? (
                 <button onClick={() => setConfirm("reseed")} className="w-full btn-ghost py-2 px-3 text-[12.5px] justify-between">
                   <span className="flex items-center gap-2"><IconReset className="w-4 h-4" /> Пересоздать демо-студентов</span>
                 </button>
-              )}
+              ) : null}
               <p className="font-mono text-[10.5px] text-dim leading-relaxed pt-1">
                 Демо-аккаунты помечены бейджем demo — их можно безопасно удалять и пересоздавать.
               </p>
@@ -373,7 +430,7 @@ export function AdminPanel({ currentUser, onHome, onLogout }: { currentUser: Use
 
                 {profile.user.id !== currentUser.id && (
                   <button
-                    onClick={act(() => updateUser(profile.user.id, { role: profile.user.role === "admin" ? "user" : "admin" }))}
+                    onClick={act(() => setRole(profile.user.id, profile.user.role === "admin" ? "user" : "admin"))}
                     className="w-full btn-ghost py-2 px-3 text-[12.5px] justify-between"
                   >
                     <span className="flex items-center gap-2">
@@ -387,7 +444,7 @@ export function AdminPanel({ currentUser, onHome, onLogout }: { currentUser: Use
                   <div className="rounded-lg border border-amber/40 bg-amber/5 p-3 pop-in">
                     <p className="text-[12px] text-[#ffe3bd] mb-2">Весь прогресс пользователя будет стёрт. Продолжить?</p>
                     <div className="flex gap-2">
-                      <button onClick={act(() => resetUserProgress(profile.user.id))} className="flex-1 py-1.5 rounded-md bg-amber/20 border border-amber/40 text-amber text-[12px] font-semibold">Стереть</button>
+                      <button onClick={act(() => resetProgress(profile.user.id))} className="flex-1 py-1.5 rounded-md bg-amber/20 border border-amber/40 text-amber text-[12px] font-semibold">Стереть</button>
                       <button onClick={() => setConfirm(null)} className="flex-1 py-1.5 rounded-md border border-line text-mute text-[12px]">Отмена</button>
                     </div>
                   </div>
@@ -403,7 +460,7 @@ export function AdminPanel({ currentUser, onHome, onLogout }: { currentUser: Use
                       <p className="text-[12px] text-[#ffd6dc] mb-2">Аккаунт и весь прогресс будут удалены безвозвратно.</p>
                       <div className="flex gap-2">
                         <button
-                          onClick={act(() => { deleteUser(profile.user.id); setProfileId(null); })}
+                          onClick={act(async () => { await removeUser(profile.user.id); setProfileId(null); })}
                           className="flex-1 py-1.5 rounded-md bg-coral/20 border border-coral/40 text-coral text-[12px] font-semibold"
                         >
                           Удалить

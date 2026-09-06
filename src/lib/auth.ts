@@ -94,6 +94,107 @@ function setSession(userId: string | null) {
 /* ---------- операции ---------- */
 export type AuthResult = { ok: true; user: User } | { ok: false; error: string };
 
+/* ============================================================
+ * СЕРВЕРНЫЙ РЕЖИМ (Express + MySQL): включается VITE_API_URL.
+ * Без неё remoteMode === false — всё работает на localStorage.
+ * ============================================================ */
+import {
+  remoteMode as apiRemoteMode,
+  apiLogin, apiRegister, apiMe, apiGetProgress, apiSaveProgress,
+  apiLogoutLocal, getToken, type ApiUser,
+} from "./api";
+
+export const remoteMode = apiRemoteMode;
+export const hasRemoteSession = () => remoteMode && Boolean(getToken());
+
+const REMOTE_USER_KEY = "jsmaster-remote-user";
+
+function cacheRemoteUser(u: User | null) {
+  try {
+    if (u) localStorage.setItem(REMOTE_USER_KEY, JSON.stringify(u));
+    else localStorage.removeItem(REMOTE_USER_KEY);
+  } catch { /* ignore */ }
+}
+
+export function getRemoteCachedUser(): User | null {
+  try {
+    const raw = localStorage.getItem(REMOTE_USER_KEY);
+    return raw ? (JSON.parse(raw) as User) : null;
+  } catch {
+    return null;
+  }
+}
+
+function apiUserToLocal(u: ApiUser): User {
+  return {
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    salt: "",
+    hash: "",
+    role: u.role,
+    demo: u.demo,
+    createdAt: u.createdAt,
+    lastLoginAt: u.lastLoginAt ?? Date.now(),
+  };
+}
+
+async function adoptRemoteUser(apiUser: ApiUser): Promise<User> {
+  const user = apiUserToLocal(apiUser);
+  const serverProgress = await apiGetProgress();
+  const guest = readProgress("guest");
+  const guestHasData = guest.xp > 0 || Object.keys(guest.completed).length > 0;
+  const serverEmpty =
+    !serverProgress ||
+    (serverProgress.xp === 0 && Object.keys(serverProgress.completed).length === 0);
+
+  if (serverEmpty && guestHasData) {
+    // переносим гостевой прогресс на сервер
+    writeProgress(user.id, guest);
+    clearProgress("guest");
+    await apiSaveProgress(guest).catch(() => {});
+  } else if (serverProgress) {
+    writeProgress(user.id, serverProgress);
+  }
+  setSession(user.id);
+  cacheRemoteUser(user);
+  return user;
+}
+
+export async function loginRemote(email: string, password: string): Promise<AuthResult> {
+  try {
+    const user = await adoptRemoteUser(await apiLogin(email, password));
+    return { ok: true, user };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Ошибка входа" };
+  }
+}
+
+export async function registerRemote(name: string, email: string, password: string): Promise<AuthResult> {
+  try {
+    const user = await adoptRemoteUser(await apiRegister(name, email, password));
+    return { ok: true, user };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Ошибка регистрации" };
+  }
+}
+
+/** Проверка сессии при загрузке страницы + подтягивание свежего прогресса */
+export async function bootRemote(): Promise<User | null> {
+  const apiUser = await apiMe();
+  if (!apiUser) {
+    cacheRemoteUser(null);
+    return null;
+  }
+  return adoptRemoteUser(apiUser);
+}
+
+export function logoutRemote() {
+  apiLogoutLocal();
+  cacheRemoteUser(null);
+  setSession(null);
+}
+
 export function register(name: string, email: string, password: string): AuthResult {
   const trimmed = name.trim();
   const e = email.trim().toLowerCase();

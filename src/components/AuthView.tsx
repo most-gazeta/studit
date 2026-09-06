@@ -55,8 +55,8 @@ export function AuthView({
   onAuthed: () => void;
   onGuest: () => void;
   guestXp: number;
-  doLogin: (email: string, pass: string) => AuthResult;
-  doRegister: (name: string, email: string, pass: string) => AuthResult;
+  doLogin: (email: string, pass: string) => AuthResult | Promise<AuthResult>;
+  doRegister: (name: string, email: string, pass: string) => AuthResult | Promise<AuthResult>;
 }) {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [name, setName] = useState("");
@@ -64,9 +64,11 @@ export function AuthView({
   const [pass, setPass] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [topError, setTopError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (busy) return;
     setTopError(null);
     const errs: Record<string, string> = {};
     if (mode === "register" && name.trim().length < 2) errs.name = "Минимум 2 символа";
@@ -75,10 +77,14 @@ export function AuthView({
     setErrors(errs);
     if (Object.keys(errs).length) return;
 
-    const res =
-      mode === "login" ? doLogin(email, pass) : doRegister(name, email, pass);
-    if (res.ok) onAuthed();
-    else setTopError(res.error);
+    setBusy(true);
+    try {
+      const res = await (mode === "login" ? doLogin(email, pass) : doRegister(name, email, pass));
+      if (res.ok) onAuthed();
+      else setTopError(res.error);
+    } finally {
+      setBusy(false);
+    }
   };
 
   const strength = passwordStrength(pass);
@@ -224,9 +230,13 @@ export function AuthView({
               )}
             </Field>
 
-            <button type="submit" className="btn-primary w-full justify-center py-3 text-[14.5px]">
-              <IconKey className="w-4 h-4" />
-              {mode === "login" ? "Войти в кабинет" : "Зарегистрироваться"}
+            <button type="submit" disabled={busy} className="btn-primary w-full justify-center py-3 text-[14.5px]">
+              {busy ? (
+                <span className="w-4 h-4 border-2 border-[#1a1600]/25 border-t-[#1a1600] rounded-full spin-slow" />
+              ) : (
+                <IconKey className="w-4 h-4" />
+              )}
+              {busy ? "Подключение…" : mode === "login" ? "Войти в кабинет" : "Зарегистрироваться"}
             </button>
           </form>
 

@@ -9,7 +9,8 @@ import {
 } from "./hooks/useProgress";
 import {
   seedIfNeeded, getSessionUserId, getUserById, login, register, logout,
-  touchLogin, type User,
+  touchLogin, remoteMode, loginRemote, registerRemote, bootRemote,
+  logoutRemote, getRemoteCachedUser, type User,
 } from "./lib/auth";
 import { Home } from "./components/Home";
 import { Sidebar } from "./components/Sidebar";
@@ -31,6 +32,10 @@ type View =
   | { type: "admin" };
 
 function bootUser(): User | null {
+  if (remoteMode) {
+    // серверный режим: мгновенно показываем кэш, затем проверяем токен через API
+    return getRemoteCachedUser();
+  }
   seedIfNeeded();
   const id = getSessionUserId();
   return id ? getUserById(id) : null;
@@ -51,7 +56,25 @@ export default function App() {
   const [view, setView] = useState<View>({ type: "home" });
   const [menuOpen, setMenuOpen] = useState(false);
   const [accountMenu, setAccountMenu] = useState(false);
+  const [booting, setBooting] = useState(remoteMode);
   const accountRef = useRef<HTMLDivElement | null>(null);
+
+  // серверный режим: проверяем токен при загрузке и подтягиваем прогресс
+  useEffect(() => {
+    if (!remoteMode) return;
+    let cancelled = false;
+    bootRemote()
+      .then((u) => {
+        if (cancelled) return;
+        setUser(u);
+      })
+      .finally(() => {
+        if (!cancelled) setBooting(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // прогресс текущего аккаунта (или гостя)
   const storageId = user?.id ?? "guest";
@@ -94,7 +117,8 @@ export default function App() {
   const ringC = 2 * Math.PI * ringR;
 
   const doLogout = () => {
-    logout();
+    if (remoteMode) logoutRemote();
+    else logout();
     setUser(null);
     setView({ type: "home" });
   };
@@ -276,6 +300,13 @@ export default function App() {
 
         {/* ---- контент ---- */}
         <main className="min-w-0">
+          {booting ? (
+            <div className="flex flex-col items-center justify-center py-36 gap-3.5">
+              <span className="w-9 h-9 border-2 border-js/25 border-t-js rounded-full spin-slow" />
+              <span className="font-mono text-[12.5px] text-mute">подключение к серверу…</span>
+            </div>
+          ) : (
+          <>
           {effectiveView.type === "home" && (
             <Home
               progress={state}
@@ -311,10 +342,17 @@ export default function App() {
           {effectiveView.type === "auth" && (
             <AuthView
               guestXp={readProgress("guest").xp}
-              doLogin={login}
-              doRegister={register}
+              doLogin={remoteMode ? loginRemote : login}
+              doRegister={remoteMode ? registerRemote : register}
               onGuest={() => setView({ type: "home" })}
               onAuthed={() => {
+                if (remoteMode) {
+                  // loginRemote/registerRemote уже перенесли прогресс и сохранили пользователя
+                  const u = getRemoteCachedUser();
+                  if (u) setUser(u);
+                  setView({ type: "dashboard" });
+                  return;
+                }
                 const id = getSessionUserId();
                 const u = id ? getUserById(id) : null;
                 if (u) {
@@ -340,6 +378,8 @@ export default function App() {
           {effectiveView.type === "admin" && user?.role === "admin" && (
             <AdminPanel currentUser={user} onHome={() => setView({ type: "home" })} onLogout={doLogout} />
           )}
+          </>
+          )}
         </main>
       </div>
 
@@ -352,7 +392,13 @@ export default function App() {
           <span className="hidden sm:inline">теория + песочница + автотесты</span>
           <span className="ml-auto">
             ECMA-262 · {totalLessons} уроков ·{" "}
-            {user ? `аккаунт: ${user.email}` : "прогресс гостя — в вашем браузере"}
+            {remoteMode ? (
+              <span className="text-mint">режим: сервер + MySQL</span>
+            ) : user ? (
+              `аккаунт: ${user.email}`
+            ) : (
+              "демо-режим: данные в вашем браузере"
+            )}
           </span>
         </div>
       </footer>
@@ -361,7 +407,7 @@ export default function App() {
 }
 
 // touchLogin используется при старте сессии, чтобы админ видел актуальный «последний вход»
-if (typeof window !== "undefined") {
+if (typeof window !== "undefined" && !remoteMode) {
   const id = getSessionUserId();
   if (id) touchLogin(id);
 }
