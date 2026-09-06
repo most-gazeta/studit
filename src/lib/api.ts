@@ -6,7 +6,7 @@ import type { UserStats } from "./auth";
  * Режим включается переменной окружения VITE_API_URL — это ПОЛНЫЙ базовый URL API,
  * включая сегмент /api:
  *   - Node-сервер:  VITE_API_URL=http://localhost:3001/api
- *   - PHP (cPanel): VITE_API_URL=/api   (папка server-php загружена в public_html/api)
+ *   - PHP (cPanel): VITE_API_URL=https://ваш-домен.ru/api  (папка php-api в public_html)
  * Без неё — remoteMode === false и платформа работает на localStorage.
  */
 

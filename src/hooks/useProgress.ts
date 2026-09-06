@@ -53,7 +53,17 @@ export function readProgress(storageId: string): ProgressState {
     const raw = localStorage.getItem(progressKey(storageId));
     if (!raw) return { ...EMPTY };
     const parsed = JSON.parse(raw);
-    return { ...EMPTY, ...parsed };
+    const merged = { ...EMPTY, ...parsed };
+    // PHP/MySQL отдают пустые JSON-объекты как массивы [] — приводим карты к объектам
+    const asObject = (v: unknown): Record<string, unknown> =>
+      v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
+    merged.completed = asObject(merged.completed) as ProgressState["completed"];
+    merged.quiz = asObject(merged.quiz) as ProgressState["quiz"];
+    merged.tasks = asObject(merged.tasks) as ProgressState["tasks"];
+    merged.editors = asObject(merged.editors) as ProgressState["editors"];
+    merged.days = asObject(merged.days) as ProgressState["days"];
+    if (!Array.isArray(merged.events)) merged.events = [];
+    return merged;
   } catch {
     return { ...EMPTY };
   }

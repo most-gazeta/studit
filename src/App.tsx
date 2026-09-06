@@ -67,6 +67,10 @@ export default function App() {
       .then((u) => {
         if (cancelled) return;
         setUser(u);
+        // adoptRemoteUser уже записал свежий прогресс в localStorage —
+        // перечитываем его в состояние, иначе отложенная синхронизация
+        // отправит на сервер устаревшую локальную копию.
+        if (u) reload(u.id);
       })
       .finally(() => {
         if (!cancelled) setBooting(false);
@@ -74,6 +78,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // прогресс текущего аккаунта (или гостя)
