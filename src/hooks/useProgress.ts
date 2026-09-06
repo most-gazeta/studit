@@ -158,12 +158,18 @@ export function useProgress(storageId: string) {
     setState((s) => ({ ...s, editors: { ...s.editors, [taskId]: code } }));
   }, []);
 
+  /** Перечитать состояние с диска для заданного хранилища (после импорта/админских действий) */
+  const reload = useCallback((sid: string) => {
+    savedKey.current = sid;
+    setState(readProgress(sid));
+  }, []);
+
   const resetAll = useCallback(() => {
     setState({ ...EMPTY });
     clearProgress(storageId);
   }, [storageId]);
 
-  return { state, answerQuiz, passTask, completeLesson, saveEditor, resetAll };
+  return { state, answerQuiz, passTask, completeLesson, saveEditor, resetAll, reload };
 }
 
 export type ProgressApi = ReturnType<typeof useProgress>;

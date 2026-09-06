@@ -55,7 +55,7 @@ export default function App() {
 
   // прогресс текущего аккаунта (или гостя)
   const storageId = user?.id ?? "guest";
-  const { state, answerQuiz, passTask, completeLesson, saveEditor, resetAll } = useProgress(storageId);
+  const { state, answerQuiz, passTask, completeLesson, saveEditor, resetAll, reload } = useProgress(storageId);
 
   // автозавершение урока: квиз полностью верен + все задачи пройдены
   useEffect(() => {
@@ -319,6 +319,7 @@ export default function App() {
                 const u = id ? getUserById(id) : null;
                 if (u) {
                   importGuestProgress(u.id);
+                  reload(u.id); // сразу показать перенесённый гостевой прогресс
                   setUser(u);
                 }
                 setView({ type: "dashboard" });

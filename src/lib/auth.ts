@@ -224,7 +224,26 @@ function seedDemoUser(
   return user;
 }
 
+const SEED_VERSION = 3;
+const SEED_KEY = "jsmaster-seed-version";
+
 export function seedIfNeeded() {
+  // при обновлении демо-данных очищаем старые сид-аккаунты и создаём заново
+  let storedSeed: string | null = null;
+  try {
+    storedSeed = localStorage.getItem(SEED_KEY);
+  } catch { /* ignore */ }
+  if (storedSeed !== String(SEED_VERSION)) {
+    try {
+      const keep = getUsers().filter((u) => !u.demo && u.email !== "admin@jsmaster.ru");
+      getUsers().forEach((u) => {
+        if (u.demo || u.email === "admin@jsmaster.ru") clearProgress(u.id);
+      });
+      saveUsers(keep);
+      localStorage.setItem(SEED_KEY, String(SEED_VERSION));
+    } catch { /* ignore */ }
+  }
+
   const users = getUsers();
   if (users.some((u) => u.email === "admin@jsmaster.ru")) return;
 
