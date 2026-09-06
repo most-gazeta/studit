@@ -1,18 +1,61 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { flatLessons, getLesson, totalLessons } from "./data/course";
-import { useProgress } from "./hooks/useProgress";
+import {
+  useProgress,
+  readProgress,
+  writeProgress,
+  clearProgress,
+  isProgressEmpty,
+} from "./hooks/useProgress";
+import {
+  seedIfNeeded, getSessionUserId, getUserById, login, register, logout,
+  touchLogin, type User,
+} from "./lib/auth";
 import { Home } from "./components/Home";
 import { Sidebar } from "./components/Sidebar";
 import { LessonView } from "./components/LessonView";
 import { Playground } from "./components/Playground";
-import { IconLogo, IconMenu, IconX, IconZap, IconTrophy } from "./components/icons";
+import { AuthView } from "./components/AuthView";
+import { Dashboard, Avatar } from "./components/Dashboard";
+import { AdminPanel } from "./components/AdminPanel";
+import {
+  IconLogo, IconMenu, IconX, IconZap, IconTrophy, IconUser, IconCrown, IconLogout, IconChevron,
+} from "./components/icons";
 
-type View = { type: "home" } | { type: "lesson"; id: string } | { type: "playground" };
+type View =
+  | { type: "home" }
+  | { type: "lesson"; id: string }
+  | { type: "playground" }
+  | { type: "auth" }
+  | { type: "dashboard" }
+  | { type: "admin" };
+
+function bootUser(): User | null {
+  seedIfNeeded();
+  const id = getSessionUserId();
+  return id ? getUserById(id) : null;
+}
+
+/** Перенос гостевого прогресса в аккаунт при входе/регистрации */
+function importGuestProgress(userId: string) {
+  const guest = readProgress("guest");
+  const target = readProgress(userId);
+  if (isProgressEmpty(target) && !isProgressEmpty(guest)) {
+    writeProgress(userId, guest);
+    clearProgress("guest");
+  }
+}
 
 export default function App() {
-  const { state, answerQuiz, passTask, completeLesson, saveEditor, resetAll } = useProgress();
+  const [user, setUser] = useState<User | null>(bootUser);
   const [view, setView] = useState<View>({ type: "home" });
   const [menuOpen, setMenuOpen] = useState(false);
+  const [accountMenu, setAccountMenu] = useState(false);
+  const accountRef = useRef<HTMLDivElement | null>(null);
+
+  // прогресс текущего аккаунта (или гостя)
+  const storageId = user?.id ?? "guest";
+  const { state, answerQuiz, passTask, completeLesson, saveEditor, resetAll } = useProgress(storageId);
 
   // автозавершение урока: квиз полностью верен + все задачи пройдены
   useEffect(() => {
@@ -22,14 +65,24 @@ export default function App() {
       const quizOk =
         lesson.quiz.length > 0 && lesson.quiz.every((q, i) => answers[i] === q.answer);
       const tasksOk = lesson.tasks.every((t) => state.tasks[lesson.id]?.[t.id]);
-      if (quizOk && tasksOk) completeLesson(lesson.id);
+      if (quizOk && tasksOk) completeLesson(lesson.id, lesson.title);
     }
   }, [state.quiz, state.tasks, state.completed, completeLesson]);
 
   useEffect(() => {
     window.scrollTo({ top: 0 });
     setMenuOpen(false);
+    setAccountMenu(false);
   }, [view]);
+
+  // закрытие меню аккаунта по клику вне
+  useEffect(() => {
+    const onDoc = (e: MouseEvent) => {
+      if (accountRef.current && !accountRef.current.contains(e.target as Node)) setAccountMenu(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
 
   const openLesson = (id: string) => setView({ type: "lesson", id });
   const doneCount = Object.keys(state.completed).length;
@@ -37,9 +90,22 @@ export default function App() {
   const allDone = doneCount === totalLessons;
 
   const lesson = view.type === "lesson" ? getLesson(view.id) : null;
-
   const ringR = 9;
   const ringC = 2 * Math.PI * ringR;
+
+  const doLogout = () => {
+    logout();
+    setUser(null);
+    setView({ type: "home" });
+  };
+
+  const guardedAdmin = user?.role === "admin" ? view.type === "admin" : false;
+  const effectiveView: View =
+    view.type === "admin" && !guardedAdmin
+      ? { type: "home" }
+      : view.type === "dashboard" && !user
+        ? { type: "auth" }
+        : view;
 
   return (
     <div className="min-h-screen">
@@ -68,11 +134,11 @@ export default function App() {
               js<span className="text-dim">://</span>master
             </span>
             <span className="hidden sm:inline chip border-line text-dim text-[10px]">
-              junior → senior
+              junior → pro
             </span>
           </button>
 
-          <div className="ml-auto flex items-center gap-2.5 sm:gap-4">
+          <div className="ml-auto flex items-center gap-2 sm:gap-3.5">
             <span
               className={`inline-flex items-center gap-1.5 font-mono text-[12.5px] px-2.5 py-1.5 rounded-lg border ${
                 allDone ? "border-mint/40 bg-mint/10 text-mint" : "border-line text-mute"
@@ -83,26 +149,80 @@ export default function App() {
               {state.xp} XP
             </span>
 
-            <span className="flex items-center gap-2" title={`Пройдено ${doneCount} из ${totalLessons} уроков`}>
+            <span className="hidden sm:flex items-center gap-2" title={`Пройдено ${doneCount} из ${totalLessons} уроков`}>
               <svg viewBox="0 0 24 24" className="w-7 h-7 -rotate-90">
                 <circle cx="12" cy="12" r={ringR} fill="none" stroke="#1d2c4d" strokeWidth="3" />
                 <circle
-                  cx="12"
-                  cy="12"
-                  r={ringR}
-                  fill="none"
+                  cx="12" cy="12" r={ringR} fill="none"
                   stroke={allDone ? "#3ddc97" : "#f7df1e"}
-                  strokeWidth="3"
-                  strokeLinecap="round"
+                  strokeWidth="3" strokeLinecap="round"
                   strokeDasharray={ringC}
                   strokeDashoffset={ringC * (1 - percent / 100)}
                   className="transition-all duration-700"
                 />
               </svg>
-              <span className="font-mono text-[12.5px] text-mute hidden sm:inline">
-                {percent}%
-              </span>
+              <span className="font-mono text-[12.5px] text-mute">{percent}%</span>
             </span>
+
+            {/* ---- аккаунт ---- */}
+            {user ? (
+              <div className="relative" ref={accountRef}>
+                <button
+                  onClick={() => setAccountMenu((v) => !v)}
+                  className={`flex items-center gap-2 rounded-lg border px-1.5 py-1 transition-colors ${
+                    accountMenu ? "border-line2 bg-panel2" : "border-line hover:border-line2 hover:bg-panel2"
+                  }`}
+                  aria-label="Меню аккаунта"
+                >
+                  <Avatar user={user} size="sm" />
+                  <span className="hidden md:block text-[13px] font-medium text-ink max-w-[110px] truncate">
+                    {user.name.split(" ")[0]}
+                  </span>
+                  <IconChevron className={`w-3.5 h-3.5 text-dim transition-transform ${accountMenu ? "rotate-180" : ""}`} />
+                </button>
+
+                {accountMenu && (
+                  <div className="absolute right-0 top-[calc(100%+8px)] w-60 panel shadow-[0_18px_50px_rgba(0,0,0,0.5)] overflow-hidden pop-in z-50">
+                    <div className="px-4 py-3.5 border-b border-line bg-panel2/40">
+                      <p className="text-[13.5px] font-semibold text-ink truncate">{user.name}</p>
+                      <p className="font-mono text-[11px] text-dim truncate">{user.email}</p>
+                      {user.role === "admin" && (
+                        <span className="chip border-js/40 text-js bg-js/5 mt-2">
+                          <IconCrown className="w-3 h-3" /> администратор
+                        </span>
+                      )}
+                    </div>
+                    <div className="p-1.5">
+                      <button
+                        onClick={() => setView({ type: "dashboard" })}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] text-mute hover:text-ink hover:bg-panel2 transition-colors"
+                      >
+                        <IconUser className="w-4 h-4" /> Личный кабинет
+                      </button>
+                      {user.role === "admin" && (
+                        <button
+                          onClick={() => setView({ type: "admin" })}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] text-mute hover:text-ink hover:bg-panel2 transition-colors"
+                        >
+                          <IconCrown className="w-4 h-4 text-js" /> Админ-панель
+                        </button>
+                      )}
+                      <button
+                        onClick={doLogout}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] text-mute hover:text-coral hover:bg-coral/5 transition-colors"
+                      >
+                        <IconLogout className="w-4 h-4" /> Выйти
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button onClick={() => setView({ type: "auth" })} className="btn-primary px-3.5 py-2 text-[13px]">
+                <IconUser className="w-4 h-4" />
+                <span className="hidden sm:inline">Войти</span>
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -156,7 +276,7 @@ export default function App() {
 
         {/* ---- контент ---- */}
         <main className="min-w-0">
-          {view.type === "home" && (
+          {effectiveView.type === "home" && (
             <Home
               progress={state}
               xp={state.xp}
@@ -164,7 +284,7 @@ export default function App() {
               onPlayground={() => setView({ type: "playground" })}
             />
           )}
-          {view.type === "lesson" && lesson && (
+          {effectiveView.type === "lesson" && lesson && (
             <LessonView
               key={lesson.id}
               lesson={lesson}
@@ -175,18 +295,50 @@ export default function App() {
                 const q = lesson.quiz[qi];
                 const prevAnswer = (state.quiz[lesson.id] ?? [])[qi];
                 const firstCorrect = prevAnswer !== q.answer;
-                answerQuiz(lesson.id, qi, opt, opt === q.answer, firstCorrect);
+                answerQuiz(lesson.id, qi, opt, opt === q.answer, firstCorrect, lesson.title);
               }}
               onSaveCode={(taskId, code) => saveEditor(taskId, code)}
-              onPassTask={(taskId) => passTask(lesson.id, taskId)}
+              onPassTask={(taskId) => passTask(lesson.id, taskId, lesson.tasks.find((t) => t.id === taskId)?.title)}
               onOpenLesson={openLesson}
               onHome={() => setView({ type: "home" })}
             />
           )}
-          {view.type === "lesson" && !lesson && (
+          {effectiveView.type === "lesson" && !lesson && (
             <div className="p-16 text-center text-mute font-mono">урок не найден</div>
           )}
-          {view.type === "playground" && <Playground />}
+          {effectiveView.type === "playground" && <Playground />}
+
+          {effectiveView.type === "auth" && (
+            <AuthView
+              guestXp={readProgress("guest").xp}
+              doLogin={login}
+              doRegister={register}
+              onGuest={() => setView({ type: "home" })}
+              onAuthed={() => {
+                const id = getSessionUserId();
+                const u = id ? getUserById(id) : null;
+                if (u) {
+                  importGuestProgress(u.id);
+                  setUser(u);
+                }
+                setView({ type: "dashboard" });
+              }}
+            />
+          )}
+
+          {effectiveView.type === "dashboard" && user && (
+            <Dashboard
+              user={user}
+              progress={state}
+              onOpenLesson={openLesson}
+              onLogout={doLogout}
+              onAdmin={user.role === "admin" ? () => setView({ type: "admin" }) : undefined}
+            />
+          )}
+
+          {effectiveView.type === "admin" && user?.role === "admin" && (
+            <AdminPanel currentUser={user} onHome={() => setView({ type: "home" })} onLogout={doLogout} />
+          )}
         </main>
       </div>
 
@@ -198,10 +350,17 @@ export default function App() {
           </span>
           <span className="hidden sm:inline">теория + песочница + автотесты</span>
           <span className="ml-auto">
-            ECMA-262 · {totalLessons} уроков · прогресс хранится в вашем браузере
+            ECMA-262 · {totalLessons} уроков ·{" "}
+            {user ? `аккаунт: ${user.email}` : "прогресс гостя — в вашем браузере"}
           </span>
         </div>
       </footer>
     </div>
   );
+}
+
+// touchLogin используется при старте сессии, чтобы админ видел актуальный «последний вход»
+if (typeof window !== "undefined") {
+  const id = getSessionUserId();
+  if (id) touchLogin(id);
 }

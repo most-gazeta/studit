@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+export interface ProgressEvent {
+  ts: number;
+  text: string;
+  xp: number;
+}
 
 export interface ProgressState {
   xp: number;
@@ -10,61 +16,141 @@ export interface ProgressState {
   tasks: Record<string, Record<string, boolean>>;
   /** taskId -> сохранённый код ученика */
   editors: Record<string, string>;
+  /** день YYYY-MM-DD -> набрано XP */
+  days: Record<string, number>;
+  /** последние события (новые в начале) */
+  events: ProgressEvent[];
 }
 
-const KEY = "jsmaster-progress-v1";
+export const PROGRESS_PREFIX = "jsmaster-progress-v1";
+const LEGACY_KEY = "jsmaster-progress-v1";
 
-const EMPTY: ProgressState = { xp: 0, completed: {}, quiz: {}, tasks: {}, editors: {} };
+export const EMPTY: ProgressState = {
+  xp: 0,
+  completed: {},
+  quiz: {},
+  tasks: {},
+  editors: {},
+  days: {},
+  events: [],
+};
 
-function load(): ProgressState {
+export function progressKey(storageId: string) {
+  return `${PROGRESS_PREFIX}:${storageId}`;
+}
+
+export function readProgress(storageId: string): ProgressState {
   try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return EMPTY;
+    // миграция со старой общей схемы
+    if (storageId === "guest") {
+      const legacy = localStorage.getItem(LEGACY_KEY);
+      if (legacy && !localStorage.getItem(progressKey("guest"))) {
+        localStorage.setItem(progressKey("guest"), legacy);
+        localStorage.removeItem(LEGACY_KEY);
+      }
+    }
+    const raw = localStorage.getItem(progressKey(storageId));
+    if (!raw) return { ...EMPTY };
     const parsed = JSON.parse(raw);
     return { ...EMPTY, ...parsed };
   } catch {
-    return EMPTY;
+    return { ...EMPTY };
   }
 }
 
-export function useProgress() {
-  const [state, setState] = useState<ProgressState>(load);
+export function writeProgress(storageId: string, state: ProgressState) {
+  try {
+    localStorage.setItem(progressKey(storageId), JSON.stringify(state));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function clearProgress(storageId: string) {
+  try {
+    localStorage.removeItem(progressKey(storageId));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function isProgressEmpty(s: ProgressState): boolean {
+  return s.xp === 0 && Object.keys(s.completed).length === 0 && Object.keys(s.tasks).length === 0;
+}
+
+function dayKey(ts = Date.now()): string {
+  return new Date(ts).toISOString().slice(0, 10);
+}
+
+function bump(s: ProgressState, text: string, gained: number): ProgressState {
+  const d = dayKey();
+  return {
+    ...s,
+    xp: s.xp + gained,
+    days: { ...s.days, [d]: (s.days[d] ?? 0) + gained },
+    events: [{ ts: Date.now(), text, xp: gained }, ...s.events].slice(0, 60),
+  };
+}
+
+/**
+ * Прогресс, привязанный к учётной записи (или "guest").
+ * При смене storageId состояние перечитывается из localStorage.
+ */
+export function useProgress(storageId: string) {
+  const [state, setState] = useState<ProgressState>(() => readProgress(storageId));
 
   useEffect(() => {
-    try {
-      localStorage.setItem(KEY, JSON.stringify(state));
-    } catch {
-      /* quota — ignore */
+    setState(readProgress(storageId));
+  }, [storageId]);
+
+  // При смене аккаунта пропускаем одну запись, чтобы не затереть
+  // чужой ключ устаревшим состоянием предыдущего пользователя.
+  const savedKey = useRef(storageId);
+  useEffect(() => {
+    if (savedKey.current !== storageId) {
+      savedKey.current = storageId;
+      return;
     }
-  }, [state]);
+    writeProgress(storageId, state);
+  }, [storageId, state]);
 
   const answerQuiz = useCallback(
-    (lessonId: string, qIndex: number, option: number, correct: boolean, firstCorrect: boolean) => {
+    (
+      lessonId: string,
+      qIndex: number,
+      option: number,
+      correct: boolean,
+      firstCorrect: boolean,
+      label?: string
+    ) => {
       setState((s) => {
         const arr = [...(s.quiz[lessonId] ?? [])];
         while (arr.length <= qIndex) arr.push(null);
         arr[qIndex] = option;
-        return { ...s, quiz: { ...s.quiz, [lessonId]: arr }, xp: correct && firstCorrect ? s.xp + 5 : s.xp };
+        const gained = correct && firstCorrect ? 5 : 0;
+        const next = { ...s, quiz: { ...s.quiz, [lessonId]: arr } };
+        return gained ? bump(next, `Верный ответ: ${label ?? lessonId}, вопрос ${qIndex + 1}`, gained) : next;
       });
     },
     []
   );
 
-  const passTask = useCallback((lessonId: string, taskId: string) => {
+  const passTask = useCallback((lessonId: string, taskId: string, label?: string) => {
     setState((s) => {
       if (s.tasks[lessonId]?.[taskId]) return s;
-      return {
+      const next = {
         ...s,
         tasks: { ...s.tasks, [lessonId]: { ...(s.tasks[lessonId] ?? {}), [taskId]: true } },
-        xp: s.xp + 20,
       };
+      return bump(next, `Задача пройдена: ${label ?? taskId}`, 20);
     });
   }, []);
 
-  const completeLesson = useCallback((lessonId: string) => {
+  const completeLesson = useCallback((lessonId: string, label?: string) => {
     setState((s) => {
       if (s.completed[lessonId]) return s;
-      return { ...s, completed: { ...s.completed, [lessonId]: Date.now() }, xp: s.xp + 30 };
+      const next = { ...s, completed: { ...s.completed, [lessonId]: Date.now() } };
+      return bump(next, `Урок пройден: ${label ?? lessonId}`, 30);
     });
   }, []);
 
@@ -73,13 +159,9 @@ export function useProgress() {
   }, []);
 
   const resetAll = useCallback(() => {
-    setState(EMPTY);
-    try {
-      localStorage.removeItem(KEY);
-    } catch {
-      /* ignore */
-    }
-  }, []);
+    setState({ ...EMPTY });
+    clearProgress(storageId);
+  }, [storageId]);
 
   return { state, answerQuiz, passTask, completeLesson, saveEditor, resetAll };
 }
