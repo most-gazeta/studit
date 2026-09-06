@@ -1,7 +1,7 @@
 import type { User } from "../lib/auth";
 import { timeAgo } from "../lib/auth";
 import type { ProgressState } from "../hooks/useProgress";
-import { flatLessons, levels, totalLessons, totalTasks } from "../data/course";
+import { courses, flatLessonsOf, courseStats, ALL_TOTALS } from "../data/courses";
 import {
   IconBook, IconCheckCircle, IconCode, IconCrown, IconFlame, IconLock,
   IconLogout, IconPlay, IconTrophy, IconZap, IconTarget, IconArrowRight,
@@ -38,8 +38,12 @@ export function Avatar({ user, size = "md" }: { user: User; size?: "sm" | "md" |
 
 /* ---------- достижения ---------- */
 function computeAchievements(p: ProgressState) {
-  const done = (ids: string[]) => ids.every((id) => p.completed[id]);
-  const lessonIds = (li: number) => levels[li].lessons.map((l) => l.id);
+  const courseDone = (courseId: "js" | "py") =>
+    flatLessonsOf(courseId).every((l) => p.completed[l.id]);
+  const levelDone = (courseId: "js" | "py", levelIdx: number) =>
+    flatLessonsOf(courseId).length > 0 &&
+    courses.find((c) => c.id === courseId)!.levels[levelIdx].lessons.every((l) => p.completed[l.id]);
+
   const days = Object.keys(p.days).filter((d) => p.days[d] > 0).sort();
   let streak = 0;
   if (days.length) {
@@ -47,33 +51,40 @@ function computeAchievements(p: ProgressState) {
     for (let back = 0; back < 400; back++) {
       const d = new Date(today.getTime() - back * 86400000).toISOString().slice(0, 10);
       if (p.days[d] > 0) streak++;
-      else if (back === 0) continue; // сегодня мог ещё не заниматься
+      else if (back === 0) continue;
       else break;
     }
   }
-  const allCorrect = flatLessons.some(
-    (l) =>
-      l.quiz.length > 0 &&
-      (p.quiz[l.id] ?? []).length === l.quiz.length &&
-      l.quiz.every((q, i) => p.quiz[l.id]?.[i] === q.answer) &&
-      l.tasks.every((t) => p.tasks[l.id]?.[t.id])
+  const allCorrect = courses.some((c) =>
+    flatLessonsOf(c.id).some(
+      (l) =>
+        l.quiz.length > 0 &&
+        (p.quiz[l.id] ?? []).length === l.quiz.length &&
+        l.quiz.every((q, i) => p.quiz[l.id]?.[i] === q.answer) &&
+        l.tasks.every((t) => p.tasks[l.id]?.[t.id])
+    )
   );
+
+  const jsLevels = courses[0].levels;
 
   return {
     streak,
     list: [
-      { icon: IconPlay, name: "Первые шаги", desc: "Пройти первый урок", on: Object.keys(p.completed).length >= 1 },
+      { icon: IconPlay, name: "Первые шаги", desc: "Пройти первый урок любого курса", on: Object.keys(p.completed).length >= 1 },
       { icon: IconZap, name: "Сотня", desc: "Набрать 100 XP", on: p.xp >= 100 },
       { icon: IconZap, name: "Полкило опыта", desc: "Набрать 500 XP", on: p.xp >= 500 },
       { icon: IconTrophy, name: "Тысячник", desc: "Набрать 1000 XP", on: p.xp >= 1000 },
-      { icon: IconBook, name: levels[0].title, desc: `Все уроки уровня «${levels[0].label}»`, on: done(lessonIds(0)) },
-      { icon: IconBook, name: levels[1].title, desc: `Все уроки уровня «${levels[1].label}»`, on: done(lessonIds(1)) },
-      { icon: IconBook, name: levels[2].title, desc: `Все уроки уровня «${levels[2].label}»`, on: done(lessonIds(2)) },
-      { icon: IconBook, name: levels[3].title, desc: `Все уроки уровня «${levels[3].label}»`, on: done(lessonIds(3)) },
-      { icon: IconBook, name: levels[4].title, desc: `Все уроки уровня «${levels[4].label}»`, on: done(lessonIds(4)) },
+      ...jsLevels.map((level, i) => ({
+        icon: IconBook,
+        name: `JS: ${level.title}`,
+        desc: `Уровень «${level.label}» закрыт`,
+        on: levelDone("js", i),
+      })),
+      { icon: IconBook, name: "PY: старт", desc: "Первый урок Python пройден", on: flatLessonsOf("py").some((l) => p.completed[l.id]) },
+      { icon: IconCrown, name: "PY: курс", desc: "Все уроки Python закрыты", on: courseDone("py") },
+      { icon: IconCrown, name: "JS: курс", desc: "Все уроки JavaScript закрыты", on: courseDone("js") },
       { icon: IconTarget, name: "Перфекционист", desc: "Урок без единой ошибки", on: allCorrect },
       { icon: IconFlame, name: "Марафонец", desc: "Серия занятий 3+ дня", on: streak >= 3 },
-      { icon: IconCrown, name: "Финишёр", desc: `Пройти все ${totalLessons} уроков`, on: Object.keys(p.completed).length >= totalLessons },
     ],
   };
 }
@@ -102,11 +113,10 @@ export function Dashboard({
   onLogout: () => void;
   onAdmin?: () => void;
 }) {
-  const lessonsDone = Object.keys(progress.completed).length;
-  const percent = Math.round((lessonsDone / totalLessons) * 100);
+  const lessonsDone = courses.reduce((s, c) => s + courseStats(c.id, progress).lessonsDone, 0);
+  const percent = Math.round((lessonsDone / ALL_TOTALS.lessons) * 100);
   let tasksDone = 0;
   for (const l of Object.values(progress.tasks)) for (const v of Object.values(l)) if (v) tasksDone++;
-  const nextLesson = flatLessons.find((l) => !progress.completed[l.id]);
   const { streak, list } = computeAchievements(progress);
   const unlocked = list.filter((a) => a.on).length;
   const activity = last14(progress);
@@ -147,28 +157,44 @@ export function Dashboard({
           </div>
         </div>
 
-        {nextLesson && (
-          <button
-            onClick={() => onOpenLesson(nextLesson.id)}
-            className="mt-5 w-full flex items-center gap-3 rounded-lg border border-js/30 bg-js/5 hover:bg-js/10 px-4 py-3 text-left transition-colors group"
-          >
-            <span className="w-8 h-8 rounded-lg bg-js text-[#1a1600] flex items-center justify-center shrink-0">
-              <IconPlay className="w-4 h-4" strokeWidth={2.6} />
-            </span>
-            <span className="min-w-0">
-              <span className="block font-mono text-[10.5px] uppercase tracking-widest text-js">
-                {lessonsDone === 0 ? "начать обучение" : "продолжить"}
-              </span>
-              <span className="block text-[14px] font-semibold text-ink truncate">
-                Урок {String(flatLessons.indexOf(nextLesson) + 1).padStart(2, "0")} — {nextLesson.title}
-              </span>
-            </span>
-            <IconArrowRight className="w-4 h-4 ml-auto text-js shrink-0 group-hover:translate-x-1 transition-transform" />
-          </button>
-        )}
+        {/* продолжить по курсам */}
+        <div className="mt-5 grid sm:grid-cols-2 gap-3">
+          {courses.map((c) => {
+            const st = courseStats(c.id, progress);
+            const next = st.nextLesson;
+            const flat = flatLessonsOf(c.id);
+            return (
+              <button
+                key={c.id}
+                onClick={() => next && onOpenLesson(next.id)}
+                disabled={!next}
+                className="flex items-center gap-3 rounded-lg border px-4 py-3 text-left transition-colors group disabled:opacity-60"
+                style={{ borderColor: `${c.accent}45`, background: `${c.accent}0a` }}
+              >
+                <span
+                  className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ background: c.accent, color: c.id === "js" ? "#141414" : "#0d1626" }}
+                >
+                  <IconPlay className="w-4 h-4" strokeWidth={2.6} />
+                </span>
+                <span className="min-w-0">
+                  <span className="block font-mono text-[10px] uppercase tracking-widest" style={{ color: c.accent }}>
+                    {st.percent === 100 ? "курс пройден" : st.started ? `продолжить · ${c.code}` : `начать · ${c.code}`}
+                  </span>
+                  <span className="block text-[13.5px] font-semibold text-ink truncate">
+                    {next ? `Урок ${String(flat.indexOf(next) + 1).padStart(2, "0")} — ${next.title}` : "Все уроки закрыты ✓"}
+                  </span>
+                </span>
+                <span className="ml-auto shrink-0 group-hover:translate-x-1 transition-transform" style={{ color: c.accent }}>
+                  <IconArrowRight className="w-4 h-4" />
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* ---- статистика: большой процент + метрики ---- */}
+      {/* ---- статистика ---- */}
       <div className="grid md:grid-cols-[290px_1fr] gap-4 mt-5">
         <div className="panel p-6 flex flex-col items-center justify-center text-center rise">
           <div className="relative">
@@ -184,23 +210,18 @@ export function Dashboard({
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span className="font-display font-extrabold text-3xl text-ink">{percent}%</span>
-              <span className="font-mono text-[10.5px] text-dim uppercase tracking-widest">курса</span>
+              <span className="font-mono text-[10.5px] text-dim uppercase tracking-widest">всего</span>
             </div>
           </div>
           <p className="font-mono text-[12.5px] text-mute mt-3">
-            {lessonsDone} из {totalLessons} уроков
+            {lessonsDone} из {ALL_TOTALS.lessons} уроков (оба курса)
           </p>
-          {percent === 100 && (
-            <p className="mt-2 inline-flex items-center gap-1.5 text-mint text-[13px] font-semibold">
-              <IconTrophy className="w-4 h-4" /> Курс пройден полностью!
-            </p>
-          )}
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
             { icon: <IconZap className="w-4.5 h-4.5 text-js" />, value: String(progress.xp), label: "очков опыта", extra: "квизы · задачи · уроки" },
-            { icon: <IconCode className="w-4.5 h-4.5 text-sky" />, value: `${tasksDone}/${totalTasks}`, label: "задач решено", extra: "с автотестами" },
+            { icon: <IconCode className="w-4.5 h-4.5 text-sky" />, value: `${tasksDone}/${ALL_TOTALS.tasks}`, label: "задач решено", extra: "с автотестами" },
             { icon: <IconFlame className="w-4.5 h-4.5 text-coral" />, value: String(streak), label: streak === 1 ? "день серии" : "дней серии", extra: streak > 0 ? "не прерывайте!" : "займитесь сегодня" },
             { icon: <IconCheckCircle className="w-4.5 h-4.5 text-mint" />, value: `${unlocked}/${list.length}`, label: "достижений", extra: "коллекционируйте" },
           ].map((s, i) => (
@@ -211,27 +232,48 @@ export function Dashboard({
             </div>
           ))}
 
-          {/* прогресс по уровням — во всю ширину нижней строки */}
+          {/* прогресс по курсам и уровням */}
           <div className="panel p-5 col-span-2 lg:col-span-4">
-            <div className="font-mono text-[10.5px] uppercase tracking-widest text-dim mb-3">прогресс по уровням</div>
-            <div className="space-y-3">
-              {levels.map((level) => {
-                const done = level.lessons.filter((l) => progress.completed[l.id]).length;
-                const pct = Math.round((done / level.lessons.length) * 100);
+            <div className="font-mono text-[10.5px] uppercase tracking-widest text-dim mb-3">прогресс по курсам</div>
+            <div className="space-y-4">
+              {courses.map((course) => {
+                const st = courseStats(course.id, progress);
                 return (
-                  <div key={level.id} className="flex items-center gap-3">
-                    <span className="font-mono text-[11.5px] w-20 shrink-0" style={{ color: level.accent }}>
-                      {level.title}
-                    </span>
-                    <div className="flex-1 h-2.5 rounded-full bg-panel2 overflow-hidden border border-line">
-                      <div
-                        className="h-full rounded-full transition-all duration-700"
-                        style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${level.accent}88, ${level.accent})` }}
-                      />
+                  <div key={course.id}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span
+                        className="w-6 h-6 rounded-md flex items-center justify-center font-display font-bold text-[10px]"
+                        style={{ background: course.accent, color: course.id === "js" ? "#141414" : "#0d1626" }}
+                      >
+                        {course.code}
+                      </span>
+                      <span className="text-[13px] font-semibold text-ink">{course.shortTitle}</span>
+                      <span className="font-mono text-[11px] text-mute ml-auto">
+                        {st.lessonsDone}/{flatLessonsOf(course.id).length} · {st.percent}%
+                      </span>
                     </div>
-                    <span className="font-mono text-[11.5px] text-mute w-16 text-right shrink-0">
-                      {done}/{level.lessons.length} · {pct}%
-                    </span>
+                    <div className="space-y-1.5">
+                      {course.levels.map((level) => {
+                        const done = level.lessons.filter((l) => progress.completed[l.id]).length;
+                        const pct = Math.round((done / level.lessons.length) * 100);
+                        return (
+                          <div key={level.id} className="flex items-center gap-3">
+                            <span className="font-mono text-[11px] w-20 shrink-0" style={{ color: level.accent }}>
+                              {level.title}
+                            </span>
+                            <div className="flex-1 h-2 rounded-full bg-panel2 overflow-hidden border border-line">
+                              <div
+                                className="h-full rounded-full transition-all duration-700"
+                                style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${level.accent}88, ${level.accent})` }}
+                              />
+                            </div>
+                            <span className="font-mono text-[11px] text-mute w-14 text-right shrink-0">
+                              {done}/{level.lessons.length}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 );
               })}

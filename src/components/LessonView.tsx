@@ -1,5 +1,6 @@
 import type { Block, Lesson } from "../lib/types";
-import { getLessonPosition } from "../data/course";
+import type { CourseDef } from "../data/courses";
+import { getLessonPositionOf } from "../data/courses";
 import type { ProgressState } from "../hooks/useProgress";
 import { Rich } from "../lib/markdown";
 import { CodeBlock } from "./CodeBlock";
@@ -33,12 +34,12 @@ function Callout({ block }: { block: Extract<Block, { kind: "tip" | "warn" | "in
   );
 }
 
-function BlockView({ block }: { block: Block }) {
+function BlockView({ block, language }: { block: Block; language: "javascript" | "python" }) {
   switch (block.kind) {
     case "text":
       return <Rich md={block.md} />;
     case "code":
-      return <CodeBlock code={block.code} title={block.title} norun={block.norun} />;
+      return <CodeBlock code={block.code} title={block.title} norun={block.norun} language={language} />;
     case "browser":
       return <BrowserLab title={block.title} presets={block.presets} />;
     default:
@@ -47,6 +48,7 @@ function BlockView({ block }: { block: Block }) {
 }
 
 export function LessonView({
+  course,
   lesson,
   levelTitle,
   levelAccent,
@@ -57,6 +59,7 @@ export function LessonView({
   onOpenLesson,
   onHome,
 }: {
+  course: CourseDef;
   lesson: Lesson;
   levelTitle: string;
   levelAccent: string;
@@ -67,7 +70,8 @@ export function LessonView({
   onOpenLesson: (id: string) => void;
   onHome: () => void;
 }) {
-  const { prev, next, number } = getLessonPosition(lesson.id);
+  const { prev, next, number } = getLessonPositionOf(course.id, lesson.id);
+  const language = lesson.language ?? course.language;
   const answers = progress.quiz[lesson.id] ?? [];
   const taskFlags = progress.tasks[lesson.id] ?? {};
   const completed = Boolean(progress.completed[lesson.id]);
@@ -119,7 +123,7 @@ export function LessonView({
       <div className="mt-8 space-y-7">
         {lesson.blocks.map((block, i) => (
           <Reveal key={i} threshold={0.05}>
-            <BlockView block={block} />
+            <BlockView block={block} language={language} />
           </Reveal>
         ))}
       </div>
@@ -163,6 +167,7 @@ export function LessonView({
                 savedCode={progress.editors[task.id]}
                 onSave={(code) => onSaveCode(task.id, code)}
                 onPassed={() => onPassTask(task.id)}
+                language={language}
               />
             </Reveal>
           ))}

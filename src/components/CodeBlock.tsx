@@ -1,16 +1,18 @@
 import { useState } from "react";
 import { highlight } from "../lib/highlight";
-import { runCode, type RunResult } from "../lib/runner";
+import { runCode, type RunResult, type RunLanguage } from "../lib/runner";
 import { IconCopy, IconPlay, IconCheck, IconWarn } from "./icons";
 
 export function CodeBlock({
   code,
   title,
   norun = false,
+  language = "javascript",
 }: {
   code: string;
   title?: string;
   norun?: boolean;
+  language?: RunLanguage;
 }) {
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<RunResult | null>(null);
@@ -18,7 +20,7 @@ export function CodeBlock({
 
   const run = async () => {
     setRunning(true);
-    const res = await runCode(code);
+    const res = await runCode(code, "", { language });
     setResult(res);
     setRunning(false);
   };
@@ -39,7 +41,9 @@ export function CodeBlock({
         <span className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]/80" />
         <span className="w-2.5 h-2.5 rounded-full bg-[#febc2e]/80" />
         <span className="w-2.5 h-2.5 rounded-full bg-[#28c840]/80" />
-        <span className="ml-2 font-mono text-[12px] text-mute truncate">{title ?? "snippet.js"}</span>
+        <span className="ml-2 font-mono text-[12px] text-mute truncate">
+          {title ?? (language === "python" ? "snippet.py" : "snippet.js")}
+        </span>
         <div className="ml-auto flex items-center gap-1.5">
           <button
             onClick={copy}
@@ -60,7 +64,11 @@ export function CodeBlock({
               ) : (
                 <IconPlay className="w-3 h-3" strokeWidth={2.4} />
               )}
-              {running ? "выполняется…" : "запустить"}
+              {running
+                ? language === "python"
+                  ? "интерпретация…"
+                  : "выполняется…"
+                : "запустить"}
             </button>
           )}
         </div>

@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { flatLessons, getLesson, totalLessons } from "./data/course";
+import {
+  getCourse, findLessonAny, flatLessonsOf, courses, ALL_TOTALS, type CourseId,
+} from "./data/courses";
 import {
   useProgress,
   readProgress,
@@ -19,11 +21,13 @@ import { Playground } from "./components/Playground";
 import { AuthView } from "./components/AuthView";
 import { Dashboard, Avatar } from "./components/Dashboard";
 import { AdminPanel } from "./components/AdminPanel";
+import { CourseHub } from "./components/CourseHub";
 import {
   IconLogo, IconMenu, IconX, IconZap, IconTrophy, IconUser, IconCrown, IconLogout, IconChevron,
 } from "./components/icons";
 
 type View =
+  | { type: "hub" }
   | { type: "home" }
   | { type: "lesson"; id: string }
   | { type: "playground" }
@@ -53,7 +57,8 @@ function importGuestProgress(userId: string) {
 
 export default function App() {
   const [user, setUser] = useState<User | null>(bootUser);
-  const [view, setView] = useState<View>({ type: "home" });
+  const [view, setView] = useState<View>({ type: "hub" });
+  const [courseId, setCourseId] = useState<CourseId>("js");
   const [menuOpen, setMenuOpen] = useState(false);
   const [accountMenu, setAccountMenu] = useState(false);
   const [booting, setBooting] = useState(remoteMode);
@@ -85,15 +90,17 @@ export default function App() {
   const storageId = user?.id ?? "guest";
   const { state, answerQuiz, passTask, completeLesson, saveEditor, resetAll, reload } = useProgress(storageId);
 
-  // автозавершение урока: квиз полностью верен + все задачи пройдены
+  // автозавершение урока: квиз полностью верен + все задачи пройдены (по всем курсам)
   useEffect(() => {
-    for (const lesson of flatLessons) {
-      if (state.completed[lesson.id]) continue;
-      const answers = state.quiz[lesson.id] ?? [];
-      const quizOk =
-        lesson.quiz.length > 0 && lesson.quiz.every((q, i) => answers[i] === q.answer);
-      const tasksOk = lesson.tasks.every((t) => state.tasks[lesson.id]?.[t.id]);
-      if (quizOk && tasksOk) completeLesson(lesson.id, lesson.title);
+    for (const course of courses) {
+      for (const lesson of flatLessonsOf(course.id)) {
+        if (state.completed[lesson.id]) continue;
+        const answers = state.quiz[lesson.id] ?? [];
+        const quizOk =
+          lesson.quiz.length > 0 && lesson.quiz.every((q, i) => answers[i] === q.answer);
+        const tasksOk = lesson.tasks.every((t) => state.tasks[lesson.id]?.[t.id]);
+        if (quizOk && tasksOk) completeLesson(lesson.id, lesson.title);
+      }
     }
   }, [state.quiz, state.tasks, state.completed, completeLesson]);
 
@@ -112,12 +119,18 @@ export default function App() {
     return () => document.removeEventListener("mousedown", onDoc);
   }, []);
 
-  const openLesson = (id: string) => setView({ type: "lesson", id });
+  const openLesson = (id: string) => {
+    const found = findLessonAny(id);
+    if (found) setCourseId(found.course.id);
+    setView({ type: "lesson", id });
+  };
+  const totalLessons = ALL_TOTALS.lessons;
   const doneCount = Object.keys(state.completed).length;
   const percent = Math.round((doneCount / totalLessons) * 100);
   const allDone = doneCount === totalLessons;
 
-  const lesson = view.type === "lesson" ? getLesson(view.id) : null;
+  const lesson = view.type === "lesson" ? findLessonAny(view.id) ?? null : null;
+  const course = getCourse(courseId);
   const ringR = 9;
   const ringC = 2 * Math.PI * ringR;
 
@@ -125,7 +138,7 @@ export default function App() {
     if (remoteMode) logoutRemote();
     else logout();
     setUser(null);
-    setView({ type: "home" });
+    setView({ type: "hub" });
   };
 
   const guardedAdmin = user?.role === "admin" ? view.type === "admin" : false;
@@ -152,9 +165,9 @@ export default function App() {
           </button>
 
           <button
-            onClick={() => setView({ type: "home" })}
+            onClick={() => setView({ type: "hub" })}
             className="flex items-center gap-2.5 group"
-            aria-label="На главную"
+            aria-label="К выбору курсов"
           >
             <span className="text-js group-hover:scale-105 transition-transform">
               <IconLogo className="w-7 h-7" />
@@ -163,7 +176,7 @@ export default function App() {
               js<span className="text-dim">://</span>master
             </span>
             <span className="hidden sm:inline chip border-line text-dim text-[10px]">
-              junior → pro
+              2 курса · JS + PY
             </span>
           </button>
 
@@ -260,12 +273,14 @@ export default function App() {
         {/* ---- сайдбар (desktop) ---- */}
         <aside className="hidden lg:block sticky top-14 h-[calc(100vh-3.5rem)] border-r border-line">
           <Sidebar
+            course={course}
             progress={state}
             currentLessonId={view.type === "lesson" ? view.id : null}
             onOpenLesson={openLesson}
             onHome={() => setView({ type: "home" })}
             onPlayground={() => setView({ type: "playground" })}
             onReset={resetAll}
+            onHub={() => setView({ type: "hub" })}
           />
         </aside>
 
@@ -291,12 +306,14 @@ export default function App() {
               </div>
               <div className="h-[calc(100%-3.5rem)]">
                 <Sidebar
+                  course={course}
                   progress={state}
                   currentLessonId={view.type === "lesson" ? view.id : null}
                   onOpenLesson={openLesson}
                   onHome={() => setView({ type: "home" })}
                   onPlayground={() => setView({ type: "playground" })}
                   onReset={resetAll}
+                  onHub={() => setView({ type: "hub" })}
                 />
               </div>
             </div>
@@ -312,17 +329,29 @@ export default function App() {
             </div>
           ) : (
           <>
+          {effectiveView.type === "hub" && (
+            <CourseHub
+              progress={state}
+              onOpenCourse={(id) => {
+                setCourseId(id as CourseId);
+                setView({ type: "home" });
+              }}
+            />
+          )}
           {effectiveView.type === "home" && (
             <Home
+              course={course}
               progress={state}
               xp={state.xp}
               onOpenLesson={openLesson}
               onPlayground={() => setView({ type: "playground" })}
+              onHub={() => setView({ type: "hub" })}
             />
           )}
           {effectiveView.type === "lesson" && lesson && (
             <LessonView
               key={lesson.id}
+              course={lesson.course}
               lesson={lesson}
               levelTitle={lesson.level.title}
               levelAccent={lesson.level.accent}
@@ -336,13 +365,16 @@ export default function App() {
               onSaveCode={(taskId, code) => saveEditor(taskId, code)}
               onPassTask={(taskId) => passTask(lesson.id, taskId, lesson.tasks.find((t) => t.id === taskId)?.title)}
               onOpenLesson={openLesson}
-              onHome={() => setView({ type: "home" })}
+              onHome={() => {
+                setCourseId(lesson.course.id);
+                setView({ type: "home" });
+              }}
             />
           )}
           {effectiveView.type === "lesson" && !lesson && (
             <div className="p-16 text-center text-mute font-mono">урок не найден</div>
           )}
-          {effectiveView.type === "playground" && <Playground />}
+          {effectiveView.type === "playground" && <Playground language={course.language} />}
 
           {effectiveView.type === "auth" && (
             <AuthView

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Task as TaskData } from "../lib/types";
-import { runCode, type RunResult } from "../lib/runner";
+import { runCode, type RunResult, type RunLanguage } from "../lib/runner";
 import { highlight } from "../lib/highlight";
 import { Rich } from "../lib/markdown";
 import { IconCheckCircle, IconXCircle, IconPlay, IconEye, IconReset, IconCode, IconWarn } from "./icons";
@@ -12,6 +12,7 @@ export function Task({
   savedCode,
   onSave,
   onPassed,
+  language = "javascript",
 }: {
   lessonId: string;
   task: TaskData;
@@ -19,6 +20,7 @@ export function Task({
   savedCode?: string;
   onSave: (code: string) => void;
   onPassed: () => void;
+  language?: RunLanguage;
 }) {
   const [code, setCode] = useState(savedCode ?? task.starter);
   const [running, setRunning] = useState(false);
@@ -29,7 +31,10 @@ export function Task({
     setRunning(true);
     setShowSolution(false);
     onSave(code);
-    const res = await runCode(code, task.tests, 4000);
+    const res = await runCode(code, task.tests, {
+      language,
+      timeoutMs: language === "python" ? 30000 : 4000,
+    });
     setResult(res);
     setRunning(false);
     if (res.tests.length > 0 && res.tests.every((t) => t.pass)) {
@@ -43,10 +48,11 @@ export function Task({
       const el = e.currentTarget;
       const start = el.selectionStart;
       const end = el.selectionEnd;
-      const next = code.slice(0, start) + "  " + code.slice(end);
+      const indent = language === "python" ? "    " : "  ";
+      const next = code.slice(0, start) + indent + code.slice(end);
       setCode(next);
       requestAnimationFrame(() => {
-        el.selectionStart = el.selectionEnd = start + 2;
+        el.selectionStart = el.selectionEnd = start + indent.length;
       });
     }
   };

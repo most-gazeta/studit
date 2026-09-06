@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { runCode, type RunResult } from "../lib/runner";
+import { runCode, type RunResult, type RunLanguage } from "../lib/runner";
 import {
   IconPlay, IconReset, IconTerminal, IconWarn,
 } from "./icons";
 
-const SNIPPETS: { name: string; code: string }[] = [
+const JS_SNIPPETS: { name: string; code: string }[] = [
   {
     name: "Порядок event loop",
     code: `console.log("1: синхронно");
@@ -43,7 +43,7 @@ console.log(new Circle(3).describe());`,
     name: "async/await + Promise.all",
     code: `const fakeFetch = async (id) => {
   await sleep(30 + Math.random() * 40);
-  return { id, data: "ответ-" + id };
+  return { id,  "ответ-" + id };
 };
 
 console.time("параллельно");
@@ -53,14 +53,74 @@ console.log(results);`,
   },
 ];
 
-const KEY = "jsmaster-playground";
+const PY_SNIPPETS: { name: string; code: string }[] = [
+  {
+    name: "Hello, Python",
+    code: `print("Привет, Python!")
 
-export function Playground() {
+name = "Гвидо"
+print(f"Создатель языка — {name}")
+print(type(42), type("str"), type(None))`,
+  },
+  {
+    name: "Comprehensions и срезы",
+    code: `squares = [x ** 2 for x in range(10)]
+print(squares)
+print(squares[::-1])          # разворот
+print([x for x in squares if x % 2 == 0])`,
+  },
+  {
+    name: "Декоратор-логгер",
+    code: `def log_calls(fn):
+    def wrapper(*args, **kwargs):
+        print("-> вызов", fn.__name__, args)
+        result = fn(*args, **kwargs)
+        print("<- результат:", result)
+        return result
+    return wrapper
+
+@log_calls
+def add(a, b):
+    return a + b
+
+add(2, 3)`,
+  },
+  {
+    name: "Генератор Фибоначчи",
+    code: `from itertools import islice
+
+def fib():
+    a, b = 0, 1
+    while True:
+        yield a
+        a, b = b, a + b
+
+print(list(islice(fib(), 12)))`,
+  },
+  {
+    name: "dataclass",
+    code: `from dataclasses import dataclass
+
+@dataclass
+class Point:
+    x: float
+    y: float
+
+p = Point(1.5, 2.5)
+print(p)
+print(p == Point(1.5, 2.5))`,
+  },
+];
+
+const KEY_PREFIX = "jsmaster-playground";
+
+export function Playground({ language = "javascript" }: { language?: RunLanguage }) {
+  const snippets = language === "python" ? PY_SNIPPETS : JS_SNIPPETS;
   const [code, setCode] = useState(() => {
     try {
-      return localStorage.getItem(KEY) ?? SNIPPETS[0].code;
+      return localStorage.getItem(`${KEY_PREFIX}-${language}`) ?? snippets[0].code;
     } catch {
-      return SNIPPETS[0].code;
+      return snippets[0].code;
     }
   });
   const [result, setResult] = useState<RunResult | null>(null);
@@ -68,15 +128,15 @@ export function Playground() {
 
   useEffect(() => {
     try {
-      localStorage.setItem(KEY, code);
+      localStorage.setItem(`${KEY_PREFIX}-${language}`, code);
     } catch {
       /* ignore */
     }
-  }, [code]);
+  }, [code, language]);
 
   const run = async () => {
     setRunning(true);
-    const res = await runCode(code, "", 3000);
+    const res = await runCode(code, "", { language, timeoutMs: language === "python" ? 30000 : 3000 });
     setResult(res);
     setRunning(false);
   };
@@ -86,10 +146,11 @@ export function Playground() {
       e.preventDefault();
       const el = e.currentTarget;
       const s = el.selectionStart;
-      const next = code.slice(0, s) + "  " + code.slice(el.selectionEnd);
+      const indent = language === "python" ? "    " : "  ";
+      const next = code.slice(0, s) + indent + code.slice(el.selectionEnd);
       setCode(next);
       requestAnimationFrame(() => {
-        el.selectionStart = el.selectionEnd = s + 2;
+        el.selectionStart = el.selectionEnd = s + indent.length;
       });
     }
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
@@ -101,17 +162,26 @@ export function Playground() {
   return (
     <div className="max-w-5xl mx-auto px-5 sm:px-8 pb-16 pt-8">
       <div className="flex items-center gap-3 flex-wrap mb-6">
-        <span className="w-9 h-9 rounded-lg bg-js/10 border border-js/30 text-js flex items-center justify-center">
+        <span className={`w-9 h-9 rounded-lg flex items-center justify-center border ${
+          language === "python" ? "bg-[#4b8bbe]/10 border-[#4b8bbe]/35 text-[#4b8bbe]" : "bg-js/10 border-js/30 text-js"
+        }`}>
           <IconTerminal className="w-4.5 h-4.5" />
         </span>
         <div>
-          <h1 className="font-display font-bold text-xl text-ink">Песочница</h1>
-          <p className="text-[12.5px] text-dim font-mono">свободный полигон · Ctrl/⌘+Enter — запустить · доступны sleep(ms) и load(id)</p>
+          <h1 className="font-display font-bold text-xl text-ink">
+            Песочница {language === "python" ? "Python" : "JavaScript"}
+          </h1>
+          <p className="text-[12.5px] text-dim font-mono">
+            свободный полигон · Ctrl/⌘+Enter — запустить
+            {language === "python"
+              ? " · код выполняет настоящий интерпретатор (первый запуск грузит Pyodide)"
+              : " · доступны sleep(ms) и load(id)"}
+          </p>
         </div>
         <select
           value=""
           onChange={(e) => {
-            const s = SNIPPETS.find((x) => x.name === e.target.value);
+            const s = snippets.find((x) => x.name === e.target.value);
             if (s) {
               setCode(s.code);
               setResult(null);
@@ -122,7 +192,7 @@ export function Playground() {
           <option value="" disabled>
             примеры…
           </option>
-          {SNIPPETS.map((s) => (
+          {snippets.map((s) => (
             <option key={s.name} value={s.name}>
               {s.name}
             </option>
@@ -136,7 +206,9 @@ export function Playground() {
             <span className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]/80" />
             <span className="w-2.5 h-2.5 rounded-full bg-[#febc2e]/80" />
             <span className="w-2.5 h-2.5 rounded-full bg-[#28c840]/80" />
-            <span className="ml-2 font-mono text-[12px] text-mute">scratchpad.js</span>
+            <span className="ml-2 font-mono text-[12px] text-mute">
+              scratchpad.{language === "python" ? "py" : "js"}
+            </span>
             <button
               onClick={run}
               disabled={running}
@@ -147,7 +219,7 @@ export function Playground() {
               ) : (
                 <IconPlay className="w-3 h-3" strokeWidth={2.4} />
               )}
-              {running ? "…" : "запустить"}
+              {running ? (language === "python" ? "интерпретация…" : "…") : "запустить"}
             </button>
           </div>
           <textarea
@@ -176,13 +248,15 @@ export function Playground() {
             {!result && !running && (
               <div className="text-dim italic text-[12.5px]">
                 // вывод появится здесь.
-                <br />// console.log, console.warn, console.error — всё перехватывается.
+                {language === "python"
+                  ? "\n// print() перехватывается; первый запуск грузит интерпретатор ~5–10 с"
+                  : "\n// console.log, console.warn, console.error — всё перехватывается."}
               </div>
             )}
             {running && (
               <div className="flex items-center gap-2.5 text-js">
                 <span className="w-4 h-4 border-2 border-js/30 border-t-js rounded-full spin-slow" />
-                выполняется…
+                {language === "python" ? "интерпретируем Python…" : "выполняется…"}
               </div>
             )}
             {result && !running && (

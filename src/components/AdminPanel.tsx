@@ -4,8 +4,11 @@ import {
   resetUserProgress, timeAgo, updateUser, type User, type UserStats,
 } from "../lib/auth";
 import { apiAdminStats, apiAdminSetRole, apiAdminReset, apiAdminDelete } from "../lib/api";
-import { flatLessons, levels, totalLessons } from "../data/course";
+import { courses, flatLessonsOf } from "../data/courses";
 import { Avatar } from "./Dashboard";
+
+const allFlat = courses.flatMap((c) => flatLessonsOf(c.id));
+const totalLessons = allFlat.length;
 import {
   IconChart, IconCrown, IconDownload, IconLogout, IconReset, IconSearch,
   IconShield, IconTrash, IconUsers, IconX, IconZap, IconBook,
@@ -85,18 +88,18 @@ export function AdminPanel({ currentUser, onHome, onLogout }: { currentUser: Use
   const sortedByXp = [...stats].sort((a, b) => b.progress.xp - a.progress.xp);
   const profile = profileId ? stats.find((s) => s.user.id === profileId) : null;
 
-  /* аналитика по урокам: сколько пользователей прошли каждый урок */
+  /* аналитика по урокам: сколько пользователей прошли каждый урок (по курсам) */
   const lessonStats = useMemo(() => {
     const map = new Map<string, number>();
-    flatLessons.forEach((l) => map.set(l.id, 0));
+    allFlat.forEach((l) => map.set(l.id, 0));
     stats.forEach((s) => {
       Object.keys(s.progress.completed).forEach((id) => {
         if (map.has(id)) map.set(id, (map.get(id) ?? 0) + 1);
       });
     });
-    return flatLessons.map((l) => ({
+    return allFlat.map((l) => ({
       lesson: l,
-      level: levels.find((lv) => lv.lessons.some((x) => x.id === l.id)),
+      level: l.level,
       count: map.get(l.id) ?? 0,
     }));
   }, [stats]);

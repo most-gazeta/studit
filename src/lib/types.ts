@@ -42,10 +42,8 @@ export interface Lesson {
   tasks: Task[];
 }
 
-export type LevelId = "junior" | "middle" | "browser" | "senior" | "pro";
-
 export interface Level {
-  id: LevelId;
+  id: string;
   title: string;
   label: string;
   tagline: string;

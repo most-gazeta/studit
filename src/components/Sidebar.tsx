@@ -1,44 +1,57 @@
 import { useState } from "react";
-import { levels } from "../data/course";
+import type { CourseDef } from "../data/courses";
 import type { ProgressState } from "../hooks/useProgress";
 import { lessonStatus } from "./Home";
-import { IconCheck, IconHome, IconPlay, IconReset, IconTerminal } from "./icons";
+import { IconCheck, IconHome, IconLayers, IconPlay, IconReset, IconTerminal } from "./icons";
 
 export function Sidebar({
+  course,
   progress,
   currentLessonId,
   onOpenLesson,
   onHome,
   onPlayground,
   onReset,
+  onHub,
 }: {
+  course: CourseDef;
   progress: ProgressState;
   currentLessonId: string | null;
   onOpenLesson: (id: string) => void;
   onHome: () => void;
   onPlayground: () => void;
   onReset: () => void;
+  onHub: () => void;
 }) {
   const [confirmReset, setConfirmReset] = useState(false);
+  const levels = course.levels;
 
   return (
     <div className="flex flex-col h-full">
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
-        <button
-          onClick={onHome}
-          className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg border text-[13.5px] font-medium transition-colors ${
-            !currentLessonId
-              ? "border-js/30 bg-js/5 text-js"
-              : "border-transparent text-mute hover:text-ink hover:bg-panel2"
-          }`}
-        >
-          <IconHome className="w-4 h-4" /> Главная · карта курса
-        </button>
+        <div className="space-y-0.5">
+          <button
+            onClick={onHub}
+            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg border border-transparent text-[13.5px] font-medium text-mute hover:text-ink hover:bg-panel2 transition-colors"
+          >
+            <IconLayers className="w-4 h-4" /> Все курсы
+          </button>
+          <button
+            onClick={onHome}
+            className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg border text-[13.5px] font-medium transition-colors ${
+              !currentLessonId
+                ? "border-js/30 bg-js/5 text-js"
+                : "border-transparent text-mute hover:text-ink hover:bg-panel2"
+            }`}
+          >
+            <IconHome className="w-4 h-4" /> Главная курса · {course.code}
+          </button>
+        </div>
         <button
           onClick={onPlayground}
           className="w-full -mt-3 flex items-center gap-2.5 px-3 py-2.5 rounded-lg border border-transparent text-[13.5px] font-medium text-mute hover:text-ink hover:bg-panel2 transition-colors"
         >
-          <IconTerminal className="w-4 h-4" /> Песочница
+          <IconTerminal className="w-4 h-4" /> Песочница {course.code}
         </button>
 
         {levels.map((level, li) => {
