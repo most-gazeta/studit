@@ -51,11 +51,13 @@ FRONTEND_ORIGIN=http://localhost:5173
 
 ## 3. Подключение фронтенда
 
+`VITE_API_URL` — это **полный базовый URL API, включая сегмент `/api`**:
+
 ```bash
-# в корне проекта
-VITE_API_URL=http://localhost:3001 npm run dev
+# в корне проекта (Node-сервер)
+VITE_API_URL=http://localhost:3001/api npm run dev
 # или для production-сборки
-VITE_API_URL=https://api.ваш-домен.ru npm run build
+VITE_API_URL=https://api.ваш-домен.ru/api npm run build
 ```
 
 Без переменной сайт остаётся в демо-режиме (localStorage) — ничего не ломается.

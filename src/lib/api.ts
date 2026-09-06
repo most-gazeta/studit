@@ -2,8 +2,11 @@ import type { ProgressState } from "../hooks/useProgress";
 import type { UserStats } from "./auth";
 
 /**
- * Клиент REST API (server/index.js).
- * Режим включается переменной окружения VITE_API_URL.
+ * Клиент REST API.
+ * Режим включается переменной окружения VITE_API_URL — это ПОЛНЫЙ базовый URL API,
+ * включая сегмент /api:
+ *   - Node-сервер:  VITE_API_URL=http://localhost:3001/api
+ *   - PHP (cPanel): VITE_API_URL=/api   (папка server-php загружена в public_html/api)
  * Без неё — remoteMode === false и платформа работает на localStorage.
  */
 
@@ -77,7 +80,7 @@ export interface ApiUser {
 /* ---------- auth ---------- */
 
 export async function apiRegister(name: string, email: string, password: string) {
-  const r = await request<{ token: string; user: ApiUser }>("/api/auth/register", {
+  const r = await request<{ token: string; user: ApiUser }>("/auth/register", {
     method: "POST",
     body: JSON.stringify({ name, email, password }),
   });
@@ -86,7 +89,7 @@ export async function apiRegister(name: string, email: string, password: string)
 }
 
 export async function apiLogin(email: string, password: string) {
-  const r = await request<{ token: string; user: ApiUser }>("/api/auth/login", {
+  const r = await request<{ token: string; user: ApiUser }>("/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
   });
@@ -97,7 +100,7 @@ export async function apiLogin(email: string, password: string) {
 export async function apiMe(): Promise<ApiUser | null> {
   if (!getToken()) return null;
   try {
-    const r = await request<{ user: ApiUser }>("/api/auth/me");
+    const r = await request<{ user: ApiUser }>("/auth/me");
     return r.user;
   } catch (e) {
     if (e instanceof ApiError && e.status === 401) setToken(null);
@@ -113,7 +116,7 @@ export function apiLogoutLocal() {
 
 export async function apiGetProgress(): Promise<ProgressState | null> {
   try {
-    const r = await request<{ progress: ProgressState }>("/api/progress");
+    const r = await request<{ progress: ProgressState }>("/progress");
     return r.progress;
   } catch {
     return null;
@@ -121,7 +124,7 @@ export async function apiGetProgress(): Promise<ProgressState | null> {
 }
 
 export async function apiSaveProgress(progress: ProgressState): Promise<void> {
-  await request("/api/progress", {
+  await request("/progress", {
     method: "PUT",
     body: JSON.stringify({ progress }),
   });
@@ -130,21 +133,21 @@ export async function apiSaveProgress(progress: ProgressState): Promise<void> {
 /* ---------- admin ---------- */
 
 export async function apiAdminStats(): Promise<UserStats[]> {
-  const r = await request<{ stats: UserStats[] }>("/api/admin/stats");
+  const r = await request<{ stats: UserStats[] }>("/admin/stats");
   return r.stats;
 }
 
 export async function apiAdminSetRole(userId: string, role: "user" | "admin"): Promise<void> {
-  await request(`/api/admin/users/${userId}`, {
+  await request(`/admin/users/${userId}`, {
     method: "PATCH",
     body: JSON.stringify({ role }),
   });
 }
 
 export async function apiAdminReset(userId: string): Promise<void> {
-  await request(`/api/admin/users/${userId}/reset`, { method: "POST" });
+  await request(`/admin/users/${userId}/reset`, { method: "POST" });
 }
 
 export async function apiAdminDelete(userId: string): Promise<void> {
-  await request(`/api/admin/users/${userId}`, { method: "DELETE" });
+  await request(`/admin/users/${userId}`, { method: "DELETE" });
 }
