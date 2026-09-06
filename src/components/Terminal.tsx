@@ -7,9 +7,9 @@ interface Line {
 }
 
 const SCRIPT: Line[] = [
-  { kind: "cmd", text: 'const путь = ["junior", "middle", "senior"];' },
+  { kind: "cmd", text: 'const путь = ["junior", "middle", "browser", "senior", "pro"];' },
   { kind: "cmd", text: "const навыки = путь.flatMap(уровень => учить(уровень));" },
-  { kind: "out", text: "// 31 урок · 62 задания · 200+ автотестов" },
+  { kind: "out", text: "// 37 уроков · 80 заданий · 270+ автотестов" },
   { kind: "cmd", text: "навыки.at(-1)" },
   { kind: "ok", text: '"уверенный JavaScript-инженер"' },
 ];

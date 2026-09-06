@@ -4,6 +4,7 @@ import { middleLessons } from "./middle";
 import { browserLessons } from "./browser";
 import { seniorLessons } from "./senior";
 import { extraJunior, extraMiddle, extraSenior } from "./extra";
+import { proLessons } from "./pro";
 
 export const levels: Level[] = [
   {
@@ -41,6 +42,15 @@ export const levels: Level[] = [
       "Event Loop, метпрограммирование, прототипы до самого дна, память, ФП и архитектура. Мышление, за которое платят больше.",
     accent: "#ff7a8f",
     lessons: [...seniorLessons, ...extraSenior],
+  },
+  {
+    id: "pro",
+    title: "Pro",
+    label: "Регулярки, сеть и платформа",
+    tagline:
+      "Регулярные выражения до ReDoS, бинарные данные, сеть от fetch до WebSocket, хранилища, анимации и веб-компоненты.",
+    accent: "#b8e63d",
+    lessons: proLessons,
   },
 ];
 
