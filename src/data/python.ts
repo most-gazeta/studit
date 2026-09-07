@@ -2059,4 +2059,567 @@ def make_multiplier(factor):
       },
     ],
   },
+
+  {
+    id: "py16",
+    language: "python",
+    title: "Основы командной строки",
+    subtitle: "Терминал, навигация, работа с файлами и папками — базовый инструмент DevOps",
+    minutes: 25,
+    blocks: [
+      {
+        kind: "text",
+        md: `## Почему CLI важен
+
+Командная строка (CLI) — основной инструмент разработчика и DevOps-инженера. Графический интерфейс удобен, но терминал даёт скорость, автоматизацию и контроль. Большинство серверов работают без GUI — только CLI.
+
+Основные оболочки: **bash** (Linux/macOS), **PowerShell** (Windows), **zsh** (macOS по умолчанию).`,
+      },
+      {
+        kind: "text",
+        md: `## Навигация по файловой системе
+
+- \`pwd\` — текущая директория (print working directory)
+- \`ls\` (или \`dir\` в Windows) — список файлов
+- \`cd <path>\` — сменить директорию
+- \`cd ..\` — на уровень выше
+- \`cd ~\` — в домашнюю директорию
+- \`cd -\` — вернуться в предыдущую`,
+      },
+      {
+        kind: "code",
+        title: "Пример навигации",
+        code: `# В терминале (не Python):
+# $ pwd
+# /home/user/projects
+# $ ls
+# app.py  data/  requirements.txt
+# $ cd data
+# $ pwd
+# /home/user/projects/data
+# $ ls
+# users.csv  config.json
+# $ cd ..
+# $ pwd
+# /home/user/projects
+
+print("Команды терминала выполняются в оболочке, не в Python")
+print("Python запускается командой: python или python3")`,
+      },
+      {
+        kind: "text",
+        md: `## Работа с файлами и папками
+
+- \`mkdir <name>\` — создать директорию
+- \`touch <file>\` — создать пустой файл
+- \`cp <src> <dst>\` — копировать
+- \`mv <src> <dst>\` — переместить или переименовать
+- \`rm <file>\` — удалить файл
+- \`rm -r <dir>\` — удалить директорию рекурсивно
+- \`cat <file>\` — вывести содержимое
+- \`head -n 10 <file>\` — первые 10 строк
+- \`tail -n 10 <file>\` — последние 10 строк`,
+      },
+      {
+        kind: "text",
+        md: `## Запуск Python-скриптов
+
+- \`python script.py\` — запустить скрипт
+- \`python3 script.py\` — явно Python 3 (Linux/macOS)
+- \`python -m pip install <package>\` — установить пакет
+- \`python -c "print('hello')"\` — выполнить код одной строкой
+
+Флаги: \`-v\` (verbose), \`-h\` (help), \`--version\`.`,
+      },
+      {
+        kind: "code",
+        title: "Примеры команд",
+        code: `# Создание проекта:
+# $ mkdir my_project
+# $ cd my_project
+# $ touch main.py
+# $ python main.py
+
+# Поиск файлов:
+# $ find . -name "*.py"
+# $ grep -r "def " .
+
+# Переменные окружения:
+# $ export PATH=$PATH:/custom/path
+# $ echo $PATH
+
+print("CLI — это навык, который экономит часы работы")
+print("Автоматизация через shell-скрипты — сила терминала")`,
+      },
+      {
+        kind: "tip",
+        title: "Полезные сочетания клавиш",
+        md: `- \`Tab\` — автодополнение (имён файлов, команд)
+- \`Ctrl+R\` — поиск по истории команд
+- \`Ctrl+C\` — прервать выполнение
+- \`Ctrl+D\` — выйти из оболочки
+- \`↑/↓\` — навигация по истории`,
+      },
+    ],
+    quiz: [
+      {
+        q: "Какая команда показывает текущую директорию?",
+        options: ["ls", "cd", "pwd", "dir"],
+        answer: 2,
+        explain: "pwd (print working directory) выводит полный путь к текущей папке.",
+      },
+      {
+        q: "Как создать пустой файл в терминале?",
+        options: ["mkdir file.txt", "touch file.txt", "create file.txt", "new file.txt"],
+        answer: 1,
+        explain: "touch создаёт пустой файл или обновляет время модификации существующего.",
+      },
+    ],
+    tasks: [
+      {
+        id: "py16t1",
+        title: "Последовательность команд",
+        md: `Реализуйте функцию \`build_commands()\`, возвращающую список команд для создания структуры проекта: папка \`app\`, файл \`app/main.py\`, папка \`tests\`, файл \`tests/test_main.py\`. Порядок важен.`,
+        starter: `def build_commands():
+    # верните список строк-команд
+    pass
+
+for cmd in build_commands():
+    print(cmd)`,
+        tests: `
+__test("создаёт папку app", lambda: "mkdir app" in build_commands(), True)
+__test("создаёт файл main.py", lambda: any("main.py" in cmd for cmd in build_commands()), True)
+__test("создаёт папку tests", lambda: "mkdir tests" in build_commands(), True)
+__test("создаёт файл test_main.py", lambda: any("test_main.py" in cmd for cmd in build_commands()), True)
+__test("порядок: сначала mkdir, потом touch", lambda: build_commands().index("mkdir app") < build_commands().index([c for c in build_commands() if "main.py" in c][0]), True)`,
+        solution: `def build_commands():
+    return [
+        "mkdir app",
+        "touch app/main.py",
+        "mkdir tests",
+        "touch tests/test_main.py",
+    ]`,
+      },
+      {
+        id: "py16t2",
+        title: "Фильтр файлов",
+        md: `Реализуйте \`filter_py_files(files)\` — принимает список имён файлов, возвращает только те, что заканчиваются на \`.py\`.`,
+        starter: `def filter_py_files(files):
+    # ваш код
+    pass
+
+print(filter_py_files(["main.py", "data.csv", "utils.py", "README.md"]))`,
+        tests: `
+__test("фильтрует .py", lambda: filter_py_files(["a.py", "b.txt", "c.py"]), ["a.py", "c.py"])
+__test("пустой список", lambda: filter_py_files([]), [])
+__test("нет .py файлов", lambda: filter_py_files(["a.txt", "b.csv"]), [])
+__test("все .py", lambda: filter_py_files(["x.py", "y.py"]), ["x.py", "y.py"])`,
+        solution: `def filter_py_files(files):
+    return [f for f in files if f.endswith(".py")]`,
+      },
+    ],
+  },
+
+  {
+    id: "py17",
+    language: "python",
+    title: "Введение в Git",
+    subtitle: "Система контроля версий: коммиты, ветки, история, workflow",
+    minutes: 30,
+    blocks: [
+      {
+        kind: "text",
+        md: `## Что такое Git
+
+Git — распределённая система контроля версий. Она хранит историю изменений, позволяет работать параллельно над разными функциями (ветки), откатываться к предыдущим состояниям и сотрудничать в команде.
+
+Без Git: «final_v2_REALLY_FINAL.py». С Git: каждый коммит — снимок проекта с комментарием.`,
+      },
+      {
+        kind: "text",
+        md: `## Базовые команды
+
+- \`git init\` — инициализировать репозиторий в текущей папке
+- \`git status\` — показать состояние файлов (изменённые, новые, удалённые)
+- \`git add <file>\` — добавить файл в staging area (подготовить к коммиту)
+- \`git add .\` — добавить все изменения
+- \`git commit -m "сообщение"\` — сохранить снимок с комментарием
+- \`git log\` — история коммитов
+- \`git log --oneline\` — компактная история`,
+      },
+      {
+        kind: "code",
+        title: "Пример workflow",
+        code: `# Инициализация и первый коммит:
+# $ git init
+# $ echo "print('hello')" > main.py
+# $ git add main.py
+# $ git commit -m "Initial commit"
+
+# Изменение файла:
+# $ echo "print('world')" >> main.py
+# $ git status
+# On branch main
+# Changes not staged for commit:
+#   modified: main.py
+# $ git add main.py
+# $ git commit -m "Add world output"
+
+# История:
+# $ git log --oneline
+# a1b2c3d Add world output
+# e4f5g6h Initial commit
+
+print("Git хранит снимки, а не различия")
+print("Каждый коммит — уникальный хеш (a1b2c3d...)")`,
+      },
+      {
+        kind: "text",
+        md: `## Ветки (branches)
+
+Ветка — параллельная линия разработки. По умолчанию — \`main\` (или \`master\`).
+
+- \`git branch\` — список веток
+- \`git branch <name>\` — создать ветку
+- \`git checkout <branch>\` — переключиться на ветку
+- \`git checkout -b <name>\` — создать и переключиться
+- \`git merge <branch>\` — слить ветку в текущую`,
+      },
+      {
+        kind: "code",
+        title: "Работа с ветками",
+        code: `# Создание feature-ветки:
+# $ git checkout -b feature/login
+# Switched to a new branch 'feature/login'
+
+# Работа в ветке:
+# $ echo "def login()..." > auth.py
+# $ git add auth.py
+# $ git commit -m "Add login function"
+
+# Возврат в main и слияние:
+# $ git checkout main
+# $ git merge feature/login
+# Updating e4f5g6h..i7j8k9l
+# Fast-forward
+#  auth.py | 1 +
+#  1 file changed, 1 insertion(+)
+
+print("Ветки позволяют работать над фичами изолированно")
+print("Merge объединяет изменения в основную ветку")`,
+      },
+      {
+        kind: "text",
+        md: `## Удалённые репозитории
+
+GitHub, GitLab, Bitbucket — хостинги для Git-репозиториев.
+
+- \`git remote add origin <url>\` — добавить удалённый репозиторий
+- \`git push origin <branch>\` — отправить ветку на сервер
+- \`git pull origin <branch>\` — получить изменения с сервера
+- \`git clone <url>\` — клонировать репозиторий`,
+      },
+      {
+        kind: "warn",
+        title: "Не коммитьте секреты",
+        md: `Никогда не добавляйте в Git пароли, API-ключи, приватные данные. Используйте \`.gitignore\` для исключения файлов: \`*.env\`, \`secrets.json\`, \`__pycache__/\`.`,
+      },
+      {
+        kind: "tip",
+        title: "Хорошие сообщения коммитов",
+        md: `Пишите кратко и по делу: \`"Add user authentication"\`, \`"Fix bug in login form"\`, \`"Update README with installation steps"\`. Избегайте: \`"fix"\`, \`"update"\`, \`"wip"\`.`,
+      },
+    ],
+    quiz: [
+      {
+        q: "Какая команда создаёт новый коммит?",
+        options: ["git save", "git commit", "git push", "git add"],
+        answer: 1,
+        explain: "git commit сохраняет снимок staging area с комментарием. git add только подготавливает файлы.",
+      },
+      {
+        q: "Что делает git checkout -b feature?",
+        options: [
+          "Удаляет ветку feature",
+          "Создаёт ветку feature и переключается на неё",
+          "Сливает ветку feature в текущую",
+          "Показывает изменения в ветке feature",
+        ],
+        answer: 1,
+        explain: "checkout -b создаёт новую ветку и сразу переключается на неё — комбинация git branch + git checkout.",
+      },
+    ],
+    tasks: [
+      {
+        id: "py17t1",
+        title: "Последовательность Git-команд",
+        md: `Реализуйте \`git_workflow()\` — возвращает список команд для: инициализации репозитория, добавления файла \`main.py\`, коммита с сообщением \`"Initial commit"\`.`,
+        starter: `def git_workflow():
+    # верните список команд
+    pass
+
+for cmd in git_workflow():
+    print(cmd)`,
+        tests: `
+__test("инициализация", lambda: "git init" in git_workflow(), True)
+__test("добавление файла", lambda: "git add main.py" in git_workflow(), True)
+__test("коммит", lambda: any("git commit" in cmd and "Initial commit" in cmd for cmd in git_workflow()), True)
+__test("порядок: init → add → commit", lambda: (
+    git_workflow().index("git init") < 
+    git_workflow().index("git add main.py") < 
+    [i for i, c in enumerate(git_workflow()) if "git commit" in c][0]
+), True)`,
+        solution: `def git_workflow():
+    return [
+        "git init",
+        "git add main.py",
+        'git commit -m "Initial commit"',
+    ]`,
+      },
+      {
+        id: "py17t2",
+        title: "Фильтр коммитов",
+        md: `Реализуйте \`filter_commits(commits, keyword)\` — принимает список коммитов (строки) и ключевое слово, возвращает только те коммиты, где встречается слово (регистр не важен).`,
+        starter: `def filter_commits(commits, keyword):
+    # ваш код
+    pass
+
+print(filter_commits(
+    ["Add login", "Fix bug", "Add logout", "Update docs"],
+    "add"
+))`,
+        tests: `
+__test("фильтр по ключевому слову", lambda: filter_commits(["Add login", "Fix bug", "Add logout"], "add"), ["Add login", "Add logout"])
+__test("регистр не важен", lambda: filter_commits(["ADD feature", "add fix"], "Add"), ["ADD feature", "add fix"])
+__test("пустой результат", lambda: filter_commits(["a", "b"], "z"), [])
+__test("пустой список", lambda: filter_commits([], "test"), [])`,
+        solution: `def filter_commits(commits, keyword):
+    return [c for c in commits if keyword.lower() in c.lower()]`,
+      },
+    ],
+  },
+
+  {
+    id: "py18",
+    language: "python",
+    title: "Настройка окружения",
+    subtitle: "Виртуальные окружения, pip, requirements.txt, pyproject.toml",
+    minutes: 25,
+    blocks: [
+      {
+        kind: "text",
+        md: `## Зачем виртуальные окружения
+
+Разные проекты могут требовать разные версии библиотек. Виртуальное окружение (venv) — изолированная копия Python с собственными пакетами. Это предотвращает конфликты зависимостей.
+
+Без venv: проект A требует \`requests==2.25\`, проект B — \`requests==2.28\`. Конфликт.
+С venv: у каждого проекта своё окружение — всё работает.`,
+      },
+      {
+        kind: "text",
+        md: `## Создание и активация venv
+
+\`\`\`bash
+# Создать окружение в папке venv:
+python -m venv venv
+
+# Активировать (Linux/macOS):
+source venv/bin/activate
+
+# Активировать (Windows):
+venv\\Scripts\\activate
+
+# После активации в терминале появится (venv) перед промптом.
+# Деактивация: deactivate
+\`\`\``,
+      },
+      {
+        kind: "code",
+        title: "Пример использования venv",
+        code: `# В терминале:
+# $ python -m venv venv
+# $ source venv/bin/activate  # Linux/macOS
+# (venv) $ pip install requests
+# (venv) $ python main.py
+# (venv) $ deactivate
+
+print("Виртуальные окружения изолируют зависимости")
+print("Каждый проект — своё окружение")
+print("pip устанавливает пакеты в активное окружение")`,
+      },
+      {
+        kind: "text",
+        md: `## pip — менеджер пакетов
+
+- \`pip install <package>\` — установить пакет
+- \`pip install <package>==<version>\` — конкретная версия
+- \`pip install -r requirements.txt\` — установить из файла
+- \`pip freeze\` — список установленных пакетов с версиями
+- \`pip freeze > requirements.txt\` — сохранить список
+- \`pip uninstall <package>\` — удалить пакет`,
+      },
+      {
+        kind: "code",
+        title: "requirements.txt",
+        code: `# Формат requirements.txt:
+# requests==2.31.0
+# flask>=2.0,<3.0
+# numpy~=1.24  # совместимые версии
+# pandas
+
+# Установка:
+# $ pip install -r requirements.txt
+
+# Создание:
+# $ pip freeze > requirements.txt
+
+print("requirements.txt фиксирует версии зависимостей")
+print("~= означает совместимые версии (например, ~=1.24 → >=1.24, <1.25)")`,
+      },
+      {
+        kind: "text",
+        md: `## pyproject.toml — современный стандарт
+
+\`pyproject.toml\` — единый файл конфигурации проекта (замена \`setup.py\`, \`setup.cfg\`). Содержит метаданные, зависимости, настройки инструментов.
+
+\`\`\`toml
+[project]
+name = "my_project"
+version = "0.1.0"
+dependencies = [
+    "requests>=2.28",
+    "flask>=2.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "black", "ruff"]
+\`\`\``,
+      },
+      {
+        kind: "code",
+        title: "Структура проекта",
+        code: `# Типичная структура Python-проекта:
+# my_project/
+# ├── venv/                  # виртуальное окружение
+# ├── src/                   # исходный код
+# │   └── my_package/
+# │       ├── __init__.py
+# │       └── main.py
+# ├── tests/                 # тесты
+# │   └── test_main.py
+# ├── requirements.txt       # зависимости (старый стиль)
+# ├── pyproject.toml         # конфигурация (новый стиль)
+# ├── .gitignore             # исключения для Git
+# └── README.md              # документация
+
+print("Стандартная структура упрощает навигацию")
+print("venv/ не коммитится в Git (добавьте в .gitignore)")`,
+      },
+      {
+        kind: "tip",
+        title: ".gitignore для Python",
+        md: `Обязательно добавьте в \`.gitignore\`:
+\`\`\`
+venv/
+__pycache__/
+*.pyc
+.env
+*.egg-info/
+dist/
+build/
+\`\`\``,
+      },
+    ],
+    quiz: [
+      {
+        q: "Какая команда создаёт виртуальное окружение?",
+        options: ["python -m venv venv", "python create venv", "virtualenv create", "venv init"],
+        answer: 0,
+        explain: "python -m venv venv создаёт папку venv с изолированным окружением Python.",
+      },
+      {
+        q: "Что делает pip freeze?",
+        options: [
+          "Удаляет все пакеты",
+          "Показывает список установленных пакетов с версиями",
+          "Обновляет все пакеты",
+          "Создаёт виртуальное окружение",
+        ],
+        answer: 1,
+        explain: "pip freeze выводит все установленные пакеты в формате package==version — удобно для requirements.txt.",
+      },
+    ],
+    tasks: [
+      {
+        id: "py18t1",
+        title: "Парсер requirements.txt",
+        md: `Реализуйте \`parse_requirements(text)\` — принимает содержимое requirements.txt (строка), возвращает список словарей \`{"package": "имя", "version": "версия"}\`. Если версии нет — \`"any"\`. Игнорируйте пустые строки и комментарии (\`#\`).`,
+        starter: `def parse_requirements(text):
+    # ваш код
+    pass
+
+print(parse_requirements("""
+requests==2.31.0
+# комментарий
+flask>=2.0
+
+numpy
+"""))`,
+        tests: `
+__test("пакет с версией", lambda: parse_requirements("requests==2.31.0"), [{"package": "requests", "version": "2.31.0"}])
+__test("пакет без версии", lambda: parse_requirements("numpy"), [{"package": "numpy", "version": "any"}])
+__test("игнорирует комментарии", lambda: parse_requirements("# comment\\nrequests==1.0"), [{"package": "requests", "version": "1.0"}])
+__test("игнорирует пустые строки", lambda: parse_requirements("\\n\\nrequests\\n\\n"), [{"package": "requests", "version": "any"}])
+__test("несколько пакетов", lambda: parse_requirements("a==1\\nb==2"), [{"package": "a", "version": "1"}, {"package": "b", "version": "2"}])`,
+        solution: `def parse_requirements(text):
+    result = []
+    for line in text.strip().split("\\n"):
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if "==" in line:
+            pkg, ver = line.split("==", 1)
+            result.append({"package": pkg.strip(), "version": ver.strip()})
+        else:
+            result.append({"package": line.strip(), "version": "any"})
+    return result`,
+      },
+      {
+        id: "py18t2",
+        title: "Генератор структуры проекта",
+        md: `Реализуйте \`generate_project_files(name)\` — возвращает список файлов для создания проекта: \`README.md\`, \`requirements.txt\`, \`pyproject.toml\`, \`.gitignore\`. Каждый файл — словарь \`{"path": "путь", "content": "содержимое"}\`.`,
+        starter: `def generate_project_files(name):
+    # ваш код
+    pass
+
+for f in generate_project_files("my_app"):
+    print(f["path"])`,
+        tests: `
+__test("создаёт README.md", lambda: any(f["path"] == "README.md" for f in generate_project_files("test")), True)
+__test("создаёт requirements.txt", lambda: any(f["path"] == "requirements.txt" for f in generate_project_files("test")), True)
+__test("создаёт pyproject.toml", lambda: any(f["path"] == "pyproject.toml" for f in generate_project_files("test")), True)
+__test("создаёт .gitignore", lambda: any(f["path"] == ".gitignore" for f in generate_project_files("test")), True)
+__test("README содержит имя проекта", lambda: next(f["content"] for f in generate_project_files("my_app") if f["path"] == "README.md").find("my_app") >= 0, True)`,
+        solution: `def generate_project_files(name):
+    return [
+        {
+            "path": "README.md",
+            "content": f"# {name}\\n\\nОписание проекта.",
+        },
+        {
+            "path": "requirements.txt",
+            "content": "# Зависимости проекта\\n",
+        },
+        {
+            "path": "pyproject.toml",
+            "content": f'[project]\\nname = "{name}"\\nversion = "0.1.0"\\n',
+        },
+        {
+            "path": ".gitignore",
+            "content": "venv/\\n__pycache__/\\n*.pyc\\n.env\\n",
+        },
+    ]`,
+      },
+    ],
+  },
 ];

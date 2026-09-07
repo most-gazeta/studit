@@ -96,9 +96,9 @@ export const pyCourse: CourseDef = {
   title: "Python от junior до senior",
   shortTitle: "Python",
   language: "python",
-  tagline: "Язык данных и бэкенда — от print и срезов до декораторов, генераторов и dataclass.",
+  tagline: "Язык данных и бэкенда — от print и срезов до декораторов, генераторов, Git и настройки окружения.",
   description:
-    "12 уроков в трёх уровнях с настоящим интерпретатором Python в браузере: примеры запускаются, задачи проверяются автотестами — как и в курсе JavaScript.",
+    "18 уроков в трёх уровнях с настоящим интерпретатором Python в браузере: примеры запускаются, задачи проверяются автотестами — как и в курсе JavaScript.",
   accent: "#4b8bbe",
   accent2: "#ffd43b",
   levels: [
@@ -123,9 +123,9 @@ export const pyCourse: CourseDef = {
     {
       id: "pysenior",
       title: "Senior",
-      label: "Глубина языка",
+      label: "Глубина языка и инструменты",
       tagline:
-        "Генераторы, протоколы исключений и контекстных менеджеров, типизация и dataclass — язык изнутри.",
+        "Генераторы, исключения, типизация, модули, регулярные выражения, функциональный стиль, командная строка, Git и настройка окружения — полный набор профессионала.",
       accent: "#306998",
       lessons: pythonLessons.slice(9),
     },
@@ -133,7 +133,9 @@ export const pyCourse: CourseDef = {
   skills: [
     "списки и срезы", "comprehensions", "декораторы", "генераторы", "dataclass",
     "f-строки", "ООП и super", "замыкания", "nonlocal", "исключения", "with",
-    "типизация", "PEP 8", "dict/set/tuple",
+    "типизация", "PEP 8", "dict/set/tuple", "модули и пакеты", "ввод/вывод",
+    "JSON и CSV", "регулярные выражения", "map/filter/reduce", "functools.partial",
+    "командная строка", "Git и контроль версий", "виртуальные окружения", "pip и requirements.txt",
   ],
 };
 

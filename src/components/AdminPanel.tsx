@@ -396,19 +396,27 @@ export function AdminPanel({ currentUser, onHome, onLogout }: { currentUser: Use
               <div className="mt-5">
                 <div className="font-mono text-[10.5px] uppercase tracking-widest text-dim mb-2.5">по уровням</div>
                 <div className="space-y-2.5">
-                  {levels.map((level) => {
-                    const done = level.lessons.filter((l) => profile.progress.completed[l.id]).length;
-                    const pct = Math.round((done / level.lessons.length) * 100);
-                    return (
-                      <div key={level.id} className="flex items-center gap-3">
-                        <span className="font-mono text-[11px] w-16 shrink-0" style={{ color: level.accent }}>{level.title}</span>
-                        <div className="flex-1 h-2 rounded-full bg-panel2 overflow-hidden border border-line">
-                          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: level.accent }} />
+                  {(() => {
+                    // Определяем курс на основе завершённых уроков
+                    const completedIds = Object.keys(profile.progress.completed);
+                    const hasPython = completedIds.some(id => id.startsWith("py"));
+                    const course = hasPython ? courses.find(c => c.id === "py") : courses.find(c => c.id === "js");
+                    const levels = course?.levels ?? [];
+                    
+                    return levels.map((level) => {
+                      const done = level.lessons.filter((l) => profile.progress.completed[l.id]).length;
+                      const pct = Math.round((done / level.lessons.length) * 100);
+                      return (
+                        <div key={level.id} className="flex items-center gap-3">
+                          <span className="font-mono text-[11px] w-16 shrink-0" style={{ color: level.accent }}>{level.title}</span>
+                          <div className="flex-1 h-2 rounded-full bg-panel2 overflow-hidden border border-line">
+                            <div className="h-full rounded-full" style={{ width: `${pct}%`, background: level.accent }} />
+                          </div>
+                          <span className="font-mono text-[11px] text-mute w-12 text-right">{done}/{level.lessons.length}</span>
                         </div>
-                        <span className="font-mono text-[11px] text-mute w-12 text-right">{done}/{level.lessons.length}</span>
-                      </div>
-                    );
-                  })}
+                      );
+                    });
+                  })()}
                 </div>
               </div>
 
