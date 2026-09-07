@@ -1628,4 +1628,435 @@ __test("лимит 0", lambda: top_scores({"x": 7}, 0), [])`,
       },
     ],
   },
+
+  {
+    id: "py13",
+    language: "python",
+    title: "Модули, ввод/вывод и сериализация",
+    subtitle: "import, input(), файлы, JSON, CSV — работа с данными и пакетами",
+    minutes: 30,
+    blocks: [
+      {
+        kind: "text",
+        md: `## Модули и пакеты
+
+\`import math\` — подключаем модуль целиком. \`from os import path\` — только конкретное имя. \`import numpy as np\` — псевдоним. Пакет — директория с \`__init__.py\` и модулями внутри.
+
+Стандартная библиотека огромна: \`os\`, \`sys\`, \`json\`, \`csv\`, \`datetime\`, \`random\`, \`math\`, \`re\`, \`collections\` — и это только начало.`,
+      },
+      {
+        kind: "code",
+        title: "Импорт в действии",
+        code: `import math
+print(math.pi, math.sqrt(16))
+
+from datetime import datetime
+print(datetime.now().strftime("%Y-%m-%d"))
+
+from collections import Counter
+words = ["кот", "пёс", "кот", "кот", "пёс"]
+print(Counter(words))  # Counter({'кот': 3, 'пёс': 2})`,
+      },
+      {
+        kind: "text",
+        md: `## Ввод и вывод
+
+\`input()\` читает строку с клавиатуры (в песочнице недоступно — там только print). Файлы — через \`open()\` с \`with\`: \`with open(path, "r") as f: content = f.read()\`. Режимы: \`"r"\` (чтение), \`"w"\` (перезапись), \`"a"\` (дописывание).`,
+      },
+      {
+        kind: "code",
+        title: "Файлы (демонстрация)",
+        code: `# В песочнице файлы недоступны, но синтаксис такой:
+# with open("data.txt", "w") as f:
+#     f.write("привет\\n")
+#     f.write("мир\\n")
+
+# with open("data.txt", "r") as f:
+#     lines = f.readlines()
+#     print(lines)
+
+print("Файлы: open() + with + read/write")
+print("Режимы: r, w, a, rb, wb")`,
+      },
+      {
+        kind: "text",
+        md: `## JSON и CSV
+
+\`json.dumps(obj)\` — сериализация в строку, \`json.loads(str)\` — обратно. \`json.dump(obj, file)\` — запись в файл, \`json.load(file)\` — чтение.
+
+\`csv.reader\` / \`csv.writer\` — работа с CSV. \`csv.DictReader\` — строки как словари.`,
+      },
+      {
+        kind: "code",
+        title: "JSON и CSV",
+        code: `import json
+import csv
+from io import StringIO  # для демонстрации без файлов
+
+data = {"name": "Ада", "age": 36, "langs": ["python", "js"]}
+json_str = json.dumps(data, ensure_ascii=False, indent=2)
+print(json_str)
+
+parsed = json.loads(json_str)
+print(parsed["name"], parsed["langs"])
+
+# CSV (демонстрация через StringIO)
+csv_data = "name,age\\nАда,36\\nГвидо,67"
+reader = csv.DictReader(StringIO(csv_data))
+for row in reader:
+    print(row)`,
+      },
+      {
+        kind: "tip",
+        title: "Когда что использовать",
+        md: `Конфигурация — JSON или YAML. Табличные данные — CSV или pandas. Бинарные — pickle (но осторожно: небезопасно для чужих данных). Для баз — SQLite (\`sqlite3\` в стандартной библиотеке).`,
+      },
+    ],
+    quiz: [
+      {
+        q: "Что вернёт json.loads('{\"a\": 1}')?",
+        options: ["{'a': 1}", "{\"a\": 1}", "{'a': 1} как dict", "ошибку"],
+        answer: 2,
+        explain: "loads парсит JSON-строку в Python-объект: словарь {'a': 1}.",
+      },
+      {
+        q: "Какой режим open() перезаписывает файл?",
+        options: ["r", "w", "a", "x"],
+        answer: 1,
+        explain: "w — write, перезаписывает. a — append, дописывает. r — read (по умолчанию). x — эксклюзивное создание.",
+      },
+    ],
+    tasks: [
+      {
+        id: "py13t1",
+        title: "JSON-сериализация",
+        md: `Реализуйте \`to_json(obj)\` — превращает словарь в JSON-строку с \`indent=2\` и \`ensure_ascii=False\`. \`to_json({"a": 1})\` → \`'{\\n  "a": 1\\n}'\`.`,
+        starter: `import json
+
+def to_json(obj):
+    # ваш код
+    pass
+
+print(to_json({"name": "Ада", "age": 36}))`,
+        tests: `
+__test("простой словарь", lambda: json.loads(to_json({"a": 1})), {"a": 1})
+__test("кириллица сохраняется", lambda: "Ада" in to_json({"name": "Ада"}), True)
+__test("отступы 2 пробела", lambda: "\\n  " in to_json({"a": 1}), True)`,
+        solution: `import json
+
+def to_json(obj):
+    return json.dumps(obj, ensure_ascii=False, indent=2)`,
+      },
+      {
+        id: "py13t2",
+        title: "Парсер CSV",
+        md: `Реализуйте \`parse_csv(text)\` — принимает CSV-строку с заголовком, возвращает список словарей. \`parse_csv("a,b\\n1,2")\` → \`[{'a': '1', 'b': '2'}]\`.`,
+        starter: `import csv
+from io import StringIO
+
+def parse_csv(text):
+    # ваш код
+    pass
+
+print(parse_csv("name,age\\nАда,36\\nГвидо,67"))`,
+        tests: `
+__test("одна строка", lambda: parse_csv("x,y\\n1,2"), [{"x": "1", "y": "2"}])
+__test("две строки", lambda: parse_csv("a,b\\n1,2\\n3,4"), [{"a": "1", "b": "2"}, {"a": "3", "b": "4"}])
+__test("кириллица", lambda: parse_csv("имя\\nАда"), [{"имя": "Ада"}])`,
+        solution: `import csv
+from io import StringIO
+
+def parse_csv(text):
+    reader = csv.DictReader(StringIO(text))
+    return list(reader)`,
+      },
+    ],
+  },
+
+  {
+    id: "py14",
+    language: "python",
+    title: "Регулярные выражения",
+    subtitle: "re-модуль, паттерны, группы, поиск и замена",
+    minutes: 30,
+    blocks: [
+      {
+        kind: "text",
+        md: `## re-модуль
+
+\`re.search(pattern, text)\` — первый матч, \`re.findall\` — все, \`re.sub\` — замена. Паттерны: \`\\d\` (цифра), \`\\w\` (слово), \`\\s\` (пробел), \`+\` (один или более), \`*\` (ноль или более), \`?\` (ноль или один).`,
+      },
+      {
+        kind: "code",
+        title: "Базовые паттерны",
+        code: `import re
+
+text = "Заказ №123, сумма 456.78 руб."
+
+# Найти число
+print(re.search(r"\\d+", text).group())  # 123
+
+# Все числа
+print(re.findall(r"\\d+", text))  # ['123', '456', '78']
+
+# Дробное число
+print(re.findall(r"\\d+\\.\\d+", text))  # ['456.78']
+
+# Слово
+print(re.findall(r"\\w+", text))  # ['Заказ', '123', 'сумма', '456', '78', 'руб']`,
+      },
+      {
+        kind: "text",
+        md: `## Группы и замена
+
+Круглые скобки \`(...)\` — группы. \`\\1\` — ссылка на первую группу в шаблоне замены. \`re.sub\` заменяет все вхождения.`,
+      },
+      {
+        kind: "code",
+        title: "Группы и sub",
+        code: `import re
+
+# Извлечь домен из email
+email = "user@example.com"
+match = re.search(r"@(\\w+\\.\\w+)", email)
+print(match.group(1))  # example.com
+
+# Заменить все пробелы на дефис
+text = "hello world python"
+print(re.sub(r"\\s+", "-", text))  # hello-world-python
+
+# Ссылка на группу в замене
+text = "2026-02-14"
+print(re.sub(r"(\\d{4})-(\\d{2})-(\\d{2})", r"\\3.\\2.\\1", text))  # 14.02.2026`,
+      },
+      {
+        kind: "warn",
+        title: "Raw-строки для паттернов",
+        md: `Всегда используйте \`r"..." \` (raw-строки) для регулярных выражений: \`r"\\d+"\` вместо \`"\\\\d+"\`. Иначе придётся экранировать обратные слеши дважды.`,
+      },
+    ],
+    quiz: [
+      {
+        q: "Что вернёт re.findall(r'\\d+', 'abc123def456')?",
+        options: ["['123', '456']", "['abc', 'def']", "['123456']", "ошибку"],
+        answer: 0,
+        explain: "findall находит все непересекающиеся вхождения: два числа 123 и 456.",
+      },
+      {
+        q: "Зачем нужны круглые скобки в паттерне?",
+        options: [
+          "Для группировки и извлечения подвыражений",
+          "Для повторения",
+          "Для альтернативы",
+          "Для комментария",
+        ],
+        answer: 0,
+        explain: "Скобки создают группу: её можно извлечь через group(1), group(2) и использовать в замене.",
+      },
+    ],
+    tasks: [
+      {
+        id: "py14t1",
+        title: "Извлечь числа",
+        md: `Реализуйте \`extract_numbers(text)\` — список всех целых чисел из строки. \`extract_numbers("a1b23c456")\` → \`['1', '23', '456']\`.`,
+        starter: `import re
+
+def extract_numbers(text):
+    # ваш код
+    pass
+
+print(extract_numbers("заказ 123, сумма 456"))`,
+        tests: `
+__test("простой случай", lambda: extract_numbers("a1b23c456"), ["1", "23", "456"])
+__test("нет чисел", lambda: extract_numbers("abc"), [])
+__test("только числа", lambda: extract_numbers("123"), ["123"])`,
+        solution: `import re
+
+def extract_numbers(text):
+    return re.findall(r"\\d+", text)`,
+      },
+      {
+        id: "py14t2",
+        title: "Формат даты",
+        md: `Реализуйте \`reformat_date(text)\` — заменяет \`YYYY-MM-DD\` на \`DD.MM.YYYY\`. \`reformat_date("2026-02-14")\` → \`"14.02.2026"\`.`,
+        starter: `import re
+
+def reformat_date(text):
+    # ваш код
+    pass
+
+print(reformat_date("дата: 2026-02-14"))`,
+        tests: `
+__test("простая дата", lambda: reformat_date("2026-02-14"), "14.02.2026")
+__test("в тексте", lambda: reformat_date("событие 2026-12-31"), "событие 31.12.2026")
+__test("несколько дат", lambda: reformat_date("2026-01-01 и 2026-12-31"), "01.01.2026 и 31.12.2026")`,
+        solution: `import re
+
+def reformat_date(text):
+    return re.sub(r"(\\d{4})-(\\d{2})-(\\d{2})", r"\\3.\\2.\\1", text)`,
+      },
+    ],
+  },
+
+  {
+    id: "py15",
+    language: "python",
+    title: "Функциональный стиль и анализ кода",
+    subtitle: "map/filter/reduce, functools.partial, mypy, ruff",
+    minutes: 25,
+    blocks: [
+      {
+        kind: "text",
+        md: `## map, filter, reduce
+
+\`map(fn, iterable)\` — применяет функцию к каждому элементу. \`filter(fn, iterable)\` — оставляет только те, для которых \`fn\` вернула \`True\`. \`reduce(fn, iterable)\` — сворачивает в одно значение (из \`functools\`).`,
+      },
+      {
+        kind: "code",
+        title: "Функциональная троица",
+        code: `from functools import reduce
+
+nums = [1, 2, 3, 4, 5]
+
+# map: удвоить каждое
+print(list(map(lambda x: x * 2, nums)))  # [2, 4, 6, 8, 10]
+
+# filter: только чётные
+print(list(filter(lambda x: x % 2 == 0, nums)))  # [2, 4]
+
+# reduce: сумма
+print(reduce(lambda a, b: a + b, nums))  # 15
+
+# reduce с начальным значением
+print(reduce(lambda a, b: a + b, nums, 100))  # 115`,
+      },
+      {
+        kind: "text",
+        md: `## Частичные функции
+
+\`functools.partial(fn, *args)\` — фиксирует часть аргументов, возвращает новую функцию. Удобно для создания специализаций.`,
+      },
+      {
+        kind: "code",
+        title: "partial в деле",
+        code: `from functools import partial
+
+def power(base, exp):
+    return base ** exp
+
+square = partial(power, exp=2)
+cube = partial(power, exp=3)
+
+print(square(5))   # 25
+print(cube(5))     # 125
+
+# partial с позиционными аргументами
+def greet(greeting, name):
+    return f"{greeting}, {name}!"
+
+hello = partial(greet, "Привет")
+print(hello("Ада"))  # Привет, Ада!`,
+      },
+      {
+        kind: "text",
+        md: `## Анализ кода
+
+**mypy** — статическая проверка типов. Запуск: \`mypy script.py\`. Проверяет аннотации типов, находит несоответствия.
+
+**ruff** / **black** — линтер и форматтер. \`ruff check .\` — найти проблемы стиля, \`ruff format .\` — отформатировать. \`black\` — альтернатива форматтеру.`,
+      },
+      {
+        kind: "code",
+        title: "Пример для mypy (демонстрация)",
+        code: `# Код с аннотациями типов:
+def greet(name: str, times: int = 1) -> str:
+    return ("Привет, " + name + "! ") * times
+
+# mypy проверит:
+# - name должен быть str
+# - times должен быть int
+# - возвращаемое значение — str
+
+# Ошибка, которую поймает mypy:
+# result: int = greet("Ада")  # TypeError: str, не int
+
+print("mypy проверяет типы статически")
+print("ruff/black форматируют код")`,
+      },
+      {
+        kind: "tip",
+        title: "Когда что использовать",
+        md: `map/filter — когда логика простая и однострочная. Comprehensions — когда сложнее или с условиями. reduce — для свёрток (сумма, произведение, конкатенация). partial — когда нужно зафиксировать часть аргументов для переиспользования.`,
+      },
+    ],
+    quiz: [
+      {
+        q: "Что вернёт reduce(lambda a, b: a * b, [1, 2, 3, 4])?",
+        options: ["10", "24", "[1, 2, 3, 4]", "ошибку"],
+        answer: 1,
+        explain: "reduce сворачивает: ((((1*2)*3)*4) = 24.",
+      },
+      {
+        q: "Что делает functools.partial?",
+        options: [
+          "Фиксирует часть аргументов функции",
+          "Делает функцию частичной (неполной)",
+          "Удаляет аргументы",
+          "Создаёт генератор",
+        ],
+        answer: 0,
+        explain: "partial возвращает новую функцию с зафиксированными аргументами — специализацию оригинала.",
+      },
+    ],
+    tasks: [
+      {
+        id: "py15t1",
+        title: "Сумма квадратов",
+        md: `Реализуйте \`sum_of_squares(nums)\` — сумму квадратов чисел, используя \`map\` и \`reduce\`. \`sum_of_squares([1, 2, 3])\` → \`14\` (1+4+9).`,
+        starter: `from functools import reduce
+
+def sum_of_squares(nums):
+    # map + reduce
+    pass
+
+print(sum_of_squares([1, 2, 3]))`,
+        tests: `
+__test("[1,2,3] → 14", lambda: sum_of_squares([1, 2, 3]), 14)
+__test("[2,3] → 13", lambda: sum_of_squares([2, 3]), 13)
+__test("пустой список → 0", lambda: sum_of_squares([]), 0)`,
+        solution: `from functools import reduce
+
+def sum_of_squares(nums):
+    squares = map(lambda x: x ** 2, nums)
+    return reduce(lambda a, b: a + b, squares, 0)`,
+      },
+      {
+        id: "py15t2",
+        title: "Частичное умножение",
+        md: `Реализуйте \`make_multiplier(factor)\` через \`partial\` — возвращает функцию, умножающую аргумент на \`factor\`. \`m = make_multiplier(3); m(7)\` → \`21\`.`,
+        starter: `from functools import partial
+
+def multiply(a, b):
+    return a * b
+
+def make_multiplier(factor):
+    # partial
+    pass
+
+m = make_multiplier(3)
+print(m(7))`,
+        tests: `
+__test("factor 3, x 7 → 21", lambda: make_multiplier(3)(7), 21)
+__test("factor 0 → 0", lambda: make_multiplier(0)(5), 0)
+__test("factor 2.5, x 4 → 10.0", lambda: make_multiplier(2.5)(4), 10.0)`,
+        solution: `from functools import partial
+
+def multiply(a, b):
+    return a * b
+
+def make_multiplier(factor):
+    return partial(multiply, b=factor)`,
+      },
+    ],
+  },
 ];
