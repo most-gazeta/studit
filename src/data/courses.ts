@@ -148,7 +148,7 @@ export const backendCourse: CourseDef = {
   language: "python",
   tagline: "Django, PostgreSQL, Elasticsearch, Docker — полный стек backend-разработки на Python.",
   description:
-    "13 уроков в пяти спринтах: Django и базы данных, Docker и деплой, Elasticsearch и ETL-процессы, Code Review и SOLID, асинхронное программирование и FastAPI. Практические проекты: REST API, контейнеризация, синхронизация данных, тестирование, FastAPI с кешированием.",
+    "16 уроков в семи спринтах: Django и базы данных, Docker и деплой, Elasticsearch и ETL-процессы, Code Review и SOLID, асинхронное программирование и FastAPI, авторизация и аутентификация, микросервисы и устойчивость сервисов. Практические проекты: REST API, контейнеризация, синхронизация данных, тестирование, FastAPI с кешированием, JWT/OAuth, микросервисная архитектура.",
   accent: "#092e20",
   accent2: "#44b78b",
   levels: [
@@ -195,7 +195,25 @@ export const backendCourse: CourseDef = {
       tagline:
         "Асинхронное программирование, корутины, FastAPI, кеширование с Redis, продакшн-конфигурация.",
       accent: "#00bcd4",
-      lessons: backendLessons.slice(10),
+      lessons: backendLessons.slice(10, 13),
+    },
+    {
+      id: "be-sprint6",
+      title: "Спринт 6",
+      label: "Авторизация и аутентификация",
+      tagline:
+        "JWT токены, OAuth 2.0, двухфакторная аутентификация, капча, безопасность API.",
+      accent: "#e91e63",
+      lessons: backendLessons.slice(13, 14),
+    },
+    {
+      id: "be-sprint7",
+      title: "Спринт 7",
+      label: "Микросервисы и устойчивость",
+      tagline:
+        "Микросервисная архитектура, gRPC, message brokers, rate limiting, circuit breaker, мониторинг и логирование.",
+      accent: "#ff5722",
+      lessons: backendLessons.slice(14),
     },
   ],
   skills: [
@@ -206,6 +224,9 @@ export const backendCourse: CourseDef = {
     "Airflow", "PostgreSQL", "reverse proxy", "контейнеризация",
     "Code Review", "SOLID", "функциональное тестирование", "pytest", "Swagger", "OpenAPI",
     "async/await", "корутины", "asyncio", "FastAPI", "Pydantic", "Redis", "кеширование",
+    "JWT", "OAuth 2.0", "OpenID Connect", "двухфакторная аутентификация", "TOTP", "капча", "reCAPTCHA",
+    "микросервисы", "gRPC", "RabbitMQ", "Apache Kafka", "Circuit Breaker", "Rate Limiting",
+    "health checks", "мониторинг", "Prometheus", "Grafana", "структурированное логирование",
   ],
 };
 

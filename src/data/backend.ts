@@ -2483,4 +2483,1014 @@ __test("кеширует результат", lambda: (lambda: (get_cached_data(
       },
     ],
   },
+
+  // ========== СПРИНТ 6: Авторизация и аутентификация ==========
+  {
+    id: "be14",
+    language: "python",
+    title: "Сервис авторизации и аутентификации",
+    subtitle: "JWT, OAuth 2.0, двухфакторная аутентификация, капча",
+    minutes: 50,
+    blocks: [
+      {
+        kind: "text",
+        md: `## Аутентификация vs Авторизация
+
+**Аутентификация** — проверка личности пользователя (кто вы?)
+**Авторизация** — проверка прав доступа (что вам разрешено?)
+
+Основные подходы:
+- **Session-based** — сессии на сервере, cookie на клиенте
+- **Token-based (JWT)** — токены на клиенте, проверка подписи
+- **OAuth 2.0** — делегированная авторизация (вход через Google, GitHub)`,
+      },
+      {
+        kind: "code",
+        title: "JWT аутентификация",
+        code: `from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from pydantic import BaseModel
+import jwt
+from datetime import datetime, timedelta
+from passlib.context import CryptContext
+
+app = FastAPI()
+security = HTTPBearer()
+
+# Конфигурация
+SECRET_KEY = "your-secret-key"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+pwd_context = CryptContext(schemes=["bcrypt"])
+
+class User(BaseModel):
+    username: str
+    email: str
+
+class UserInDB(User):
+    hashed_password: str
+
+# Фейковая база данных
+fake_users_db = {
+    "john": {
+        "username": "john",
+        "email": "john@example.com",
+        "hashed_password": pwd_context.hash("secret123")
+    }
+}
+
+def create_access_token(data: dict, expires_delta: timedelta = None):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=15))
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    user = fake_users_db.get(username)
+    if user is None:
+        raise HTTPException(status_code=401, detail="User not found")
+    return user
+
+@app.post("/token")
+async def login(username: str, password: str):
+    user = fake_users_db.get(username)
+    if not user or not pwd_context.verify(password, user["hashed_password"]):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    access_token = create_access_token(
+        data={"sub": username},
+        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@app.get("/users/me")
+async def read_users_me(current_user: dict = Depends(get_current_user)):
+    return current_user`,
+      },
+      {
+        kind: "text",
+        md: `## OAuth 2.0 и OpenID Connect
+
+**OAuth 2.0** — протокол делегированной авторизации:
+- **Authorization Code** — для веб-приложений
+- **Implicit** — для SPA (устарел)
+- **Client Credentials** — для machine-to-machine
+- **Refresh Token** — обновление access token
+
+**OpenID Connect** — надстройка над OAuth 2.0 для аутентификации:
+- Предоставляет информацию о пользователе (id_token)
+- Стандартизирует endpoints: /authorize, /token, /userinfo`,
+      },
+      {
+        kind: "code",
+        title: "OAuth 2.0 с Google",
+        code: `from authlib.integrations.starlette_client import OAuth
+from starlette.config import Config
+
+config = Config('.env')
+oauth = OAuth(config)
+
+# Регистрация Google OAuth
+oauth.register(
+    name='google',
+    client_id=config('GOOGLE_CLIENT_ID'),
+    client_secret=config('GOOGLE_CLIENT_SECRET'),
+    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+    client_kwargs={'scope': 'openid email profile'}
+)
+
+@app.get('/login/google')
+async def login_google(request: Request):
+    redirect_uri = request.url_for('auth_google_callback')
+    return await oauth.google.authorize_redirect(request, redirect_uri)
+
+@app.get('/auth/google/callback')
+async def auth_google_callback(request: Request):
+    token = await oauth.google.authorize_access_token(request)
+    user_info = token.get('userinfo')
+    
+    # Создаём или находим пользователя
+    user = await get_or_create_user(
+        email=user_info['email'],
+        name=user_info['name'],
+        picture=user_info.get('picture')
+    )
+    
+    # Создаём сессию или токен
+    request.session['user'] = dict(user)
+    return RedirectResponse(url='/')`,
+      },
+      {
+        kind: "text",
+        md: `## Двухфакторная аутентификация (2FA)
+
+Добавляет второй фактор проверки:
+- **TOTP** (Time-based One-Time Password) — Google Authenticator, Authy
+- **SMS** — код по SMS (менее безопасно)
+- **Email** — код на email
+- **Hardware tokens** — YubiKey, FIDO2`,
+      },
+      {
+        kind: "code",
+        title: "TOTP двухфакторная аутентификация",
+        code: `import pyotp
+from fastapi import HTTPException
+
+class TwoFactorAuth:
+    def __init__(self):
+        self.totp = pyotp.TOTP
+    
+    def generate_secret(self) -> str:
+        """Генерация секретного ключа"""
+        return pyotp.random_base32()
+    
+    def get_provisioning_uri(self, secret: str, email: str) -> str:
+        """URI для QR-кода в Google Authenticator"""
+        totp = pyotp.TOTP(secret)
+        return totp.provisioning_uri(name=email, issuer_name="MyApp")
+    
+    def verify_code(self, secret: str, code: str) -> bool:
+        """Проверка кода от пользователя"""
+        totp = pyotp.TOTP(secret)
+        return totp.verify(code)
+
+# Использование
+two_fa = TwoFactorAuth()
+
+@app.post("/users/{user_id}/2fa/enable")
+async def enable_2fa(user_id: int):
+    secret = two_fa.generate_secret()
+    # Сохраняем secret в БД для пользователя
+    await save_2fa_secret(user_id, secret)
+    
+    user = await get_user(user_id)
+    uri = two_fa.get_provisioning_uri(secret, user.email)
+    
+    return {
+        "secret": secret,
+        "qr_uri": uri,
+        "message": "Отсканируйте QR-код в Google Authenticator"
+    }
+
+@app.post("/users/{user_id}/2fa/verify")
+async def verify_2fa(user_id: int, code: str):
+    secret = await get_2fa_secret(user_id)
+    if not two_fa.verify_code(secret, code):
+        raise HTTPException(status_code=400, detail="Invalid code")
+    
+    # Код верный — выдаём access token
+    return {"message": "2FA verified", "access_token": create_access_token(user_id)}`,
+      },
+      {
+        kind: "text",
+        md: `## Капча (CAPTCHA)
+
+Защита от ботов и автоматических атак:
+- **reCAPTCHA v2** — "I'm not a robot" чекбокс
+- **reCAPTCHA v3** — невидимая, анализ поведения
+- **hCaptcha** — альтернатива reCAPTCHA
+- **Cloudflare Turnstile** — новая бесплатная альтернатива`,
+      },
+      {
+        kind: "code",
+        title: "Интеграция reCAPTCHA",
+        code: `import httpx
+from fastapi import Form
+
+RECAPTCHA_SECRET_KEY = "your-secret-key"
+RECAPTCHA_VERIFY_URL = "https://www.google.com/recaptcha/api/siteverify"
+
+async def verify_recaptcha(token: str) -> bool:
+    """Проверка токена reCAPTCHA"""
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            RECAPTCHA_VERIFY_URL,
+            data={
+                "secret": RECAPTCHA_SECRET_KEY,
+                "response": token
+            }
+        )
+        result = response.json()
+        return result.get("success", False) and result.get("score", 0) > 0.5
+
+@app.post("/register")
+async def register(
+    username: str = Form(...),
+    email: str = Form(...),
+    password: str = Form(...),
+    recaptcha_token: str = Form(...)
+):
+    # Проверяем капчу
+    if not await verify_recaptcha(recaptcha_token):
+        raise HTTPException(status_code=400, detail="Invalid captcha")
+    
+    # Создаём пользователя
+    user = await create_user(username, email, password)
+    return {"message": "User created", "user_id": user.id}`,
+      },
+      {
+        kind: "warn",
+        title: "Безопасность токенов",
+        md: `- Храните SECRET_KEY в переменных окружения, не в коде
+- Используйте короткие expiration time для access tokens (15-30 минут)
+- Реализуйте refresh tokens для длительного доступа
+- Храните refresh tokens в httpOnly cookies
+- Валидируйте токены на каждом защищённом endpoint
+- Реализуйте отзыв токенов (blacklist)`,
+      },
+    ],
+    quiz: [
+      {
+        q: "Что такое OAuth 2.0?",
+        options: [
+          "Протокол аутентификации",
+          "Протокол делегированной авторизации",
+          "База данных",
+          "Фреймворк",
+        ],
+        answer: 1,
+        explain: "OAuth 2.0 — протокол делегированной авторизации, позволяющий приложениям получать доступ к ресурсам от имени пользователя без передачи пароля.",
+      },
+      {
+        q: "Какой тип 2FA наиболее безопасен?",
+        options: ["SMS", "Email", "TOTP (Google Authenticator)", "Hardware token (YubiKey)"],
+        answer: 3,
+        explain: "Hardware tokens (YubiKey, FIDO2) наиболее безопасны, так как физическое устройство невозможно удалённо перехватить.",
+      },
+    ],
+    tasks: [
+      {
+        id: "be14t1",
+        title: "JWT токен",
+        md: `Реализуйте функцию \`create_jwt_token(user_id, secret_key, expires_minutes=30)\`, которая создаёт JWT токен с payload \`{"sub": user_id, "exp": expiration_time}\`.`,
+        starter: `import jwt
+from datetime import datetime, timedelta
+
+def create_jwt_token(user_id: int, secret_key: str, expires_minutes: int = 30) -> str:
+    """Создание JWT токена"""
+    # Ваш код здесь
+    pass
+
+# Тест
+token = create_jwt_token(123, "secret")
+print(token)`,
+        tests: `
+__test("возвращает строку", lambda: isinstance(create_jwt_token(123, "secret"), str), True)
+__test("токен декодируется", lambda: jwt.decode(create_jwt_token(123, "secret"), "secret", algorithms=["HS256"])["sub"], 123)`,
+        solution: `import jwt
+from datetime import datetime, timedelta
+
+def create_jwt_token(user_id: int, secret_key: str, expires_minutes: int = 30) -> str:
+    payload = {
+        "sub": user_id,
+        "exp": datetime.utcnow() + timedelta(minutes=expires_minutes)
+    }
+    return jwt.encode(payload, secret_key, algorithm="HS256")`,
+      },
+    ],
+  },
+
+  // ========== СПРИНТ 7: Микросервисы и устойчивость ==========
+  {
+    id: "be15",
+    language: "python",
+    title: "Микросервисы и общение между сервисами",
+    subtitle: "REST, gRPC, message brokers, паттерны взаимодействия",
+    minutes: 45,
+    blocks: [
+      {
+        kind: "text",
+        md: `## Микросервисная архитектура
+
+Микросервисы — архитектурный стиль, где приложение состоит из небольших независимых сервисов:
+- Каждый сервис отвечает за свою бизнес-область
+- Сервисы общаются через API
+- Независимое развёртывание и масштабирование
+- Разные технологии для разных сервисов
+
+Преимущества:
+- Масштабируемость отдельных частей
+- Независимые релизы
+- Отказоустойчивость
+
+Недостатки:
+- Сложность оркестрации
+- Сетевые задержки
+- Распределённые транзакции`,
+      },
+      {
+        kind: "text",
+        md: `## Синхронное взаимодействие
+
+**REST API** — самый распространённый способ:
+- Простота и универсальность
+- HTTP протокол
+- JSON формат
+- Кэширование
+
+**gRPC** — высокопроизводительный RPC фреймворк:
+- Protocol Buffers (бинарная сериализация)
+- Двунаправленные потоки
+- Автоматическая генерация клиентов
+- В 10 раз быстрее REST`,
+      },
+      {
+        kind: "code",
+        title: "gRPC сервис",
+        code: `# proto file: movie.proto
+syntax = "proto3";
+
+service MovieService {
+    rpc GetMovie (MovieRequest) returns (MovieResponse);
+    rpc ListMovies (ListRequest) returns (stream MovieResponse);
+}
+
+message MovieRequest {
+    int32 id = 1;
+}
+
+message MovieResponse {
+    int32 id = 1;
+    string title = 2;
+    int32 year = 3;
+    float rating = 4;
+}
+
+message ListRequest {
+    int32 limit = 1;
+    int32 offset = 2;
+}
+
+# Python сервер
+import grpc
+from concurrent import futures
+import movie_pb2
+import movie_pb2_grpc
+
+class MovieServiceServicer(movie_pb2_grpc.MovieServiceServicer):
+    def GetMovie(self, request, context):
+        movie = get_movie_from_db(request.id)
+        return movie_pb2.MovieResponse(
+            id=movie.id,
+            title=movie.title,
+            year=movie.year,
+            rating=movie.rating
+        )
+    
+    def ListMovies(self, request, context):
+        movies = get_movies_from_db(request.limit, request.offset)
+        for movie in movies:
+            yield movie_pb2.MovieResponse(
+                id=movie.id,
+                title=movie.title,
+                year=movie.year,
+                rating=movie.rating
+            )
+
+server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+movie_pb2_grpc.add_MovieServiceServicer_to_server(
+    MovieServiceServicer(), server
+)
+server.add_insecure_port('[::]:50051')
+server.start()`,
+      },
+      {
+        kind: "text",
+        md: `## Асинхронное взаимодействие
+
+**Message Brokers** — брокеры сообщений для асинхронного общения:
+- **RabbitMQ** — классический broker, AMQP протокол
+- **Apache Kafka** — high-throughput, log-based
+- **Redis Pub/Sub** — простой pub/sub
+- **AWS SQS/SNS** — облачные очереди
+
+Паттерны:
+- **Publish/Subscribe** — издатель/подписчик
+- **Point-to-Point** — очередь задач
+- **Event Sourcing** — хранение событий`,
+      },
+      {
+        kind: "code",
+        title: "RabbitMQ producer/consumer",
+        code: `import pika
+import json
+
+# PRODUCER
+class MovieEventProducer:
+    def __init__(self, host='localhost'):
+        self.connection = pika.BlockingConnection(
+            pika.ConnectionParameters(host)
+        )
+        self.channel = self.connection.channel()
+        self.channel.queue_declare(queue='movie_events')
+    
+    def publish(self, event_type: str, data: dict):
+        message = json.dumps({
+            'type': event_type,
+            'data': data
+        })
+        self.channel.basic_publish(
+            exchange='',
+            routing_key='movie_events',
+            body=message,
+            properties=pika.BasicProperties(
+                delivery_mode=2,  # persistent
+            )
+        )
+        print(f"Sent: {event_type}")
+    
+    def close(self):
+        self.connection.close()
+
+# CONSUMER
+class MovieEventConsumer:
+    def __init__(self, host='localhost'):
+        self.connection = pika.BlockingConnection(
+            pika.ConnectionParameters(host)
+        )
+        self.channel = self.connection.channel()
+        self.channel.queue_declare(queue='movie_events')
+    
+    def callback(self, ch, method, properties, body):
+        event = json.loads(body)
+        print(f"Received: {event['type']}")
+        
+        # Обработка события
+        if event['type'] == 'movie.created':
+            self.handle_movie_created(event['data'])
+        elif event['type'] == 'movie.updated':
+            self.handle_movie_updated(event['data'])
+        
+        # Подтверждение обработки
+        ch.basic_ack(delivery_tag=method.delivery_tag)
+    
+    def handle_movie_created(self, data):
+        print(f"Movie created: {data['title']}")
+    
+    def handle_movie_updated(self, data):
+        print(f"Movie updated: {data['title']}")
+    
+    def start_consuming(self):
+        self.channel.basic_consume(
+            queue='movie_events',
+            on_message_callback=self.callback
+        )
+        print('Waiting for messages...')
+        self.channel.start_consuming()
+
+# Использование
+producer = MovieEventProducer()
+producer.publish('movie.created', {'id': 1, 'title': 'Inception'})
+producer.close()`,
+      },
+      {
+        kind: "text",
+        md: `## Паттерны взаимодействия
+
+**Saga Pattern** — управление распределёнными транзакциями:
+- Каждая микросервисная операция публикует событие
+- Следующий сервис реагирует на событие
+- Компенсирующие транзакции для отката
+
+**CQRS** (Command Query Responsibility Segregation):
+- Отдельные модели для записи (Command) и чтения (Query)
+- Оптимизация под конкретные операции
+- Eventual consistency`,
+      },
+      {
+        kind: "warn",
+        title: "Распределённые транзакции",
+        md: `В микросервисах нельзя использовать обычные транзакции БД. Решения:
+- **Saga Pattern** — последовательность локальных транзакций
+- **Event Sourcing** — хранение событий вместо состояния
+- **Two-Phase Commit (2PC)** — редко используется из-за блокировок
+
+Избегайте сильной согласованности — используйте eventual consistency.`,
+      },
+    ],
+    quiz: [
+      {
+        q: "Что такое gRPC?",
+        options: [
+          "Веб-фреймворк",
+          "Высокопроизводительный RPC фреймворк",
+          "База данных",
+          "Брокер сообщений",
+        ],
+        answer: 1,
+        explain: "gRPC — высокопроизводительный RPC фреймворк от Google, использующий Protocol Buffers и HTTP/2.",
+      },
+      {
+        q: "Какой паттерн используется для распределённых транзакций?",
+        options: ["Singleton", "Observer", "Saga", "Factory"],
+        answer: 2,
+        explain: "Saga Pattern — паттерн для управления распределёнными транзакциями через последовательность локальных транзакций и компенсирующих действий.",
+      },
+    ],
+    tasks: [
+      {
+        id: "be15t1",
+        title: "Event producer",
+        md: `Реализуйте класс \`EventProducer\` с методом \`publish(event_type, data)\`, который отправляет событие в RabbitMQ очередь \`events\`.`,
+        starter: `import pika
+import json
+
+class EventProducer:
+    def __init__(self, host='localhost'):
+        # Ваш код здесь
+        pass
+    
+    def publish(self, event_type: str, data: dict):
+        # Ваш код здесь
+        pass
+    
+    def close(self):
+        # Ваш код здесь
+        pass
+
+print("Класс создан")`,
+        tests: `
+__test("имеет метод publish", lambda: hasattr(EventProducer, 'publish'), True)
+__test("имеет метод close", lambda: hasattr(EventProducer, 'close'), True)`,
+        solution: `import pika
+import json
+
+class EventProducer:
+    def __init__(self, host='localhost'):
+        self.connection = pika.BlockingConnection(
+            pika.ConnectionParameters(host)
+        )
+        self.channel = self.connection.channel()
+        self.channel.queue_declare(queue='events')
+    
+    def publish(self, event_type: str, data: dict):
+        message = json.dumps({'type': event_type, 'data': data})
+        self.channel.basic_publish(
+            exchange='',
+            routing_key='events',
+            body=message
+        )
+    
+    def close(self):
+        self.connection.close()`,
+      },
+    ],
+  },
+
+  {
+    id: "be16",
+    language: "python",
+    title: "Устойчивость сервисов и мониторинг",
+    subtitle: "Rate limiting, circuit breaker, health checks, логирование",
+    minutes: 40,
+    blocks: [
+      {
+        kind: "text",
+        md: `## Устойчивость к нагрузкам
+
+**Rate Limiting** — ограничение количества запросов:
+- Защита от DDoS-атак
+- Справедливое распределение ресурсов
+- Предотвращение злоупотреблений API
+
+Реализации:
+- **Fixed Window** — счётчик за фиксированный период
+- **Sliding Window** — скользящее окно
+- **Token Bucket** — токены пополняются со временем`,
+      },
+      {
+        kind: "code",
+        title: "Rate limiting с Redis",
+        code: `from fastapi import FastAPI, Request, HTTPException
+import redis
+import time
+
+app = FastAPI()
+redis_client = redis.Redis(host='localhost', port=6379, db=0)
+
+class RateLimiter:
+    def __init__(self, max_requests: int, window_seconds: int):
+        self.max_requests = max_requests
+        self.window_seconds = window_seconds
+    
+    def is_allowed(self, key: str) -> bool:
+        """Проверка, разрешён ли запрос"""
+        current_time = int(time.time())
+        window_key = f"rate_limit:{key}:{current_time // self.window_seconds}"
+        
+        # Увеличиваем счётчик
+        requests = redis_client.incr(window_key)
+        
+        # Устанавливаем TTL для ключа
+        if requests == 1:
+            redis_client.expire(window_key, self.window_seconds)
+        
+        return requests <= self.max_requests
+
+# Создаём rate limiter: 100 запросов в минуту
+rate_limiter = RateLimiter(max_requests=100, window_seconds=60)
+
+@app.middleware("http")
+async def rate_limit_middleware(request: Request, call_next):
+    # Получаем IP клиента
+    client_ip = request.client.host
+    key = f"api:{client_ip}"
+    
+    if not rate_limiter.is_allowed(key):
+        raise HTTPException(
+            status_code=429,
+            detail="Too many requests",
+            headers={"Retry-After": "60"}
+        )
+    
+    response = await call_next(request)
+    return response
+
+@app.get("/api/data")
+async def get_data():
+    return {"data": "some data"}`,
+      },
+      {
+        kind: "text",
+        md: `## Circuit Breaker
+
+**Circuit Breaker** — паттерн для предотвращения каскадных сбоев:
+- **Closed** — нормальная работа, запросы проходят
+- **Open** — сервис недоступен, запросы блокируются
+- **Half-Open** — проверка восстановления
+
+Когда использовать:
+- Зависимость от внешних сервисов
+- Нестабильные сети
+- Защита от cascade failures`,
+      },
+      {
+        kind: "code",
+        title: "Circuit Breaker реализация",
+        code: `from enum import Enum
+from datetime import datetime, timedelta
+import functools
+
+class CircuitState(Enum):
+    CLOSED = "closed"
+    OPEN = "open"
+    HALF_OPEN = "half_open"
+
+class CircuitBreaker:
+    def __init__(self, failure_threshold=5, recovery_timeout=60):
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout = recovery_timeout
+        self.failure_count = 0
+        self.last_failure_time = None
+        self.state = CircuitState.CLOSED
+    
+    def call(self, func, *args, **kwargs):
+        """Вызов функции с circuit breaker"""
+        if self.state == CircuitState.OPEN:
+            if self._should_attempt_reset():
+                self.state = CircuitState.HALF_OPEN
+            else:
+                raise Exception("Circuit breaker is OPEN")
+        
+        try:
+            result = func(*args, **kwargs)
+            self._on_success()
+            return result
+        except Exception as e:
+            self._on_failure()
+            raise
+    
+    def _should_attempt_reset(self) -> bool:
+        """Проверка, пора ли пытаться восстановить"""
+        if self.last_failure_time is None:
+            return True
+        return datetime.utcnow() - self.last_failure_time > timedelta(
+            seconds=self.recovery_timeout
+        )
+    
+    def _on_success(self):
+        """Обработка успешного вызова"""
+        self.failure_count = 0
+        self.state = CircuitState.CLOSED
+    
+    def _on_failure(self):
+        """Обработка неудачного вызова"""
+        self.failure_count += 1
+        self.last_failure_time = datetime.utcnow()
+        
+        if self.failure_count >= self.failure_threshold:
+            self.state = CircuitState.OPEN
+
+# Использование
+circuit_breaker = CircuitBreaker(failure_threshold=5, recovery_timeout=60)
+
+@circuit_breaker_decorator
+def call_external_api():
+    # Вызов внешнего API
+    import requests
+    response = requests.get("https://api.example.com/data")
+    return response.json()
+
+def circuit_breaker_decorator(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        return circuit_breaker.call(func, *args, **kwargs)
+    return wrapper`,
+      },
+      {
+        kind: "text",
+        md: `## Health Checks
+
+**Health checks** — проверки здоровья сервиса:
+- **Liveness** — сервис жив (не завис)
+- **Readiness** — сервис готов принимать запросы
+- **Startup** — сервис запустился
+
+Endpoints:
+- \`/health\` — общая проверка
+- \`/health/live\` — liveness probe
+- \`/health/ready\` — readiness probe`,
+      },
+      {
+        kind: "code",
+        title: "Health check endpoints",
+        code: `from fastapi import FastAPI
+from sqlalchemy import text
+import redis
+
+app = FastAPI()
+
+@app.get("/health")
+async def health_check():
+    """Общая проверка здоровья"""
+    checks = {
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat(),
+        "checks": {}
+    }
+    
+    # Проверка БД
+    try:
+        db.execute(text("SELECT 1"))
+        checks["checks"]["database"] = "healthy"
+    except Exception as e:
+        checks["checks"]["database"] = f"unhealthy: {str(e)}"
+        checks["status"] = "unhealthy"
+    
+    # Проверка Redis
+    try:
+        redis_client.ping()
+        checks["checks"]["redis"] = "healthy"
+    except Exception as e:
+        checks["checks"]["redis"] = f"unhealthy: {str(e)}"
+        checks["status"] = "unhealthy"
+    
+    status_code = 200 if checks["status"] == "healthy" else 503
+    return JSONResponse(content=checks, status_code=status_code)
+
+@app.get("/health/live")
+async def liveness_probe():
+    """Liveness probe для Kubernetes"""
+    return {"status": "alive"}
+
+@app.get("/health/ready")
+async def readiness_probe():
+    """Readiness probe для Kubernetes"""
+    # Проверяем, готов ли сервис принимать трафик
+    if not is_database_connected():
+        raise HTTPException(status_code=503, detail="Database not ready")
+    return {"status": "ready"}`,
+      },
+      {
+        kind: "text",
+        md: `## Логирование и мониторинг
+
+**Структурированное логирование**:
+- JSON формат для машинной обработки
+- Корреляционные ID для трекинга запросов
+- Уровни: DEBUG, INFO, WARNING, ERROR, CRITICAL
+
+**Метрики**:
+- **Prometheus** — сбор и хранение метрик
+- **Grafana** — визуализация
+- **Alertmanager** — алерты
+
+**Трейсинг**:
+- **Jaeger** — распределённый трейсинг
+- **Zipkin** — альтернатива Jaeger`,
+      },
+      {
+        kind: "code",
+        title: "Структурированное логирование",
+        code: `import logging
+import json
+from pythonjsonlogger import jsonlogger
+from uuid import uuid4
+from contextvars import ContextVar
+
+# Корреляционный ID для трекинга запросов
+correlation_id_var: ContextVar[str] = ContextVar('correlation_id', default='')
+
+class CorrelationIdFilter(logging.Filter):
+    def filter(self, record):
+        record.correlation_id = correlation_id_var.get()
+        return True
+
+# Настройка логгера
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+handler = logging.StreamHandler()
+formatter = jsonlogger.JsonFormatter(
+    '%(timestamp)s %(level)s %(name)s %(message)s %(correlation_id)s'
+)
+handler.setFormatter(formatter)
+handler.addFilter(CorrelationIdFilter())
+logger.addHandler(handler)
+
+# Middleware для установки correlation_id
+@app.middleware("http")
+async def logging_middleware(request: Request, call_next):
+    # Генерируем или берём из заголовка
+    correlation_id = request.headers.get('X-Correlation-ID', str(uuid4()))
+    correlation_id_var.set(correlation_id)
+    
+    # Логируем запрос
+    logger.info(
+        "Request started",
+        extra={
+            "method": request.method,
+            "path": request.url.path,
+            "client_ip": request.client.host
+        }
+    )
+    
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = time.time() - start_time
+    
+    # Логируем ответ
+    logger.info(
+        "Request completed",
+        extra={
+            "status_code": response.status_code,
+            "process_time_ms": round(process_time * 1000, 2)
+        }
+    )
+    
+    response.headers["X-Correlation-ID"] = correlation_id
+    return response
+
+# Использование
+@app.get("/api/movies")
+async def get_movies():
+    logger.info("Fetching movies from database")
+    movies = await db.get_movies()
+    logger.info(f"Found {len(movies)} movies")
+    return movies`,
+      },
+      {
+        kind: "warn",
+        title: "Не логируйте секреты",
+        md: `Никогда не логируйте:
+- Пароли и токены
+- Данные карт (PAN, CVV)
+- Персональные данные (PII)
+- API ключи
+
+Используйте маскирование:
+\`\`\`python
+logger.info(f"User login: {mask_email(user.email)}")
+\`\`\``,
+      },
+    ],
+    quiz: [
+      {
+        q: "Что делает Circuit Breaker?",
+        options: [
+          "Ускоряет запросы",
+          "Предотвращает каскадные сбои",
+          "Кэширует данные",
+          "Балансирует нагрузку",
+        ],
+        answer: 1,
+        explain: "Circuit Breaker предотвращает каскадные сбои, блокируя запросы к недоступному сервису и позволяя ему восстановиться.",
+      },
+      {
+        q: "Что такое liveness probe?",
+        options: [
+          "Проверка готовности принимать трафик",
+          "Проверка, что сервис жив и не завис",
+          "Проверка базы данных",
+          "Проверка сети",
+        ],
+        answer: 1,
+        explain: "Liveness probe проверяет, что сервис жив и не завис. Если проверка не проходит, Kubernetes перезапускает под.",
+      },
+    ],
+    tasks: [
+      {
+        id: "be16t1",
+        title: "Rate limiter",
+        md: `Реализуйте класс \`RateLimiter\` с методом \`is_allowed(key)\`, который проверяет, разрешён ли запрос для данного ключа. Используйте sliding window алгоритм: не более \`max_requests\` запросов за \`window_seconds\`.`,
+        starter: `import time
+from collections import defaultdict
+
+class RateLimiter:
+    def __init__(self, max_requests: int, window_seconds: int):
+        self.max_requests = max_requests
+        self.window_seconds = window_seconds
+        self.requests = defaultdict(list)
+    
+    def is_allowed(self, key: str) -> bool:
+        """Проверка, разрешён ли запрос"""
+        # Ваш код здесь
+        pass
+
+# Тест
+limiter = RateLimiter(max_requests=5, window_seconds=60)
+print(limiter.is_allowed("user1"))  # True
+print(limiter.is_allowed("user1"))  # True`,
+        tests: `
+__test("разрешает первые запросы", lambda: RateLimiter(5, 60).is_allowed("test"), True)
+__test("ограничивает после лимита", lambda: (lambda l: [l.is_allowed("test") for _ in range(10)][-1])(RateLimiter(5, 60)), False)`,
+        solution: `import time
+from collections import defaultdict
+
+class RateLimiter:
+    def __init__(self, max_requests: int, window_seconds: int):
+        self.max_requests = max_requests
+        self.window_seconds = window_seconds
+        self.requests = defaultdict(list)
+    
+    def is_allowed(self, key: str) -> bool:
+        current_time = time.time()
+        window_start = current_time - self.window_seconds
+        
+        # Удаляем старые запросы
+        self.requests[key] = [
+            t for t in self.requests[key] if t > window_start
+        ]
+        
+        # Проверяем лимит
+        if len(self.requests[key]) >= self.max_requests:
+            return False
+        
+        # Добавляем текущий запрос
+        self.requests[key].append(current_time)
+        return True`,
+      },
+    ],
+  },
 ];
