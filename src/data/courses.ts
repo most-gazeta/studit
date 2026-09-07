@@ -148,7 +148,7 @@ export const backendCourse: CourseDef = {
   language: "python",
   tagline: "Django, PostgreSQL, Elasticsearch, Docker — полный стек backend-разработки на Python.",
   description:
-    "16 уроков в семи спринтах: Django и базы данных, Docker и деплой, Elasticsearch и ETL-процессы, Code Review и SOLID, асинхронное программирование и FastAPI, авторизация и аутентификация, микросервисы и устойчивость сервисов. Практические проекты: REST API, контейнеризация, синхронизация данных, тестирование, FastAPI с кешированием, JWT/OAuth, микросервисная архитектура.",
+    "18 уроков в девяти спринтах: Django и базы данных, Docker и деплой, Elasticsearch и ETL-процессы, Code Review и SOLID, асинхронное программирование и FastAPI, авторизация и аутентификация, микросервисы и устойчивость сервисов, UGC-сервис и большие данные, CI/CD и распределённые системы. Практические проекты: REST API, контейнеризация, синхронизация данных, тестирование, FastAPI с кешированием, JWT/OAuth, микросервисная архитектура, Kafka/Spark/ClickHouse, GitHub Actions/ELK/Sentry.",
   accent: "#092e20",
   accent2: "#44b78b",
   levels: [
@@ -213,7 +213,25 @@ export const backendCourse: CourseDef = {
       tagline:
         "Микросервисная архитектура, gRPC, message brokers, rate limiting, circuit breaker, мониторинг и логирование.",
       accent: "#ff5722",
-      lessons: backendLessons.slice(14),
+      lessons: backendLessons.slice(14, 16),
+    },
+    {
+      id: "be-sprint8",
+      title: "Спринт 8",
+      label: "UGC-сервис и большие данные",
+      tagline:
+        "Планирование UGC-сервиса, Apache Kafka, Apache Spark, ClickHouse, архитектура высоконагруженных систем.",
+      accent: "#795548",
+      lessons: backendLessons.slice(16, 17),
+    },
+    {
+      id: "be-sprint9",
+      title: "Спринт 9",
+      label: "CI/CD и распределённые системы",
+      tagline:
+        "GitHub Actions, распределённые хранилища, ELK-стек, Sentry, автоматизация развёртывания и мониторинг.",
+      accent: "#607d8b",
+      lessons: backendLessons.slice(17),
     },
   ],
   skills: [
@@ -227,6 +245,8 @@ export const backendCourse: CourseDef = {
     "JWT", "OAuth 2.0", "OpenID Connect", "двухфакторная аутентификация", "TOTP", "капча", "reCAPTCHA",
     "микросервисы", "gRPC", "RabbitMQ", "Apache Kafka", "Circuit Breaker", "Rate Limiting",
     "health checks", "мониторинг", "Prometheus", "Grafana", "структурированное логирование",
+    "UGC-сервис", "Apache Spark", "ClickHouse", "шардирование", "репликация",
+    "CI/CD", "GitHub Actions", "ELK-стек", "Sentry", "распределённые системы",
   ],
 };
 
