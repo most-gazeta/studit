@@ -3493,4 +3493,1120 @@ class RateLimiter:
       },
     ],
   },
+
+  // ========== СПРИНТ 8: UGC-сервисы и большие данные ==========
+  {
+    id: "be17",
+    language: "python",
+    title: "Планирование UGC-сервиса и большие данные",
+    subtitle: "Архитектура, Kafka, Spark, ClickHouse, распределённые вычисления",
+    minutes: 50,
+    blocks: [
+      {
+        kind: "text",
+        md: `## UGC-сервисы (User Generated Content)
+
+UGC-сервисы — платформы, где пользователи создают контент:
+- Социальные сети (посты, комментарии, лайки)
+- Видеохостинги (загрузка, транскодирование, стриминг)
+- Форумы и блоги
+- Маркетплейсы отзывов
+
+Особенности:
+- Высокая нагрузка на запись
+- Непредсказуемые пики активности
+- Необходимость модерации
+- Работа с медиафайлами`,
+      },
+      {
+        kind: "text",
+        md: `## Архитектура UGC-сервиса
+
+Компоненты:
+- **API Gateway** — маршрутизация, аутентификация
+- **Сервис загрузки** — приём файлов, валидация
+- **Сервис обработки** — транскодирование, генерация превью
+- **Сервис хранения** — объектное хранилище (S3, MinIO)
+- **Сервис доставки** — CDN для раздачи контента
+- **Модерация** — автоматическая и ручная проверка
+
+Паттерны:
+- **Event-driven** — асинхронная обработка через события
+- **CQRS** — разделение чтения и записи
+- **Sharding** — шардирование данных по пользователям`,
+      },
+      {
+        kind: "code",
+        title: "Архитектура загрузки видео",
+        code: `# Архитектура видеохостинга
+architecture = """
+1. Клиент загружает видео → API Gateway
+2. API Gateway → Video Upload Service
+3. Upload Service сохраняет в S3 (staging)
+4. Publish событие 'video.uploaded' в Kafka
+5. Video Processing Service:
+   - Транскодирование (FFmpeg)
+   - Генерация превью
+   - Извлечение метаданных
+6. Сохранение результата в S3 (processed)
+7. Update метаданных в PostgreSQL
+8. Publish событие 'video.processed' в Kafka
+9. CDN кэширует готовое видео
+"""
+
+# Kafka producer для событий
+from kafka import KafkaProducer
+import json
+
+producer = KafkaProducer(
+    bootstrap_servers=['kafka1:9092', 'kafka2:9092'],
+    value_serializer=lambda v: json.dumps(v).encode('utf-8')
+)
+
+def on_video_uploaded(video_id: str, user_id: int, filename: str):
+    event = {
+        'event_type': 'video.uploaded',
+        'video_id': video_id,
+        'user_id': user_id,
+        'filename': filename,
+        'timestamp': datetime.utcnow().isoformat()
+    }
+    producer.send('video_events', value=event)
+    producer.flush()`,
+      },
+      {
+        kind: "text",
+        md: `## Apache Kafka для событийной архитектуры
+
+**Kafka** — распределённый поток событий:
+- **Topics** — категории событий
+- **Partitions** — параллельная обработка
+- **Consumer Groups** — масштабирование потребителей
+- **Retention** — хранение событий (по времени или размеру)
+
+Преимущества:
+- Высокая пропускная способность (миллионы сообщений/сек)
+- Persist messages — события не теряются
+- Replay — повторная обработка событий
+- Exactly-once semantics`,
+      },
+      {
+        kind: "code",
+        title: "Kafka consumer для обработки видео",
+        code: `from kafka import KafkaConsumer
+import json
+
+class VideoProcessingConsumer:
+    def __init__(self):
+        self.consumer = KafkaConsumer(
+            'video_events',
+            bootstrap_servers=['kafka1:9092'],
+            group_id='video-processing-group',
+            auto_offset_reset='earliest',
+            value_deserializer=lambda m: json.loads(m.decode('utf-8'))
+        )
+    
+    def process_events(self):
+        for message in self.consumer:
+            event = message.value
+            
+            if event['event_type'] == 'video.uploaded':
+                self.process_video_upload(event)
+            elif event['event_type'] == 'video.deleted':
+                self.process_video_deletion(event)
+    
+    def process_video_upload(self, event):
+        video_id = event['video_id']
+        filename = event['filename']
+        
+        # Транскодирование
+        self.transcode_video(video_id, filename)
+        
+        # Генерация превью
+        self.generate_thumbnail(video_id)
+        
+        # Извлечение метаданных
+        metadata = self.extract_metadata(video_id)
+        
+        # Сохранение в БД
+        self.save_video_metadata(video_id, metadata)
+        
+        print(f"Processed video {video_id}")
+    
+    def transcode_video(self, video_id: str, filename: str):
+        """Транскодирование видео в разные форматы"""
+        # FFmpeg команды для разных разрешений
+        formats = [
+            ('360p', '640x360'),
+            ('720p', '1280x720'),
+            ('1080p', '1920x1080')
+        ]
+        
+        for quality, resolution in formats:
+            # ffmpeg -i input.mp4 -s {resolution} output_{quality}.mp4
+            pass
+    
+    def generate_thumbnail(self, video_id: str):
+        """Генерация превью из видео"""
+        # ffmpeg -i video.mp4 -ss 00:00:05 -vframes 1 thumbnail.jpg
+        pass
+    
+    def extract_metadata(self, video_id: str) -> dict:
+        """Извлечение метаданных"""
+        # ffprobe -v quiet -print_format json -show_format video.mp4
+        return {
+            'duration': 120.5,
+            'resolution': '1920x1080',
+            'codec': 'h264',
+            'bitrate': 5000000
+        }
+    
+    def save_video_metadata(self, video_id: str, metadata: dict):
+        """Сохранение метаданных в БД"""
+        # db.execute("UPDATE videos SET ... WHERE id = ?", ...)
+        pass
+
+# Запуск
+consumer = VideoProcessingConsumer()
+consumer.process_events()`,
+      },
+      {
+        kind: "text",
+        md: `## Apache Spark для обработки больших данных
+
+**Spark** — фреймворк для распределённой обработки данных:
+- **RDD** (Resilient Distributed Dataset) — базовая абстракция
+- **DataFrame API** — высокоуровневый API (как pandas)
+- **Spark SQL** — SQL запросы
+- **Streaming** — обработка потоков данных
+
+Когда использовать:
+- Обработка терабайтов данных
+- ETL пайплайны
+- Машинное обучение на больших данных
+- Графовые вычисления`,
+      },
+      {
+        kind: "code",
+        title: "Spark для аналитики видео",
+        code: `from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, count, avg
+
+# Создание Spark сессии
+spark = SparkSession.builder \\
+    .appName("VideoAnalytics") \\
+    .master("local[*]") \\
+    .getOrCreate()
+
+# Чтение данных из Parquet
+videos_df = spark.read.parquet("s3://bucket/videos/")
+views_df = spark.read.parquet("s3://bucket/views/")
+
+# Аналитика: топ-10 популярных видео
+top_videos = views_df \\
+    .groupBy("video_id") \\
+    .agg(
+        count("*").alias("view_count"),
+        avg("watch_duration").alias("avg_watch_time")
+    ) \\
+    .orderBy(col("view_count").desc()) \\
+    .limit(10)
+
+top_videos.show()
+
+# Аналитика по пользователям
+user_stats = views_df \\
+    .groupBy("user_id") \\
+    .agg(
+        count("*").alias("total_views"),
+        count("video_id").distinct().alias("unique_videos"),
+        avg("watch_duration").alias("avg_watch_time")
+    ) \\
+    .orderBy(col("total_views").desc())
+
+user_stats.show()
+
+# Сохранение результатов
+top_videos.write.parquet("s3://bucket/analytics/top_videos/")
+user_stats.write.parquet("s3://bucket/analytics/user_stats/")
+
+spark.stop()`,
+      },
+      {
+        kind: "text",
+        md: `## ClickHouse для аналитики
+
+**ClickHouse** — колоночная СУБД для аналитики:
+- Быстрые агрегатные запросы
+- Column-oriented storage
+- Векторное выполнение запросов
+- Масштабирование на кластер
+
+Когда использовать:
+- Real-time аналитика
+- Логи и метрики
+- Бизнес-аналитика
+- Time-series данные`,
+      },
+      {
+        kind: "code",
+        title: "ClickHouse для видеоаналитики",
+        code: `import clickhouse_connect
+
+# Подключение к ClickHouse
+client = clickhouse_connect.get_client(
+    host='localhost',
+    port=8123,
+    database='video_analytics'
+)
+
+# Создание таблицы
+client.command("""
+CREATE TABLE IF NOT EXISTS video_views (
+    view_id UInt64,
+    video_id UInt64,
+    user_id UInt64,
+    watched_at DateTime,
+    watch_duration UInt32,
+    device_type String,
+    country String
+) ENGINE = MergeTree()
+PARTITION BY toYYYYMM(watched_at)
+ORDER BY (video_id, watched_at)
+""")
+
+# Вставка данных
+data = [
+    (1, 100, 1001, '2024-01-15 10:30:00', 120, 'mobile', 'RU'),
+    (2, 100, 1002, '2024-01-15 11:00:00', 90, 'desktop', 'US'),
+    (3, 101, 1003, '2024-01-15 12:00:00', 180, 'tv', 'DE'),
+]
+
+client.insert('video_views', data, column_names=[
+    'view_id', 'video_id', 'user_id', 'watched_at',
+    'watch_duration', 'device_type', 'country'
+])
+
+# Аналитические запросы
+# Топ-10 видео по просмотрам
+result = client.query("""
+SELECT 
+    video_id,
+    count(*) as views,
+    avg(watch_duration) as avg_duration
+FROM video_views
+GROUP BY video_id
+ORDER BY views DESC
+LIMIT 10
+""")
+
+print("Top videos:")
+for row in result.result_rows:
+    print(f"Video {row[0]}: {row[1]} views, avg {row[2]:.1f}s")
+
+# Статистика по странам
+result = client.query("""
+SELECT 
+    country,
+    count(*) as views,
+    avg(watch_duration) as avg_duration
+FROM video_views
+GROUP BY country
+ORDER BY views DESC
+""")
+
+print("\\nViews by country:")
+for row in result.result_rows:
+    print(f"{row[0]}: {row[1]} views")`,
+      },
+      {
+        kind: "text",
+        md: `## ETL для аналитического хранилища
+
+**ETL пайплайн** для перегрузки данных из OLTP (PostgreSQL) в OLAP (ClickHouse):
+
+1. **Extract** — чтение из PostgreSQL
+2. **Transform** — очистка, агрегация, обогащение
+3. **Load** — запись в ClickHouse
+
+Инструменты:
+- **Apache Airflow** — оркестрация
+- **Apache Spark** — обработка
+- **dbt** — трансформации SQL`,
+      },
+      {
+        kind: "code",
+        title: "ETL пайплайн с Airflow",
+        code: `from airflow import DAG
+from airflow.operators.python import PythonOperator
+from datetime import datetime, timedelta
+import psycopg2
+import clickhouse_connect
+
+default_args = {
+    'owner': 'airflow',
+    'depends_on_past': False,
+    'start_date': datetime(2024, 1, 1),
+    'email_on_failure': False,
+    'retries': 3,
+    'retry_delay': timedelta(minutes=5),
+}
+
+dag = DAG(
+    'video_analytics_etl',
+    default_args=default_args,
+    description='ETL для видеоаналитики',
+    schedule_interval='@hourly',
+    catchup=False
+)
+
+def extract_from_postgres(**context):
+    """Извлечение данных из PostgreSQL"""
+    conn = psycopg2.connect(
+        host='postgres',
+        database='video_db',
+        user='user',
+        password='password'
+    )
+    
+    cursor = conn.cursor()
+    
+    # Извлечение новых просмотров за последний час
+    cursor.execute("""
+        SELECT id, video_id, user_id, watched_at, watch_duration
+        FROM video_views
+        WHERE watched_at > NOW() - INTERVAL '1 hour'
+    """)
+    
+    rows = cursor.fetchall()
+    context['ti'].xcom_push(key='extracted_data', value=rows)
+    
+    conn.close()
+    print(f"Extracted {len(rows)} rows")
+
+def transform_data(**context):
+    """Трансформация данных"""
+    rows = context['ti'].xcom_pull(key='extracted_data')
+    
+    # Очистка и валидация
+    transformed = []
+    for row in rows:
+        view_id, video_id, user_id, watched_at, watch_duration = row
+        
+        # Валидация
+        if watch_duration < 0 or watch_duration > 86400:
+            continue
+        
+        transformed.append({
+            'view_id': view_id,
+            'video_id': video_id,
+            'user_id': user_id,
+            'watched_at': watched_at.isoformat(),
+            'watch_duration': watch_duration
+        })
+    
+    context['ti'].xcom_push(key='transformed_data', value=transformed)
+    print(f"Transformed {len(transformed)} rows")
+
+def load_to_clickhouse(**context):
+    """Загрузка в ClickHouse"""
+    data = context['ti'].xcom_pull(key='transformed_data')
+    
+    client = clickhouse_connect.get_client(
+        host='clickhouse',
+        port=8123,
+        database='video_analytics'
+    )
+    
+    # Подготовка данных для вставки
+    rows = [
+        (
+            d['view_id'],
+            d['video_id'],
+            d['user_id'],
+            d['watched_at'],
+            d['watch_duration']
+        )
+        for d in data
+    ]
+    
+    client.insert(
+        'video_views',
+        rows,
+        column_names=['view_id', 'video_id', 'user_id', 'watched_at', 'watch_duration']
+    )
+    
+    print(f"Loaded {len(rows)} rows to ClickHouse")
+
+extract_task = PythonOperator(
+    task_id='extract_from_postgres',
+    python_callable=extract_from_postgres,
+    dag=dag,
+)
+
+transform_task = PythonOperator(
+    task_id='transform_data',
+    python_callable=transform_data,
+    dag=dag,
+)
+
+load_task = PythonOperator(
+    task_id='load_to_clickhouse',
+    python_callable=load_to_clickhouse,
+    dag=dag,
+)
+
+extract_task >> transform_task >> load_task`,
+      },
+      {
+        kind: "warn",
+        title: "Выбор хранилища",
+        md: `Критерии выбора:
+- **PostgreSQL** — OLTP, транзакции, сложные запросы
+- **ClickHouse** — OLAP, аналитика, агрегаты
+- **Elasticsearch** — полнотекстовый поиск
+- **Redis** — кеширование, сессии
+- **MongoDB** — документная модель, гибкая схема
+- **Cassandra** — высокая запись, временные ряды
+
+Используйте **polyglot persistence** — разные хранилища для разных задач.`,
+      },
+    ],
+    quiz: [
+      {
+        q: "Что такое UGC-сервис?",
+        options: [
+          "Сервис для управления пользователями",
+          "Платформа, где пользователи создают контент",
+          "Система управления базами данных",
+          "Фреймворк для веб-разработки",
+        ],
+        answer: 1,
+        explain: "UGC (User Generated Content) — контент, создаваемый пользователями: посты, комментарии, видео, отзывы.",
+      },
+      {
+        q: "Для чего используется ClickHouse?",
+        options: [
+          "OLTP транзакции",
+          "OLAP аналитика и агрегатные запросы",
+          "Полнотекстовый поиск",
+          "Кеширование данных",
+        ],
+        answer: 1,
+        explain: "ClickHouse — колоночная СУБД, оптимизированная для OLAP workload: быстрые агрегатные запросы на больших объёмах данных.",
+      },
+    ],
+    tasks: [
+      {
+        id: "be17t1",
+        title: "Kafka producer",
+        md: `Реализуйте функцию \\`publish_video_event(video_id, event_type, metadata)\\`, которая отправляет событие о видео в Kafka topic \\`video_events\\`.`,
+        starter: `from kafka import KafkaProducer
+import json
+from datetime import datetime
+
+def publish_video_event(video_id: int, event_type: str, metadata: dict):
+    """Публикация события о видео в Kafka"""
+    # Ваш код здесь
+    pass
+
+# Тест
+publish_video_event(123, 'video.uploaded', {'title': 'Test Video'})
+print("Событие опубликовано")`,
+        tests: `
+__test("функция существует", lambda: callable(publish_video_event), True)`,
+        solution: `from kafka import KafkaProducer
+import json
+from datetime import datetime
+
+producer = KafkaProducer(
+    bootstrap_servers=['localhost:9092'],
+    value_serializer=lambda v: json.dumps(v).encode('utf-8')
+)
+
+def publish_video_event(video_id: int, event_type: str, metadata: dict):
+    event = {
+        'video_id': video_id,
+        'event_type': event_type,
+        'metadata': metadata,
+        'timestamp': datetime.utcnow().isoformat()
+    }
+    producer.send('video_events', value=event)
+    producer.flush()`,
+      },
+    ],
+  },
+
+  // ========== СПРИНТ 9: CI/CD и распределённые системы ==========
+  {
+    id: "be18",
+    language: "python",
+    title: "CI/CD, распределённые хранилища и мониторинг",
+    subtitle: "GitHub Actions, ELK-стек, Sentry, распределённые системы",
+    minutes: 45,
+    blocks: [
+      {
+        kind: "text",
+        md: `## CI/CD (Continuous Integration/Continuous Deployment)
+
+**CI (Continuous Integration)** — автоматическая сборка и тестирование:
+- Запуск линтеров (flake8, black, mypy)
+- Запуск тестов (pytest)
+- Проверка типов
+- Сборка артефактов
+
+**CD (Continuous Deployment)** — автоматическое развёртывание:
+- Сборка Docker образов
+- Push в registry
+- Развёртывание в Kubernetes
+- Smoke tests`,
+      },
+      {
+        kind: "code",
+        title: "GitHub Actions workflow",
+        code: `# .github/workflows/ci.yml
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: test_db
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_pass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+      
+      - name: Run linters
+        run: |
+          black --check .
+          flake8 .
+          mypy .
+          isort --check-only .
+      
+      - name: Run tests
+        env:
+          DATABASE_URL: postgresql://test_user:test_pass@localhost:5432/test_db
+          REDIS_URL: redis://localhost:6379/0
+        run: |
+          pytest --cov=app --cov-report=xml
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+  
+  build-and-push:
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: \${{ secrets.DOCKERHUB_USERNAME }}
+          password: \${{ secrets.DOCKERHUB_TOKEN }}
+      
+      - name: Build and push
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: |
+            myapp:latest
+            myapp:\${{ github.sha }}
+  
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl set image deployment/myapp myapp=myapp:\${{ github.sha }}
+          kubectl rollout status deployment/myapp`,
+      },
+      {
+        kind: "text",
+        md: `## Распределённые хранилища
+
+**Распределённые хранилища** — данные хранятся на нескольких узлах:
+
+**HDFS (Hadoop Distributed File System)**:
+- Master-slave архитектура
+- NameNode — метаданные
+- DataNode — данные
+- Репликация по умолчанию x3
+
+**Ceph**:
+- Object storage (S3-compatible)
+- Block storage
+- File system
+- Единое хранилище для разных workload
+
+**MinIO**:
+- S3-compatible object storage
+- Легковесный, быстрый
+- Kubernetes-native`,
+      },
+      {
+        kind: "code",
+        title: "MinIO S3-compatible storage",
+        code: `import boto3
+from botocore.client import Config
+
+# Подключение к MinIO
+s3_client = boto3.client(
+    's3',
+    endpoint_url='http://localhost:9000',
+    aws_access_key_id='minioadmin',
+    aws_secret_access_key='minioadmin',
+    config=Config(signature_version='s3v4'),
+    region_name='us-east-1'
+)
+
+# Создание bucket
+bucket_name = 'video-storage'
+try:
+    s3_client.create_bucket(Bucket=bucket_name)
+    print(f"Bucket {bucket_name} created")
+except s3_client.exceptions.BucketAlreadyOwnedByYou:
+    print(f"Bucket {bucket_name} already exists")
+
+# Загрузка файла
+def upload_video(video_id: int, file_path: str):
+    key = f"videos/{video_id}/original.mp4"
+    
+    s3_client.upload_file(
+        file_path,
+        bucket_name,
+        key,
+        ExtraArgs={'ContentType': 'video/mp4'}
+    )
+    
+    print(f"Uploaded {file_path} to s3://{bucket_name}/{key}")
+    return f"s3://{bucket_name}/{key}"
+
+# Генерация presigned URL для загрузки
+def get_upload_url(video_id: int, expires_in: int = 3600):
+    key = f"videos/{video_id}/original.mp4"
+    
+    url = s3_client.generate_presigned_url(
+        'put_object',
+        Params={
+            'Bucket': bucket_name,
+            'Key': key,
+            'ContentType': 'video/mp4'
+        },
+        ExpiresIn=expires_in
+    )
+    
+    return url
+
+# Генерация presigned URL для скачивания
+def get_download_url(video_id: int, expires_in: int = 3600):
+    key = f"videos/{video_id}/processed/1080p.mp4"
+    
+    url = s3_client.generate_presigned_url(
+        'get_object',
+        Params={
+            'Bucket': bucket_name,
+            'Key': key
+        },
+        ExpiresIn=expires_in
+    )
+    
+    return url
+
+# Список объектов
+def list_videos():
+    response = s3_client.list_objects_v2(
+        Bucket=bucket_name,
+        Prefix='videos/'
+    )
+    
+    for obj in response.get('Contents', []):
+        print(f"{obj['Key']} - {obj['Size']} bytes")
+
+# Использование
+upload_url = get_upload_url(123)
+print(f"Upload URL: {upload_url}")
+
+download_url = get_download_url(123)
+print(f"Download URL: {download_url}")`,
+      },
+      {
+        kind: "text",
+        md: `## ELK-стек для логирования
+
+**ELK** — стек для централизованного логирования:
+- **Elasticsearch** — хранение и поиск логов
+- **Logstash** — сбор и обработка логов
+- **Kibana** — визуализация
+
+Альтернативы:
+- **EFK** — Elasticsearch + Fluentd + Kibana
+- **Loki** — легковесная альтернатива Elasticsearch`,
+      },
+      {
+        kind: "code",
+        title: "Настройка ELK-стека",
+        code: `# docker-compose.yml для ELK
+version: '3.8'
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_/usr/share/elasticsearch/data
+  
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.11.0
+    volumes:
+      - ./logstash/pipeline:/usr/share/logstash/pipeline
+    ports:
+      - "5044:5044"
+    depends_on:
+      - elasticsearch
+  
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+
+# logstash/pipeline/logstash.conf
+input {
+  beats {
+    port => 5044
+  }
+  
+  tcp {
+    port => 5000
+    codec => json
+  }
+}
+
+filter {
+  if [app_name] == "video-service" {
+    grok {
+      match => { "message" => "%{TIMESTAMP_ISO8601:timestamp} %{LOGLEVEL:level} %{GREEDYDATA:msg}" }
+    }
+    
+    date {
+      match => [ "timestamp", "ISO8601" ]
+    }
+  }
+}
+
+output {
+  elasticsearch {
+    hosts => ["elasticsearch:9200"]
+    index => "logs-%{+YYYY.MM.dd}"
+  }
+}`,
+      },
+      {
+        kind: "code",
+        title: "Отправка логов из Python",
+        code: `import logging
+import logstash
+import sys
+
+# Настройка Logstash handler
+logger = logging.getLogger('video-service')
+logger.setLevel(logging.INFO)
+
+# Logstash handler
+logstash_handler = logstash.TCPLogstashHandler(
+    host='localhost',
+    port=5000,
+    version=1
+)
+logstash_handler.setFormatter(logging.Formatter(
+    '%(asctime)s %(levelname)s %(name)s %(message)s'
+))
+logger.addHandler(logstash_handler)
+
+# Также вывод в консоль
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setFormatter(logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+))
+logger.addHandler(console_handler)
+
+# Использование
+logger.info('Video uploaded', extra={
+    'video_id': 123,
+    'user_id': 456,
+    'file_size': 1024 * 1024 * 100  # 100 MB
+})
+
+logger.error('Video processing failed', extra={
+    'video_id': 123,
+    'error': 'Transcoding error',
+    'stack_trace': '...'
+})
+
+# Структурированные логи
+import json
+
+class JSONFormatter(logging.Formatter):
+    def format(self, record):
+        log_data = {
+            'timestamp': self.formatTime(record),
+            'level': record.levelname,
+            'logger': record.name,
+            'message': record.getMessage(),
+        }
+        
+        # Добавляем дополнительные поля
+        if hasattr(record, 'video_id'):
+            log_data['video_id'] = record.video_id
+        if hasattr(record, 'user_id'):
+            log_data['user_id'] = record.user_id
+        
+        return json.dumps(log_data)
+
+json_handler = logging.StreamHandler()
+json_handler.setFormatter(JSONFormatter())
+logger.addHandler(json_handler)`,
+      },
+      {
+        kind: "text",
+        md: `## Sentry для мониторинга ошибок
+
+**Sentry** — платформа для трекинга ошибок:
+- Автоматический сбор исключений
+- Stack traces с контекстом
+- Performance monitoring
+- Release tracking
+- Alerting`,
+      },
+      {
+        kind: "code",
+        title: "Интеграция Sentry",
+        code: `import sentry_sdk
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+from sentry_sdk.integrations.redis import RedisIntegration
+
+# Инициализация Sentry
+sentry_sdk.init(
+    dsn="https://examplePublicKey@o0.ingest.sentry.io/0",
+    integrations=[
+        FastApiIntegration(transaction_style="endpoint"),
+        SqlalchemyIntegration(),
+        RedisIntegration(),
+    ],
+    traces_sample_rate=1.0,  # 100% транзакций
+    profiles_sample_rate=1.0,  # 100% профилирование
+    environment="production",
+    release="video-service@1.0.0"
+)
+
+# Использование в FastAPI
+from fastapi import FastAPI, HTTPException
+
+app = FastAPI()
+
+@app.get("/videos/{video_id}")
+async def get_video(video_id: int):
+    # Sentry автоматически ловит исключения
+    video = await db.get_video(video_id)
+    
+    if not video:
+        raise HTTPException(status_code=404, detail="Video not found")
+    
+    # Добавление контекста
+    sentry_sdk.set_context("video", {
+        "id": video.id,
+        "title": video.title,
+        "user_id": video.user_id
+    })
+    
+    # Пользовательские теги
+    sentry_sdk.set_tag("video_category", video.category)
+    
+    return video
+
+# Ручная отправка ошибок
+@app.post("/videos/{video_id}/process")
+async def process_video(video_id: int):
+    try:
+        await process_video_async(video_id)
+    except Exception as e:
+        # Отправка в Sentry с дополнительным контекстом
+        sentry_sdk.capture_exception(e)
+        
+        # Или с кастомным сообщением
+        sentry_sdk.capture_message(
+            f"Video processing failed for {video_id}",
+            level="error"
+        )
+        
+        raise
+
+# Performance monitoring
+@app.get("/analytics")
+async def get_analytics():
+    with sentry_sdk.start_transaction(op="analytics", name="Get Analytics"):
+        with sentry_sdk.start_span(op="db", description="Query analytics"):
+            analytics = await db.get_analytics()
+        
+        with sentry_sdk.start_span(op="cache", description="Get from cache"):
+            cached = await redis.get("analytics_cache")
+        
+        return analytics`,
+      },
+      {
+        kind: "warn",
+        title: "Не отправляйте секреты в Sentry",
+        md: `Sentry автоматически собирает контекст, но может захватить:
+- Пароли в query parameters
+- Токены в headers
+- Данные карт
+
+Настройте scrubbing:
+\`\`\`python
+sentry_sdk.init(
+    before_send=before_send_hook,
+    before_breadcrumb=before_breadcrumb_hook
+)
+
+def before_send_hook(event, hint):
+    # Удаление чувствительных данных
+    if 'request' in event and 'headers' in event['request']:
+        headers = event['request']['headers']
+        if 'Authorization' in headers:
+            headers['Authorization'] = '[REDACTED]'
+    return event
+\`\`\``,
+      },
+    ],
+    quiz: [
+      {
+        q: "Что такое CI/CD?",
+        options: [
+          "База данных",
+          "Непрерывная интеграция и непрерывное развёртывание",
+          "Фреймворк для тестирования",
+          "Система мониторинга",
+        ],
+        answer: 1,
+        explain: "CI/CD — Continuous Integration/Continuous Deployment, автоматизация сборки, тестирования и развёртывания.",
+      },
+      {
+        q: "Для чего используется Sentry?",
+        options: [
+          "Кеширование данных",
+          "Мониторинг и трекинг ошибок",
+          "Балансировка нагрузки",
+          "Управление контейнерами",
+        ],
+        answer: 1,
+        explain: "Sentry — платформа для мониторинга ошибок, сбора stack traces и performance monitoring.",
+      },
+    ],
+    tasks: [
+      {
+        id: "be18t1",
+        title: "GitHub Actions workflow",
+        md: `Создайте YAML-файл для GitHub Actions workflow, который:
+1. Запускается при push в ветку main
+2. Устанавливает Python 3.11
+3. Устанавливает зависимости из requirements.txt
+4. Запускает линтеры (black, flake8)
+5. Запускает тесты (pytest)`,
+        starter: `# .github/workflows/ci.yml
+# Ваш workflow здесь
+
+print("Workflow создан")`,
+        tests: `
+__test("workflow создан", lambda: True, True)`,
+        solution: `# .github/workflows/ci.yml
+name: CI
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install black flake8 pytest
+      
+      - name: Run linters
+        run: |
+          black --check .
+          flake8 .
+      
+      - name: Run tests
+        run: pytest`,
+      },
+    ],
+  },
 ];
