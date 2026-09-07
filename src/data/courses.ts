@@ -148,7 +148,7 @@ export const backendCourse: CourseDef = {
   language: "python",
   tagline: "Django, PostgreSQL, Elasticsearch, Docker — полный стек backend-разработки на Python.",
   description:
-    "8 уроков в трёх спринтах: Django и базы данных, Docker и деплой, Elasticsearch и ETL-процессы. Практические проекты: REST API, контейнеризация, синхронизация данных.",
+    "13 уроков в пяти спринтах: Django и базы данных, Docker и деплой, Elasticsearch и ETL-процессы, Code Review и SOLID, асинхронное программирование и FastAPI. Практические проекты: REST API, контейнеризация, синхронизация данных, тестирование, FastAPI с кешированием.",
   accent: "#092e20",
   accent2: "#44b78b",
   levels: [
@@ -177,7 +177,25 @@ export const backendCourse: CourseDef = {
       tagline:
         "Полнотекстовый поиск, индексы и агрегации, ETL-процессы для синхронизации данных из PostgreSQL в Elasticsearch.",
       accent: "#fed10a",
-      lessons: backendLessons.slice(6),
+      lessons: backendLessons.slice(6, 8),
+    },
+    {
+      id: "be-sprint4",
+      title: "Спринт 4",
+      label: "Code Review и качество кода",
+      tagline:
+        "Принципы код-ревью, SOLID-принципы, функциональное тестирование API, документация Swagger/OpenAPI.",
+      accent: "#9c27b0",
+      lessons: backendLessons.slice(8, 10),
+    },
+    {
+      id: "be-sprint5",
+      title: "Спринт 5",
+      label: "Асинхронность и FastAPI",
+      tagline:
+        "Асинхронное программирование, корутины, FastAPI, кеширование с Redis, продакшн-конфигурация.",
+      accent: "#00bcd4",
+      lessons: backendLessons.slice(10),
     },
   ],
   skills: [
@@ -186,6 +204,8 @@ export const backendCourse: CourseDef = {
     "Docker", "docker-compose", "Nginx", "uWSGI", "SSL/TLS",
     "Elasticsearch", "полнотекстовый поиск", "агрегации", "ETL", "инкрементальная синхронизация",
     "Airflow", "PostgreSQL", "reverse proxy", "контейнеризация",
+    "Code Review", "SOLID", "функциональное тестирование", "pytest", "Swagger", "OpenAPI",
+    "async/await", "корутины", "asyncio", "FastAPI", "Pydantic", "Redis", "кеширование",
   ],
 };
 
