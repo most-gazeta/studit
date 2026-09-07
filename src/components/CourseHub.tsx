@@ -137,7 +137,16 @@ export function CourseHub({
 }) {
   const jsStats = courseStats("js", progress);
   const pyStats = courseStats("py", progress);
-  const anyStarted = jsStats.started || pyStats.started;
+  const beStats = courseStats("be", progress);
+  const anyStarted = jsStats.started || pyStats.started || beStats.started;
+  
+  // Определяем courseId для Terminal на основе прогресса
+  let terminalCourseId = "js";
+  if (anyStarted) {
+    const maxPercent = Math.max(jsStats.percent, pyStats.percent, beStats.percent);
+    if (beStats.percent === maxPercent && beStats.started) terminalCourseId = "be";
+    else if (pyStats.percent === maxPercent && pyStats.started) terminalCourseId = "py";
+  }
 
   return (
     <div className="max-w-6xl mx-auto px-5 sm:px-8 pb-20">
@@ -146,17 +155,17 @@ export function CourseHub({
         <Reveal>
           <div className="chip border-js/30 text-js bg-js/5 mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-js glow-pulse" />
-            платформа · 2 курса · один путь к senior
+            платформа · 3 курса · один путь к senior
           </div>
           <h1 className="font-display font-extrabold text-[clamp(2.1rem,5vw,3.6rem)] leading-[1.06] tracking-tight text-ink">
-            Два языка.
+            Три курса.
             <br />
             Один путь — <span className="text-js">до мастерства</span>
           </h1>
           <p className="mt-6 text-mute text-[15.5px] leading-relaxed max-w-xl">
             Плотная практика вместо видео: концентрат теории, живые примеры, которые
-            выполняются прямо в уроке, квизы и задачи с автотестами. Прогресс каждого
-            курса — свой, XP и достижения — общие на аккаунт.
+            выполняются прямо в уроке, квизы и задачи с автотестами. JavaScript для веба,
+            Python для данных и бэкенда — выбирайте свой путь или проходите все три.
           </p>
           <div className="mt-7 flex items-center gap-5 flex-wrap font-mono text-[12.5px] text-dim">
             <span className="inline-flex items-center gap-2 text-ink">
@@ -178,7 +187,10 @@ export function CourseHub({
           <div className="absolute -bottom-5 -left-1 sm:left-6 chip border-[#4b8bbe]/40 text-[#4b8bbe] bg-[#4b8bbe]/5 float-y z-10" style={{ animationDelay: "1.4s" }}>
             {"# Python"}
           </div>
-          <Terminal language={anyStarted && pyStats.percent > jsStats.percent ? "python" : "javascript"} badge="выбор языка" />
+          <div className="absolute top-1/2 -right-2 sm:right-12 chip border-[#092e20]/40 text-[#44b78b] bg-[#092e20]/10 float-y z-10" style={{ animationDelay: "2.8s" }}>
+            {"$ Backend"}
+          </div>
+          <Terminal language={terminalCourseId === "py" || terminalCourseId === "be" ? "python" : "javascript"} courseId={terminalCourseId} badge="выбор языка" />
         </Reveal>
       </section>
 
@@ -187,7 +199,7 @@ export function CourseHub({
         <Reveal>
           <div className="flex items-end justify-between flex-wrap gap-3 mb-6">
             <h2 className="font-display font-bold text-2xl sm:text-3xl text-ink">Выберите курс</h2>
-            <p className="font-mono text-[12px] text-dim">// можно проходить оба — по очереди или параллельно</p>
+            <p className="font-mono text-[12px] text-dim">// можно проходить все — по очереди или параллельно</p>
           </div>
         </Reveal>
         <div className="space-y-5">

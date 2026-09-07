@@ -38,9 +38,9 @@ export function Avatar({ user, size = "md" }: { user: User; size?: "sm" | "md" |
 
 /* ---------- достижения ---------- */
 function computeAchievements(p: ProgressState) {
-  const courseDone = (courseId: "js" | "py") =>
+  const courseDone = (courseId: "js" | "py" | "be") =>
     flatLessonsOf(courseId).every((l) => p.completed[l.id]);
-  const levelDone = (courseId: "js" | "py", levelIdx: number) =>
+  const levelDone = (courseId: "js" | "py" | "be", levelIdx: number) =>
     flatLessonsOf(courseId).length > 0 &&
     courses.find((c) => c.id === courseId)!.levels[levelIdx].lessons.every((l) => p.completed[l.id]);
 
@@ -83,6 +83,8 @@ function computeAchievements(p: ProgressState) {
       { icon: IconBook, name: "PY: старт", desc: "Первый урок Python пройден", on: flatLessonsOf("py").some((l) => p.completed[l.id]) },
       { icon: IconCrown, name: "PY: курс", desc: "Все уроки Python закрыты", on: courseDone("py") },
       { icon: IconCrown, name: "JS: курс", desc: "Все уроки JavaScript закрыты", on: courseDone("js") },
+      { icon: IconBook, name: "BE: старт", desc: "Первый урок Backend пройден", on: flatLessonsOf("be").some((l) => p.completed[l.id]) },
+      { icon: IconCrown, name: "BE: курс", desc: "Все уроки Backend закрыты", on: courseDone("be") },
       { icon: IconTarget, name: "Перфекционист", desc: "Урок без единой ошибки", on: allCorrect },
       { icon: IconFlame, name: "Марафонец", desc: "Серия занятий 3+ дня", on: streak >= 3 },
     ],

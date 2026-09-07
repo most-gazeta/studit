@@ -7,8 +7,9 @@ import { seniorLessons } from "./senior";
 import { extraJunior, extraMiddle, extraSenior } from "./extra";
 import { proLessons } from "./pro";
 import { pythonLessons } from "./python";
+import { backendLessons } from "./backend";
 
-export type CourseId = "js" | "py";
+export type CourseId = "js" | "py" | "be";
 
 export interface CourseDef {
   id: CourseId;
@@ -139,15 +140,66 @@ export const pyCourse: CourseDef = {
   ],
 };
 
-export const courses: CourseDef[] = [jsCourse, pyCourse];
+export const backendCourse: CourseDef = {
+  id: "be",
+  code: "BE",
+  title: "Python Backend Developer",
+  shortTitle: "Backend",
+  language: "python",
+  tagline: "Django, PostgreSQL, Elasticsearch, Docker — полный стек backend-разработки на Python.",
+  description:
+    "8 уроков в трёх спринтах: Django и базы данных, Docker и деплой, Elasticsearch и ETL-процессы. Практические проекты: REST API, контейнеризация, синхронизация данных.",
+  accent: "#092e20",
+  accent2: "#44b78b",
+  levels: [
+    {
+      id: "be-sprint1",
+      title: "Спринт 1",
+      label: "Django и базы данных",
+      tagline:
+        "Проектирование БД, Django ORM, REST API на Django REST Framework, админка и миграции.",
+      accent: "#092e20",
+      lessons: backendLessons.slice(0, 4),
+    },
+    {
+      id: "be-sprint2",
+      title: "Спринт 2",
+      label: "Docker и деплой",
+      tagline:
+        "Контейнеризация приложений, docker-compose, Nginx как reverse proxy, uWSGI, продакшн-конфигурация.",
+      accent: "#2496ed",
+      lessons: backendLessons.slice(4, 6),
+    },
+    {
+      id: "be-sprint3",
+      title: "Спринт 3",
+      label: "Elasticsearch и ETL",
+      tagline:
+        "Полнотекстовый поиск, индексы и агрегации, ETL-процессы для синхронизации данных из PostgreSQL в Elasticsearch.",
+      accent: "#fed10a",
+      lessons: backendLessons.slice(6),
+    },
+  ],
+  skills: [
+    "проектирование БД", "нормализация", "индексы", "Django ORM", "миграции",
+    "админка Django", "REST API", "Django REST Framework", "сериализаторы", "ViewSets",
+    "Docker", "docker-compose", "Nginx", "uWSGI", "SSL/TLS",
+    "Elasticsearch", "полнотекстовый поиск", "агрегации", "ETL", "инкрементальная синхронизация",
+    "Airflow", "PostgreSQL", "reverse proxy", "контейнеризация",
+  ],
+};
+
+export const courses: CourseDef[] = [jsCourse, pyCourse, backendCourse];
 
 export function getCourse(id: CourseId): CourseDef {
   return courses.find((c) => c.id === id) ?? jsCourse;
 }
 
-/** Определяет курс по id урока (уроки Python имеют префикс "py") */
+/** Определяет курс по id урока */
 export function courseOfLesson(lessonId: string): CourseDef {
-  return lessonId.startsWith("py") ? pyCourse : jsCourse;
+  if (lessonId.startsWith("py")) return pyCourse;
+  if (lessonId.startsWith("be")) return backendCourse;
+  return jsCourse;
 }
 
 /* ---------- производные данные ---------- */

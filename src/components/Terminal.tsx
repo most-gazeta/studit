@@ -10,7 +10,7 @@ interface Line {
 export const JS_SCRIPT: Line[] = [
   { kind: "cmd", text: 'const путь = ["junior", "middle", "browser", "senior", "pro"];' },
   { kind: "cmd", text: "const навыки = путь.flatMap(уровень => учить(уровень));" },
-  { kind: "out", text: "// 37 уроков · 80 заданий · автотесты" },
+  { kind: "out", text: "// 37 уроков · 80 заданий · песочница с автотестами" },
   { kind: "cmd", text: "навыки.at(-1)" },
   { kind: "ok", text: '"уверенный JavaScript-инженер"' },
 ];
@@ -18,19 +18,31 @@ export const JS_SCRIPT: Line[] = [
 export const PY_SCRIPT: Line[] = [
   { kind: "cmd", text: 'путь = ["junior", "middle", "senior"]' },
   { kind: "cmd", text: "навыки = [урок for уровень in путь for урок in учить(уровень)]" },
-  { kind: "out", text: "# 12 уроков · 24 задания · интерпретатор в браузере" },
+  { kind: "out", text: "# 18 уроков · 36 заданий · интерпретатор Python в браузере" },
   { kind: "cmd", text: "навыки[-1]" },
   { kind: "ok", text: "'уверенный Python-разработчик'" },
+];
+
+export const BE_SCRIPT: Line[] = [
+  { kind: "cmd", text: "from django.shortcuts import render" },
+  { kind: "cmd", text: "from elasticsearch import Elasticsearch" },
+  { kind: "out", text: "# 8 уроков · 8 заданий · Django · PostgreSQL · Elasticsearch" },
+  { kind: "cmd", text: "skills = ['REST API', 'ETL', 'контейнеризация']" },
+  { kind: "ok", text: "'backend-инженер полного стека'" },
 ];
 
 export function Terminal({
   language = "javascript",
   badge,
+  courseId,
 }: {
   language?: LessonLanguage;
   badge?: string;
+  courseId?: string;
 }) {
-  const script = language === "python" ? PY_SCRIPT : JS_SCRIPT;
+  let script = JS_SCRIPT;
+  if (courseId === "be") script = BE_SCRIPT;
+  else if (language === "python") script = PY_SCRIPT;
   const [lines, setLines] = useState<Line[]>([]);
   const [typing, setTyping] = useState("");
   const timer = useRef<number | null>(null);

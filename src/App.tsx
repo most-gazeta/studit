@@ -176,7 +176,7 @@ export default function App() {
               js<span className="text-dim">://</span>master
             </span>
             <span className="hidden sm:inline chip border-line text-dim text-[10px]">
-              2 курса · JS + PY
+              3 курса · JS + PY + BE
             </span>
           </button>
 
