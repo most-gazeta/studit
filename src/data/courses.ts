@@ -148,7 +148,7 @@ export const backendCourse: CourseDef = {
   language: "python",
   tagline: "Django, PostgreSQL, Elasticsearch, Docker — полный стек backend-разработки на Python.",
   description:
-    "18 уроков в девяти спринтах: Django и базы данных, Docker и деплой, Elasticsearch и ETL-процессы, Code Review и SOLID, асинхронное программирование и FastAPI, авторизация и аутентификация, микросервисы и устойчивость сервисов, UGC-сервис и большие данные, CI/CD и распределённые системы. Практические проекты: REST API, контейнеризация, синхронизация данных, тестирование, FastAPI с кешированием, JWT/OAuth, микросервисная архитектура, Kafka/Spark/ClickHouse, GitHub Actions/ELK/Sentry.",
+    "19 уроков в десяти спринтах: Django и базы данных, Docker и деплой, Elasticsearch и ETL-процессы, Code Review и SOLID, асинхронное программирование и FastAPI, авторизация и аутентификация, микросервисы и устойчивость сервисов, UGC-сервис и большие данные, CI/CD и распределённые системы, сервис нотификаций. Практические проекты: REST API, контейнеризация, синхронизация данных, тестирование, FastAPI с кешированием, JWT/OAuth, микросервисная архитектура, Kafka/Spark/ClickHouse, GitHub Actions/ELK/Sentry, WebSocket и массовые рассылки.",
   accent: "#092e20",
   accent2: "#44b78b",
   levels: [
@@ -231,7 +231,16 @@ export const backendCourse: CourseDef = {
       tagline:
         "GitHub Actions, распределённые хранилища, ELK-стек, Sentry, автоматизация развёртывания и мониторинг.",
       accent: "#607d8b",
-      lessons: backendLessons.slice(17),
+      lessons: backendLessons.slice(17, 18),
+    },
+    {
+      id: "be-sprint10",
+      title: "Спринт 10",
+      label: "Сервис нотификаций",
+      tagline:
+        "Email, SMS, WebSocket, RabbitMQ, шаблонизация, массовые рассылки, сокращённые ссылки.",
+      accent: "#9c27b0",
+      lessons: backendLessons.slice(18),
     },
   ],
   skills: [
@@ -247,6 +256,8 @@ export const backendCourse: CourseDef = {
     "health checks", "мониторинг", "Prometheus", "Grafana", "структурированное логирование",
     "UGC-сервис", "Apache Spark", "ClickHouse", "шардирование", "репликация",
     "CI/CD", "GitHub Actions", "ELK-стек", "Sentry", "распределённые системы",
+    "сервис нотификаций", "WebSocket", "шаблонизация email", "Jinja2", "массовые рассылки",
+    "SMTP", "сокращённые ссылки", "batch processing", "уведомления", "real-time",
   ],
 };
 

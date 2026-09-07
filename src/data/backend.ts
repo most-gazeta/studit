@@ -874,4 +874,470 @@ jobs:
       },
     ],
   },
+
+  // ========== СПРИНТ 10: Сервис нотификаций ==========
+  {
+    id: "be19",
+    language: "python",
+    title: "Сервис нотификаций и коммуникаций",
+    subtitle: "Email, SMS, WebSocket, RabbitMQ, шаблонизация, массовые рассылки",
+    minutes: 50,
+    blocks: [
+      {
+        kind: "text",
+        md: `## Архитектура сервиса нотификаций
+
+Сервис нотификаций — централизованная система отправки сообщений пользователям через различные каналы:
+- **Email** — основная коммуникация
+- **SMS** — срочные уведомления
+- **Push** — мобильные уведомления
+- **WebSocket** — real-time обновления
+
+Принципы проектирования:
+- **Единая политика контактов** — централизованное управление предпочтениями пользователей
+- **Идемпотентность** — защита от дублирования сообщений
+- **Rate limiting** — контроль частоты отправки
+- **Retry mechanism** — автоматические повторные попытки при сбоях
+- **Template engine** — шаблонизация для персонализации`,
+      },
+      {
+        kind: "code",
+        title: "Модель уведомлений",
+        code: `from dataclasses import dataclass
+from enum import Enum
+from typing import Optional
+from datetime import datetime
+
+class NotificationType(Enum):
+    EMAIL = "email"
+    SMS = "sms"
+    PUSH = "push"
+    WEBSOCKET = "websocket"
+
+class NotificationPriority(Enum):
+    LOW = 1
+    MEDIUM = 2
+    HIGH = 3
+    CRITICAL = 4
+
+@dataclass
+class Notification:
+    id: str
+    user_id: int
+    type: NotificationType
+    priority: NotificationPriority
+    template: str
+    context: dict
+    created_at: datetime
+    sent_at: Optional[datetime] = None
+    status: str = "pending"  # pending, sent, failed
+
+@dataclass
+class UserPreferences:
+    user_id: int
+    email_enabled: bool = True
+    sms_enabled: bool = False
+    push_enabled: bool = True
+    email_frequency: str = "immediate"  # immediate, daily, weekly`,
+      },
+      {
+        kind: "text",
+        md: `## Шаблонизация email
+
+Используйте Jinja2 для создания динамических шаблонов:
+- **Переменные** — подстановка данных пользователя
+- **Циклы** — списки товаров, заказов
+- **Условия** — персонализация контента
+- **Наследование** — базовые шаблоны для бренда`,
+      },
+      {
+        kind: "code",
+        title: "Email шаблонизация",
+        code: `from jinja2 import Environment, FileSystemLoader
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import smtplib
+
+class EmailService:
+    def __init__(self, smtp_host, smtp_port, username, password):
+        self.env = Environment(loader=FileSystemLoader('templates/email'))
+        self.smtp_host = smtp_host
+        self.smtp_port = smtp_port
+        self.username = username
+        self.password = password
+    
+    def render_template(self, template_name: str, context: dict) -> str:
+        """Рендеринг HTML шаблона"""
+        template = self.env.get_template(template_name)
+        return template.render(**context)
+    
+    def send_email(self, to: str, subject: str, template: str, context: dict):
+        """Отправка email"""
+        html_content = self.render_template(template, context)
+        
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From'] = self.username
+        msg['To'] = to
+        
+        # HTML версия
+        html_part = MIMEText(html_content, 'html')
+        msg.attach(html_part)
+        
+        # Отправка через SMTP
+        with smtplib.SMTP(self.smtp_host, self.smtp_port) as server:
+            server.starttls()
+            server.login(self.username, self.password)
+            server.send_message(msg)
+
+# Использование
+email_service = EmailService(
+    smtp_host='smtp.gmail.com',
+    smtp_port=587,
+    username='noreply@example.com',
+    password='your-password'
+)
+
+email_service.send_email(
+    to='user@example.com',
+    subject='Добро пожаловать!',
+    template='welcome.html',
+    context={'username': 'Иван', 'activation_link': 'https://...'}
+)`,
+      },
+      {
+        kind: "text",
+        md: `## RabbitMQ для очередей сообщений
+
+RabbitMQ — брокер сообщений для асинхронной обработки:
+- **Producer** — отправляет сообщения в очередь
+- **Consumer** — обрабатывает сообщения из очереди
+- **Exchange** — маршрутизация сообщений
+- **Queue** — хранение сообщений до обработки
+
+Преимущества:
+- Разгрузка основного приложения
+- Гарантия доставки
+- Масштабируемость
+- Retry mechanism`,
+      },
+      {
+        kind: "code",
+        title: "RabbitMQ producer и consumer",
+        code: `import pika
+import json
+from typing import Callable
+
+class NotificationProducer:
+    def __init__(self, host='localhost'):
+        self.connection = pika.BlockingConnection(
+            pika.ConnectionParameters(host)
+        )
+        self.channel = self.connection.channel()
+        
+        # Объявление exchange и queue
+        self.channel.exchange_declare(
+            exchange='notifications',
+            exchange_type='direct'
+        )
+        self.channel.queue_declare(queue='email_queue')
+        self.channel.queue_declare(queue='sms_queue')
+    
+    def send_notification(self, notification_type: str, data: dict):
+        """Отправка уведомления в очередь"""
+        self.channel.basic_publish(
+            exchange='notifications',
+            routing_key=notification_type,
+            body=json.dumps(data),
+            properties=pika.BasicProperties(delivery_mode=2)  # persistent
+        )
+
+class NotificationConsumer:
+    def __init__(self, host='localhost'):
+        self.connection = pika.BlockingConnection(
+            pika.ConnectionParameters(host)
+        )
+        self.channel = self.connection.channel()
+    
+    def consume(self, queue_name: str, callback: Callable):
+        """Обработка сообщений из очереди"""
+        def wrapped_callback(ch, method, properties, body):
+            data = json.loads(body)
+            try:
+                callback(data)
+                ch.basic_ack(delivery_tag=method.delivery_tag)
+            except Exception as e:
+                # Retry через 5 секунд
+                ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+                raise
+        
+        self.channel.basic_consume(
+            queue=queue_name,
+            on_message_callback=wrapped_callback
+        )
+        self.channel.start_consuming()
+
+# Использование
+producer = NotificationProducer()
+producer.send_notification('email', {
+    'to': 'user@example.com',
+    'template': 'welcome',
+    'context': {'username': 'Иван'}
+})
+
+# Consumer в отдельном процессе
+def process_email(data):
+    print(f"Sending email to {data['to']}")
+    # Логика отправки email
+
+consumer = NotificationConsumer()
+consumer.consume('email_queue', process_email)`,
+      },
+      {
+        kind: "text",
+        md: `## WebSocket для real-time уведомлений
+
+WebSocket обеспечивает двустороннюю связь между клиентом и сервером:
+- **Низкая задержка** — мгновенная доставка
+- **Persistent connection** — постоянное соединение
+- **Bidirectional** — сервер может отправлять данные клиенту
+
+Используйте FastAPI с WebSocket для real-time обновлений.`,
+      },
+      {
+        kind: "code",
+        title: "WebSocket сервер",
+        code: `from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from typing import List
+import asyncio
+
+app = FastAPI()
+
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+    
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+    
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+    
+    async def send_personal_message(self, message: dict, websocket: WebSocket):
+        await websocket.send_json(message)
+    
+    async def broadcast(self, message: dict):
+        for connection in self.active_connections:
+            await connection.send_json(message)
+
+manager = ConnectionManager()
+
+@app.websocket("/ws/{user_id}")
+async def websocket_endpoint(websocket: WebSocket, user_id: int):
+    await manager.connect(websocket)
+    try:
+        while True:
+            # Получение сообщений от клиента
+            data = await websocket.receive_json()
+            print(f"Received from user {user_id}: {data}")
+            
+            # Отправка подтверждения
+            await manager.send_personal_message(
+                {"type": "ack", "message": "Received"},
+                websocket
+            )
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+        print(f"User {user_id} disconnected")
+
+# Отправка уведомления всем подключённым пользователям
+async def send_notification_to_all(notification: dict):
+    await manager.broadcast({
+        "type": "notification",
+        "data": notification
+    })
+
+# Интеграция с RabbitMQ
+async def process_notifications():
+    consumer = NotificationConsumer()
+    
+    def handle_notification(data):
+        asyncio.create_task(
+            send_notification_to_all(data)
+        )
+    
+    consumer.consume('websocket_queue', handle_notification)`,
+      },
+      {
+        kind: "text",
+        md: `## Массовые рассылки и сокращённые ссылки
+
+Для массовых рассылок используйте:
+- **Batch processing** — отправка пакетами
+- **Rate limiting** — контроль скорости отправки
+- **Unsubscribe mechanism** — обязательная возможность отписки
+- **Tracking** — отслеживание открытых писем
+
+Для сокращённых ссылок:
+- **URL shortener** — сервис сокращения ссылок
+- **Analytics** — статистика переходов
+- **Expiration** — срок действия ссылок`,
+      },
+      {
+        kind: "code",
+        title: "Batch email sending",
+        code: `from typing import List
+import time
+
+class BatchEmailSender:
+    def __init__(self, email_service: EmailService, rate_limit: int = 100):
+        self.email_service = email_service
+        self.rate_limit = rate_limit  # писем в минуту
+    
+    def send_batch(self, recipients: List[dict], template: str, context: dict):
+        """Массовая отправка с rate limiting"""
+        sent_count = 0
+        start_time = time.time()
+        
+        for recipient in recipients:
+            # Проверка rate limit
+            elapsed = time.time() - start_time
+            if sent_count >= self.rate_limit and elapsed < 60:
+                sleep_time = 60 - elapsed
+                print(f"Rate limit reached. Sleeping for {sleep_time:.2f}s")
+                time.sleep(sleep_time)
+                start_time = time.time()
+                sent_count = 0
+            
+            # Отправка письма
+            try:
+                self.email_service.send_email(
+                    to=recipient['email'],
+                    subject=context.get('subject', 'Notification'),
+                    template=template,
+                    context={**context, **recipient}
+                )
+                sent_count += 1
+                print(f"Sent to {recipient['email']}")
+            except Exception as e:
+                print(f"Failed to send to {recipient['email']}: {e}")
+        
+        print(f"Batch completed. Sent: {sent_count}/{len(recipients)}")
+
+# Использование
+sender = BatchEmailSender(email_service, rate_limit=100)
+recipients = [
+    {'email': 'user1@example.com', 'username': 'Иван'},
+    {'email': 'user2@example.com', 'username': 'Мария'},
+    # ... тысячи получателей
+]
+
+sender.send_batch(
+    recipients=recipients,
+    template='newsletter.html',
+    context={
+        'subject': 'Еженедельная рассылка',
+        'unsubscribe_url': 'https://example.com/unsubscribe'
+    }
+)`,
+      },
+      {
+        kind: "warn",
+        title: "Безопасность и compliance",
+        md: `При работе с уведомлениями соблюдайте:
+- **GDPR** — согласие на обработку данных
+- **CAN-SPAM** — обязательная ссылка отписки
+- **Rate limiting** — защита от спама
+- **Data encryption** — шифрование чувствительных данных
+- **Audit log** — логирование всех отправок`,
+      },
+    ],
+    quiz: [
+      {
+        q: "Какой протокол используется для real-time уведомлений?",
+        options: [
+          "HTTP",
+          "WebSocket",
+          "FTP",
+          "SMTP",
+        ],
+        answer: 1,
+        explain: "WebSocket обеспечивает двустороннюю связь с низкой задержкой для real-time обновлений.",
+      },
+      {
+        q: "Для чего используется RabbitMQ в сервисе нотификаций?",
+        options: [
+          "Хранение шаблонов",
+          "Асинхронная обработка сообщений",
+          "Отправка email",
+          "Управление пользователями",
+        ],
+        answer: 1,
+        explain: "RabbitMQ — брокер сообщений для асинхронной обработки, разгрузки основного приложения и гарантии доставки.",
+      },
+    ],
+    tasks: [
+      {
+        id: "be19t1",
+        title: "WebSocket модуль",
+        md: `Создайте класс \`NotificationWebSocket\` с методами:
+- \`connect(user_id)\` — подключение пользователя
+- \`disconnect(user_id)\` — отключение
+- \`send_to_user(user_id, message)\` — отправка конкретному пользователю
+- \`broadcast(message)\` — отправка всем подключённым`,
+        starter: `from typing import Dict, List
+
+class NotificationWebSocket:
+    def __init__(self):
+        self.connections: Dict[int, List] = {}
+    
+    async def connect(self, user_id: int, websocket):
+        # Ваш код здесь
+        pass
+    
+    async def disconnect(self, user_id: int, websocket):
+        # Ваш код здесь
+        pass
+    
+    async def send_to_user(self, user_id: int, message: dict):
+        # Ваш код здесь
+        pass
+    
+    async def broadcast(self, message: dict):
+        # Ваш код здесь
+        pass
+
+print("WebSocket модуль создан")`,
+        tests: `
+__test("класс создан", lambda: NotificationWebSocket() is not None, True)`,
+        solution: `from typing import Dict, List
+
+class NotificationWebSocket:
+    def __init__(self):
+        self.connections: Dict[int, List] = {}
+    
+    async def connect(self, user_id: int, websocket):
+        if user_id not in self.connections:
+            self.connections[user_id] = []
+        self.connections[user_id].append(websocket)
+    
+    async def disconnect(self, user_id: int, websocket):
+        if user_id in self.connections:
+            self.connections[user_id].remove(websocket)
+            if not self.connections[user_id]:
+                del self.connections[user_id]
+    
+    async def send_to_user(self, user_id: int, message: dict):
+        if user_id in self.connections:
+            for ws in self.connections[user_id]:
+                await ws.send_json(message)
+    
+    async def broadcast(self, message: dict):
+        for user_connections in self.connections.values():
+            for ws in user_connections:
+                await ws.send_json(message)`,
+      },
+    ],
+  },
 ];
