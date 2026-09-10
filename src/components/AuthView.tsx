@@ -123,17 +123,6 @@ export function AuthView({
               </li>
             ))}
           </ul>
-
-          <div className="mt-7 rounded-lg border border-line bg-[#0a1120] p-4 font-mono text-[12px] leading-relaxed">
-            <div className="text-dim uppercase tracking-widest text-[10px] mb-2">демо-доступы</div>
-            <div className="text-[#c3d2ec]">
-              <span className="text-js">админ:</span> admin@jsmaster.ru / admin123
-            </div>
-            <div className="text-[#c3d2ec]">
-              <span className="text-sky">студент:</span> maria@demo.ru / demo123
-            </div>
-            <div className="text-dim mt-1.5 text-[11px]">данные хранятся локально в вашем браузере</div>
-          </div>
         </div>
 
         {/* ---- правая колонка: форма ---- */}
