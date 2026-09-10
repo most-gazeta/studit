@@ -1625,59 +1625,436 @@ __test("find_first_prime(100) → 101", lambda: find_first_prime(100), 101)`,
     language: "python",
     title: "Функции",
     subtitle: "def, *args и **kwargs, lambda, функции как значения",
-    minutes: 30,
+    minutes: 35,
     blocks: [
       {
         kind: "text",
-        md: `## def и аргументы
+        md: `## Функции: переиспользуемый код 🛠️
 
-Параметры по умолчанию, **именованные аргументы** при вызове, \`*args\` — «все позиционные в кортеж», \`**kwargs\` — «все именованные в словарь». Документация функции — docstring, первая строка-литерал.`,
-      },
-      {
-        kind: "code",
-        title: "Гибкие сигнатуры",
-        code: `def power(base, exp=2):
-    """Возводит base в степень exp."""
-    return base ** exp
+Функции — это блоки кода, которые можно вызывать многократно. Они помогают:
+- Избежать дублирования кода
+- Сделать код более читаемым
+- Разбить сложную задачу на простые части
 
-print(power(5))               # 25
-print(power(2, 10))           # 1024
-print(power(exp=3, base=2))   # 8 — именованные аргументы
+**Аналогия:** Представьте, что вы готовите блюдо. Вместо того чтобы каждый раз описывать весь процесс, вы создаёте рецепт (функцию) и используете его, когда нужно.
 
-def sum_all(*nums):
-    return sum(nums)
-
-print(sum_all(1, 2, 3, 4))    # 10
-
-def settings(**opts):
-    return opts
-
-print(settings(theme="dark", size=14))
-print(power.__doc__)`,
+**Синтаксис:**
+\`\`\`python
+def имя_функции(параметры):
+    # код функции
+    return результат
+\`\`\``,
       },
       {
         kind: "text",
-        md: `## lambda и функции-аргументы
+        md: `## Создание функций с def
 
-\`lambda x: x * 2\` — анонимная функция-выражение. Главное применение — короткие колбэки для \`sorted(key=...)\`, \`map\`, \`filter\`. Функции здесь — объекты первого класса, как и в JS.`,
+Ключевое слово \`def\` (define) объявляет функцию. После него идёт имя функции, параметры в скобках и двоеточие.
+
+**Правила именования:**
+- Используйте \`snake_case\`: \`calculate_total\`, \`get_user_name\`
+- Имя должно описывать, что делает функция
+- Избегайте однобуквенных имён (кроме очень коротких функций)`,
       },
       {
         kind: "code",
-        title: "Функции высшего порядка",
-        code: `double = lambda x: x * 2
-print(double(21))                 # 42
+        title: "Простые функции",
+        code: `# Функция без параметров
+def greet():
+    print("Привет, мир!")
 
-words = ["питон", "гуру", "код"]
-print(sorted(words, key=len))     # по длине
-print(sorted(words, key=lambda w: w[-1]))  # по последней букве
+greet()
 
-print(list(map(lambda x: x * 3, [1, 2])))          # [3, 6]
-print(list(filter(lambda x: x > 2, [1, 2, 3, 4]))) # [3, 4]`,
+# Функция с параметрами
+def greet_user(name):
+    print(f"Привет, {name}!")
+
+greet_user("Алиса")
+greet_user("Боб")
+
+# Функция с возвратом значения
+def add(a, b):
+    return a + b
+
+result = add(5, 3)
+print(result)  # 8
+
+# Функция с несколькими return
+def check_number(n):
+    if n > 0:
+        return "положительное"
+    elif n < 0:
+        return "отрицательное"
+    else:
+        return "ноль"
+
+print(check_number(5))    # положительное
+print(check_number(-3))   # отрицательное
+print(check_number(0))    # ноль`,
+      },
+      {
+        kind: "text",
+        md: `## Параметры по умолчанию
+
+Вы можете задать значения по умолчанию для параметров. Если аргумент не передан, используется значение по умолчанию.
+
+**Важно:** Параметры со значениями по умолчанию должны идти **после** обязательных параметров!`,
+      },
+      {
+        kind: "code",
+        title: "Параметры по умолчанию",
+        code: `# Параметры по умолчанию
+def greet(name, greeting="Привет"):
+    print(f"{greeting}, {name}!")
+
+greet("Алиса")              # Привет, Алиса!
+greet("Боб", "Здравствуйте") # Здравствуйте, Боб!
+
+# Математическая функция
+def power(base, exp=2):
+    """Возводит base в степень exp."""
+    return base ** exp
+
+print(power(5))       # 25 (5²)
+print(power(2, 10))   # 1024 (2¹⁰)
+print(power(3, 3))    # 27 (3³)
+
+# Функция с несколькими параметрами по умолчанию
+def create_user(name, age=18, city="Москва"):
+    return {"name": name, "age": age, "city": city}
+
+print(create_user("Алиса"))
+print(create_user("Боб", 25))
+print(create_user("Виктор", 30, "Санкт-Петербург"))`,
+      },
+      {
+        kind: "text",
+        md: `## Именованные аргументы
+
+При вызове функции можно передавать аргументы по имени. Это делает код более читаемым и позволяет менять порядок аргументов.
+
+**Преимущества:**
+- Код становится самодокументируемым
+- Можно пропускать параметры по умолчанию
+- Порядок аргументов не важен`,
+      },
+      {
+        kind: "code",
+        title: "Именованные аргументы",
+        code: `def create_profile(name, age, city):
+    return f"{name}, {age} лет, город: {city}"
+
+# Позиционные аргументы
+print(create_profile("Алиса", 25, "Москва"))
+
+# Именованные аргументы (порядок не важен)
+print(create_profile(city="СПб", name="Боб", age=30))
+
+# Смешанный вызов (позиционные + именованные)
+print(create_profile("Виктор", age=35, city="Казань"))
+
+# Практический пример
+def send_email(to, subject, body, cc=None, bcc=None):
+    print(f"Кому: {to}")
+    print(f"Тема: {subject}")
+    print(f"Текст: {body}")
+    if cc:
+        print(f"Копия: {cc}")
+    if bcc:
+        print(f"Скрытая копия: {bcc}")
+
+# Пропускаем cc, указываем bcc
+send_email(
+    to="user@example.com",
+    subject="Привет",
+    body="Как дела?",
+    bcc="admin@example.com"
+)`,
+      },
+      {
+        kind: "text",
+        md: `## *args: произвольное количество аргументов
+
+\`*args\` позволяет функции принимать произвольное количество позиционных аргументов. Все аргументы собираются в кортеж (tuple).
+
+**Когда использовать:**
+- Когда не знаете заранее, сколько аргументов будет передано
+- Для функций, работающих с коллекциями чисел`,
+      },
+      {
+        kind: "code",
+        title: "*args в действии",
+        code: `# Функция с произвольным количеством аргументов
+def sum_all(*nums):
+    """Суммирует все переданные числа."""
+    return sum(nums)
+
+print(sum_all(1, 2, 3))        # 6
+print(sum_all(1, 2, 3, 4, 5))  # 15
+print(sum_all())                # 0
+
+# args — это кортеж
+def print_args(*args):
+    print(f"Тип: {type(args)}")
+    print(f"Значения: {args}")
+    for i, arg in enumerate(args):
+        print(f"  {i}: {arg}")
+
+print_args("a", "b", "c")
+
+# Комбинирование обычных и *args
+def multiply(first, *others):
+    result = first
+    for num in others:
+        result *= num
+    return result
+
+print(multiply(2, 3, 4))  # 24 (2 * 3 * 4)
+print(multiply(5, 10))    # 50 (5 * 10)`,
+      },
+      {
+        kind: "text",
+        md: `## **kwargs: произвольное количество именованных аргументов
+
+\`**kwargs\` позволяет функции принимать произвольное количество именованных аргументов. Все аргументы собираются в словарь (dict).
+
+**Когда использовать:**
+- Для конфигурационных функций
+- Когда нужно передать произвольные параметры
+- Для декораторов и обёрток`,
+      },
+      {
+        kind: "code",
+        title: "**kwargs в действии",
+        code: `# Функция с произвольными именованными аргументами
+def print_info(**kwargs):
+    """Выводит всю переданную информацию."""
+    for key, value in kwargs.items():
+        print(f"{key}: {value}")
+
+print_info(name="Алиса", age=25, city="Москва")
+print_info(product="Книга", price=500, pages=300)
+
+# kwargs — это словарь
+def settings(**kwargs):
+    print(f"Тип: {type(kwargs)}")
+    return kwargs
+
+config = settings(theme="dark", language="ru", notifications=True)
+print(config)
+
+# Комбинирование *args и **kwargs
+def flexible_function(*args, **kwargs):
+    print("Позиционные:", args)
+    print("Именованные:", kwargs)
+
+flexible_function(1, 2, 3, name="Алиса", age=25)
+
+# Практический пример: создание HTML-тега
+def create_tag(tag_name, **attributes):
+    attrs = " ".join(f'{k}="{v}"' for k, v in attributes.items())
+    if attrs:
+        return f"<{tag_name} {attrs}></{tag_name}>"
+    return f"<{tag_name}></{tag_name}>"
+
+print(create_tag("div", id="main", class="container"))
+print(create_tag("img", src="image.jpg", alt="Фото"))`,
+      },
+      {
+        kind: "text",
+        md: `## Docstring: документация функций
+
+Docstring — это строка документации, которая описывает, что делает функция. Она должна быть первой строкой после \`def\`.
+
+**Зачем нужна:**
+- Помогает другим разработчикам понять функцию
+- Отображается в IDE при наведении
+- Доступна через \`function.__doc__\``,
+      },
+      {
+        kind: "code",
+        title: "Правильная документация",
+        code: `def calculate_bmi(weight, height):
+    """
+    Вычисляет индекс массы тела (ИМТ).
+    
+    Args:
+        weight (float): Вес в килограммах
+        height (float): Рост в метрах
+        
+    Returns:
+        float: Индекс массы тела
+        
+    Example:
+        >>> calculate_bmi(70, 1.75)
+        22.86
+    """
+    return weight / (height ** 2)
+
+# Доступ к документации
+print(calculate_bmi.__doc__)
+
+# Использование
+bmi = calculate_bmi(70, 1.75)
+print(f"Ваш ИМТ: {bmi:.2f}")
+
+# Ещё пример
+def find_max(numbers):
+    """
+    Находит максимальное число в списке.
+    
+    Args:
+        numbers (list): Список чисел
+        
+    Returns:
+        int/float: Максимальное число
+        
+    Raises:
+        ValueError: Если список пустой
+    """
+    if not 
+        raise ValueError("Список не может быть пустым")
+    return max(numbers)`,
+      },
+      {
+        kind: "text",
+        md: `## Lambda-функции: анонимные функции
+
+\`lambda\` — это способ создать маленькую анонимную функцию в одну строку.
+
+**Синтаксис:**
+\`\`\`python
+lambda параметры: выражение
+\`\`\`
+
+**Когда использовать:**
+- Для простых однострочных операций
+- Как аргументы для функций высшего порядка (\`sorted\`, \`map\`, \`filter\`)
+- Когда функция нужна только один раз`,
+      },
+      {
+        kind: "code",
+        title: "Lambda в примерах",
+        code: `# Простая lambda
+double = lambda x: x * 2
+print(double(5))  # 10
+
+# Эквивалент с def
+def double_def(x):
+    return x * 2
+
+# Lambda с несколькими параметрами
+add = lambda a, b: a + b
+print(add(3, 4))  # 7
+
+# Использование с sorted
+words = ["python", "java", "c", "javascript"]
+print(sorted(words))                      # по алфавиту
+print(sorted(words, key=len))             # по длине
+print(sorted(words, key=lambda w: w[-1])) # по последней букве
+
+# Использование с map
+numbers = [1, 2, 3, 4, 5]
+squared = list(map(lambda x: x ** 2, numbers))
+print(squared)  # [1, 4, 9, 16, 25]
+
+# Использование с filter
+evens = list(filter(lambda x: x % 2 == 0, numbers))
+print(evens)  # [2, 4]
+
+# Lambda с условием
+check = lambda x: "чётное" if x % 2 == 0 else "нечётное"
+print(check(5))  # нечётное
+print(check(8))  # чётное`,
+      },
+      {
+        kind: "text",
+        md: `## Функции как объекты первого класса
+
+В Python функции — это объекты. Их можно:
+- Присваивать переменным
+- Передавать как аргументы
+- Возвращать из других функций
+- Сохранять в коллекциях
+
+Это делает Python **функциональным** языком (частично).`,
+      },
+      {
+        kind: "code",
+        title: "Функции как объекты",
+        code: `# Присваивание переменной
+def greet(name):
+    return f"Привет, {name}!"
+
+say_hello = greet
+print(say_hello("Алиса"))  # Привет, Алиса!
+
+# Передача как аргумент
+def apply_function(func, value):
+    return func(value)
+
+result = apply_function(double, 5)
+print(result)  # 10
+
+# Возврат функции
+def make_multiplier(factor):
+    def multiplier(x):
+        return x * factor
+    return multiplier
+
+double = make_multiplier(2)
+triple = make_multiplier(3)
+print(double(5))   # 10
+print(triple(5))   # 15
+
+# Функции в коллекциях
+operations = {
+    "add": lambda a, b: a + b,
+    "subtract": lambda a, b: a - b,
+    "multiply": lambda a, b: a * b,
+}
+
+print(operations["add"](5, 3))      # 8
+print(operations["multiply"](4, 6)) # 24`,
       },
       {
         kind: "tip",
         title: "Когда lambda, когда def",
-        md: `lambda — только для однострочных колбэков. Как только логика требует имени, нескольких выражений или тестов — пишите обычный \`def\`: его видно в трейсбеках и у него есть docstring.`,
+        md: `**Используйте lambda, когда:**
+- Функция очень простая (одно выражение)
+- Нужна только один раз
+- Передаётся как аргумент (\`sorted\`, \`map\`, \`filter\`)
+
+**Используйте def, когда:**
+- Функция сложная (несколько строк)
+- Нужна документация (docstring)
+- Будете использовать многократно
+- Нужны условия и циклы
+
+**Правило:** Если lambda становится слишком сложной — превратите её в \`def\`.`,
+      },
+      {
+        kind: "warn",
+        title: "Избегайте изменяемых параметров по умолчанию",
+        md: `**Плохо:**
+\`\`\`python
+def add_item(item, lst=[]):  # ОПАСНО!
+    lst.append(item)
+    return lst
+\`\`\`
+
+Список создаётся **один раз** при определении функции, а не при каждом вызове!
+
+**Хорошо:**
+\`\`\`python
+def add_item(item, lst=None):
+    if lst is None:
+        lst = []
+    lst.append(item)
+    return lst
+\`\`\`
+
+Используйте \`None\` как значение по умолчанию и создавайте объект внутри функции.`,
       },
     ],
     quiz: [
@@ -1697,6 +2074,34 @@ print(list(filter(lambda x: x > 2, [1, 2, 3, 4]))) # [3, 4]`,
         options: ["6", "8", "9", "ошибка"],
         answer: 1,
         explain: "Именованные аргументы позволяют менять порядок: 2 ** 3 = 8.",
+      },
+      {
+        q: "Что такое *args?",
+        options: [
+          "Обязательный аргумент",
+          "Произвольное количество позиционных аргументов в кортеже",
+          "Именованный аргумент",
+          "Аргумент по умолчанию",
+        ],
+        answer: 1,
+        explain: "*args позволяет функции принимать произвольное количество позиционных аргументов, которые собираются в кортеж.",
+      },
+      {
+        q: "Как правильно написать lambda-функцию для удвоения числа?",
+        options: [
+          "lambda x: x * 2",
+          "lambda: x * 2",
+          "def lambda(x): x * 2",
+          "lambda x => x * 2",
+        ],
+        answer: 0,
+        explain: "Синтаксис lambda: lambda параметры: выражение. Lambda не использует def и =>.",
+      },
+      {
+        q: "Что вернёт list(map(lambda x: x ** 2, [1, 2, 3]))?",
+        options: ["[1, 2, 3]", "[1, 4, 9]", "[2, 4, 6]", "[1, 8, 27]"],
+        answer: 1,
+        explain: "map применяет функцию к каждому элементу: 1²=1, 2²=4, 3²=9.",
       },
     ],
     tasks: [
@@ -1737,6 +2142,44 @@ __test("*2 дважды к 5 → 20", lambda: apply_twice(lambda v: v * 2, 5), 2
 __test("со строками", lambda: apply_twice(lambda s: s + "!", "вау"), "вау!!")`,
         solution: `def apply_twice(fn, x):
     return fn(fn(x))`,
+      },
+      {
+        id: "py4t3",
+        title: "Фабрика функций",
+        md: `Реализуйте \`make_adder(n)\`, которая возвращает функцию, добавляющую \`n\` к своему аргументу. \`add5 = make_adder(5); add5(10)\` → \`15\`.`,
+        starter: `def make_adder(n):
+    # верните функцию
+    pass
+
+add5 = make_adder(5)
+print(add5(10), add5(20))`,
+        tests: `
+__test("make_adder(5)(10) → 15", lambda: make_adder(5)(10), 15)
+__test("make_adder(10)(5) → 15", lambda: make_adder(10)(5), 15)
+__test("make_adder(0)(100) → 100", lambda: make_adder(0)(100), 100)
+__test("make_adder(-3)(10) → 7", lambda: make_adder(-3)(10), 7)`,
+        solution: `def make_adder(n):
+    def adder(x):
+        return x + n
+    return adder`,
+      },
+      {
+        id: "py4t4",
+        title: "Сумма с *args",
+        md: `Реализуйте \`sum_of_squares(*nums)\`, которая принимает произвольное количество чисел и возвращает сумму их квадратов. \`sum_of_squares(1, 2, 3)\` → \`14\` (1² + 2² + 3²).`,
+        starter: `def sum_of_squares(*nums):
+    # ваш код с *args
+    pass
+
+print(sum_of_squares(1, 2, 3))
+print(sum_of_squares(2, 4))`,
+        tests: `
+__test("sum_of_squares(1, 2, 3) → 14", lambda: sum_of_squares(1, 2, 3), 14)
+__test("sum_of_squares(2, 4) → 20", lambda: sum_of_squares(2, 4), 20)
+__test("sum_of_squares() → 0", lambda: sum_of_squares(), 0)
+__test("sum_of_squares(5) → 25", lambda: sum_of_squares(5), 25)`,
+        solution: `def sum_of_squares(*nums):
+    return sum(x ** 2 for x in nums)`,
       },
     ],
   },
