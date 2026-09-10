@@ -10322,6 +10322,1073 @@ def read_file_good(filename):
         return f.read()  # Файл закроется автоматически`,
       },
       {
+        kind: "text",
+        md: `## Иерархия встроенных исключений
+
+Python имеет богатую иерархию встроенных исключений. Понимание этой иерархии помогает правильно обрабатывать ошибки.
+
+**Основные категории:**
+- \`BaseException\` — базовый класс для всех исключений
+- \`Exception\` — базовый класс для всех "обычных" исключений
+- \`ArithmeticError\` — арифметические ошибки (ZeroDivisionError, OverflowError)
+- \`LookupError\` — ошибки доступа (IndexError, KeyError)
+- \`ValueError\` — неверное значение
+- \`TypeError\` — неверный тип
+- \`IOError/OSError\` — ошибки ввода-вывода
+- \`RuntimeError\` — ошибки времени выполнения
+
+**Совет:** Наследуйте свои исключения от \`Exception\`, а не от \`BaseException\`. \`BaseException\` включает \`KeyboardInterrupt\`, \`SystemExit\` и \`GeneratorExit\`, которые обычно не нужно ловить.`,
+      },
+      {
+        kind: "code",
+        title: "Иерархия исключений",
+        code: `# Иерархия встроенных исключений
+print(issubclass(ValueError, Exception))  # True
+print(issubclass(ValueError, LookupError))  # False
+print(issubclass(KeyError, LookupError))  # True
+
+# Группировка исключений
+def process_data(data):
+    try:
+        value = data['key']
+        result = 100 / value
+        return int(result)
+    except LookupError:
+        # Ловит и KeyError, и IndexError
+        print("Ключ не найден")
+        return None
+    except ArithmeticError:
+        # Ловит ZeroDivisionError, OverflowError и др.
+        print("Арифметическая ошибка")
+        return None
+
+# Свои исключения с иерархией
+class AppError(Exception):
+    """Базовый класс для ошибок приложения."""
+    pass
+
+class ValidationError(AppError):
+    """Ошибки валидации."""
+    pass
+
+class AuthenticationError(AppError):
+    """Ошибки аутентификации."""
+    pass
+
+# Можно ловить все ошибки приложения
+try:
+    process()
+except AppError as e:
+    print(f"Ошибка приложения: {e}")`,
+      },
+      {
+        kind: "text",
+        md: `## Исключения и логирование
+
+В продакшене используйте модуль \`logging\` вместо \`print\` для логирования исключений. Это даёт больше контроля над форматом, уровнем логирования и местом вывода.
+
+**Уровни логирования:**
+- \`DEBUG\` — детальная информация для отладки
+- \`INFO\` — общая информация о работе
+- \`WARNING\` — предупреждения
+- \`ERROR\` — ошибки
+- \`CRITICAL\` — критические ошибки`,
+      },
+      {
+        kind: "code",
+        title: "Логирование исключений",
+        code: `import logging
+
+# Настройка логирования
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('app.log'),
+        logging.StreamHandler()
+    ]
+)
+
+logger = logging.getLogger(__name__)
+
+def process_data(data):
+    try:
+        result = 100 / data['value']
+        logger.info(f"Успешно обработано: {result}")
+        return result
+    except KeyError as e:
+        logger.error(f"Отсутствует ключ: {e}")
+        raise
+    except ZeroDivisionError as e:
+        logger.error(f"Деление на ноль: {e}")
+        raise
+    except Exception as e:
+        logger.exception(f"Неизвестная ошибка: {e}")  # Включает traceback
+        raise
+
+try:
+    process_data({'value': 0})
+except Exception:
+    pass  # Ошибка уже залогирована`,
+      },
+      {
+        kind: "text",
+        md: `## Отладка исключений: traceback
+
+Когда возникает исключение, Python создаёт **traceback** — полную информацию о том, где произошла ошибка. Это включает:
+- Тип исключения
+- Сообщение об ошибке
+- Стек вызовов (call stack)
+- Номер строки в каждом файле
+
+**Полезные инструменты:**
+- \`traceback\` модуль — работа с traceback
+- \`traceback.print_exc()\` — вывод traceback
+- \`traceback.format_exc()\` — получение traceback как строки
+- \`sys.exc_info()\` — информация о текущем исключении`,
+      },
+      {
+        kind: "code",
+        title: "Работа с traceback",
+        code: `import traceback
+import sys
+
+def function_a():
+    function_b()
+
+def function_b():
+    function_c()
+
+def function_c():
+    raise ValueError("Ошибка в function_c")
+
+try:
+    function_a()
+except ValueError as e:
+    print("Поймано исключение:", e)
+    print("\nПолный traceback:")
+    traceback.print_exc()
+    
+    # Или получить как строку
+    tb_string = traceback.format_exc()
+    print("\nTraceback как строка:")
+    print(tb_string)
+    
+    # Информация о текущем исключении
+    exc_type, exc_value, exc_tb = sys.exc_info()
+    print(f"Тип: {exc_type.__name__}")
+    print(f"Сообщение: {exc_value}")`,
+      },
+      {
+        kind: "text",
+        md: `## Исключения в асинхронном коде
+
+В асинхронном коде (\`async/await\`) исключения работают так же, но есть нюансы:
+
+1. Исключения распространяются через \`await\`
+2. \`asyncio.gather()\` может собирать исключения из нескольких задач
+3. \`asyncio.TaskGroup\` (Python 3.11+) упрощает обработку ошибок в группе задач
+
+**Важно:** Если задача завершилась с исключением, но никто не ждал её результат, исключение может быть "проглочено". Всегда проверяйте результаты задач.`,
+      },
+      {
+        kind: "code",
+        title: "Исключения в async/await",
+        code: `import asyncio
+
+async def fetch_data(url):
+    if "error" in url:
+        raise ValueError(f"Ошибка загрузки {url}")
+    await asyncio.sleep(0.1)
+    return f"Данные из {url}"
+
+async def main():
+    # Исключение распространяется через await
+    try:
+        data = await fetch_data("http://error.com")
+    except ValueError as e:
+        print(f"Поймано: {e}")
+    
+    # gather с return_exceptions=True
+    results = await asyncio.gather(
+        fetch_data("http://ok1.com"),
+        fetch_data("http://error.com"),
+        fetch_data("http://ok2.com"),
+        return_exceptions=True  # Не прерывать при ошибках
+    )
+    
+    for result in results:
+        if isinstance(result, Exception):
+            print(f"Ошибка: {result}")
+        else:
+            print(f"Успех: {result}")
+
+asyncio.run(main())`,
+      },
+      {
+        kind: "text",
+        md: `## Best practices для создания своих исключений
+
+**1. Наследуйте от подходящего базового класса**
+\`\`\`python
+class ValidationError(ValueError):  # Наследуем от ValueError
+    pass
+\`\`\`
+
+**2. Добавляйте полезную информацию**
+\`\`\`python
+class ValidationError(Exception):
+    def __init__(self, field, message, value=None):
+        self.field = field
+        self.message = message
+        self.value = value
+        super().__init__(f"{field}: {message} (получено: {value})")
+\`\`\`
+
+**3. Создавайте иерархию исключений**
+\`\`\`python
+class AppError(Exception):
+    """Базовый класс для всех ошибок приложения."""
+    pass
+
+class ValidationError(AppError):
+    """Ошибки валидации входных данных."""
+    pass
+
+class DatabaseError(AppError):
+    """Ошибки базы данных."""
+    pass
+\`\`\`
+
+**4. Документируйте исключения**
+\`\`\`python
+def process_payment(amount: float) -> None:
+    """
+    Обрабатывает платёж.
+    
+    Args:
+        amount: Сумма платежа
+        
+    Raises:
+        ValueError: Если amount <= 0
+        PaymentError: Если платёж отклонён
+    """
+    if amount <= 0:
+        raise ValueError("Сумма должна быть положительной")
+    # ...
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Исключения и типизация
+
+Используйте аннотации типов для документирования исключений, которые может бросить функция. Это помогает IDE и другим разработчикам понимать, какие ошибки ожидать.
+
+**Типизация исключений:**
+\`\`\`python
+from typing import NoReturn
+
+def fail_hard() -> NoReturn:
+    """Эта функция всегда бросает исключение."""
+    raise RuntimeError("Критическая ошибка")
+
+def safe_divide(a: float, b: float) -> float:
+    """
+    Делит a на b.
+    
+    Raises:
+        ZeroDivisionError: Если b == 0
+    """
+    return a / b
+\`\`\`
+
+**Исключения в типах:**
+\`\`\`python
+from typing import Union, Optional
+
+def parse_int(value: str) -> Union[int, None]:
+    """Возвращает int или None при ошибке."""
+    try:
+        return int(value)
+    except ValueError:
+        return None
+\`\`\``,
+      },
+      {
+        kind: "code",
+        title: "Типизация и исключения",
+        code: `from typing import NoReturn, Union, Optional
+import logging
+
+logger = logging.getLogger(__name__)
+
+def critical_failure() -> NoReturn:
+    """Всегда бросает исключение."""
+    raise RuntimeError("Критический сбой системы")
+
+def parse_int_safe(value: str) -> Optional[int]:
+    """
+    Парсит строку в int.
+    
+    Args:
+        value: Строка для парсинга
+        
+    Returns:
+        int если успешно, None если ошибка
+    """
+    try:
+        return int(value)
+    except ValueError as e:
+        logger.warning(f"Не удалось распарсить '{value}': {e}")
+        return None
+
+# Использование
+result = parse_int_safe("42")  # 42
+result = parse_int_safe("abc")  # None
+
+# Проверка типа результата
+if result is not None:
+    print(f"Успех: {result}")
+else:
+    print("Ошибка парсинга")`,
+      },
+      {
+        kind: "text",
+        md: `## Исключения и тестирование
+
+При тестировании кода важно проверять, что исключения бросаются в правильных ситуациях. Используйте \`pytest.raises\` для проверки исключений.
+
+**Тестирование исключений:**
+\`\`\`python
+import pytest
+
+def test_division_by_zero():
+    with pytest.raises(ZeroDivisionError):
+        result = 10 / 0
+
+def test_specific_exception():
+    with pytest.raises(ValueError) as exc_info:
+        process_invalid_data()
+    assert "неверные данные" in str(exc_info.value)
+\`\`\`
+
+**Тестирование своих исключений:**
+\`\`\`python
+def test_validation_error():
+    with pytest.raises(ValidationError) as exc_info:
+        validate_user("")
+    assert exc_info.value.field == "username"
+    assert "не может быть пустым" in str(exc_info.value)
+\`\`\``,
+      },
+      {
+        kind: "code",
+        title: "Тестирование исключений",
+        code: `import pytest
+
+class ValidationError(Exception):
+    def __init__(self, field, message):
+        self.field = field
+        self.message = message
+        super().__init__(f"{field}: {message}")
+
+def validate_age(age):
+    if not isinstance(age, int):
+        raise ValidationError("age", "должен быть числом")
+    if age < 0 or age > 150:
+        raise ValidationError("age", "должен быть от 0 до 150")
+    return True
+
+# Тесты
+def test_valid_age():
+    assert validate_age(25) == True
+
+def test_invalid_type():
+    with pytest.raises(ValidationError) as exc_info:
+        validate_age("25")
+    assert exc_info.value.field == "age"
+    assert "числом" in str(exc_info.value)
+
+def test_invalid_range():
+    with pytest.raises(ValidationError) as exc_info:
+        validate_age(200)
+    assert exc_info.value.field == "age"
+    assert "150" in str(exc_info.value)
+
+# Запуск тестов
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])`,
+      },
+      {
+        kind: "text",
+        md: `## Исключения и многопоточность
+
+В многопоточном коде исключения могут вести себя неожиданно. Если поток завершается с исключением, оно не распространяется в основной поток автоматически.
+
+**Проблемы:**
+- Исключения в потоках "проглатываются"
+- Основной поток не узнает об ошибке
+- Ресурсы могут не освободиться
+
+**Решения:**
+- Используйте \`concurrent.futures\` для получения результатов и исключений
+- Используйте \`queue\` для передачи исключений между потоками
+- Всегда обрабатывайте исключения в потоках`,
+      },
+      {
+        kind: "code",
+        title: "Исключения в многопоточности",
+        code: `import threading
+import concurrent.futures
+import time
+
+# ❌ ПЛОХО: исключение проглатывается
+def bad_thread():
+    raise ValueError("Ошибка в потоке")
+
+thread = threading.Thread(target=bad_thread)
+thread.start()
+thread.join()
+print("Основной поток не знает об ошибке")
+
+# ✅ ХОРОШО: используем ThreadPoolExecutor
+def good_task(x):
+    if x < 0:
+        raise ValueError(f"Отрицательное число: {x}")
+    return x * 2
+
+with concurrent.futures.ThreadPoolExecutor() as executor:
+    futures = [executor.submit(good_task, x) for x in [-1, 2, 3]]
+    
+    for future in concurrent.futures.as_completed(futures):
+        try:
+            result = future.result()
+            print(f"Успех: {result}")
+        except ValueError as e:
+            print(f"Ошибка: {e}")`,
+      },
+      {
+        kind: "text",
+        md: `## Исключения и производительность
+
+Исключения в Python относительно дороги. Не используйте их для управления потоком выполнения в горячих циклах.
+
+**Когда исключения дороги:**
+- Внутренние циклы с частыми исключениями
+- Горячие пути в производительном коде
+- Обработка ожидаемых условий через исключения
+
+**Когда исключения уместны:**
+- Исключительные ситуации (ошибки)
+- Редко возникающие условия
+- Внешние API и библиотеки
+
+**Альтернативы для производительности:**
+\`\`\`python
+# ❌ Медленно: исключения в цикле
+for item in data:
+    try:
+        process(item)
+    except ValueError:
+        continue
+
+# ✅ Быстрее: проверка перед обработкой
+for item in data:
+    if is_valid(item):
+        process(item)
+\`\`\``,
+      },
+      {
+        kind: "code",
+        title: "Производительность исключений",
+        code: `import time
+
+# Тест производительности
+def test_with_exceptions():
+    data = [1, 2, "invalid", 4, "bad", 6] * 1000
+    result = []
+    for item in data:
+        try:
+            result.append(int(item) * 2)
+        except ValueError:
+            continue
+    return result
+
+def test_with_checks():
+    data = [1, 2, "invalid", 4, "bad", 6] * 1000
+    result = []
+    for item in data:
+        if isinstance(item, int):
+            result.append(item * 2)
+    return result
+
+# Замеры
+start = time.time()
+test_with_exceptions()
+time_with_exc = time.time() - start
+
+start = time.time()
+test_with_checks()
+time_with_checks = time.time() - start
+
+print(f"С исключениями: {time_with_exc:.4f}с")
+print(f"С проверками: {time_with_checks:.4f}с")
+print(f"Разница: {((time_with_exc / time_with_checks) - 1) * 100:.1f}%")`,
+      },
+      {
+        kind: "text",
+        md: `## Исключения и безопасность
+
+Исключения могут раскрывать чувствительную информацию. Будьте осторожны с тем, что попадает в сообщения об ошибках и логи.
+
+**Риски:**
+- Пути к файлам в сообщениях
+- SQL-запросы с данными
+- Пароли и токены в traceback
+- Внутренняя структура приложения
+
+**Best practices:**
+- Не включайте чувствительные данные в сообщения исключений
+- Логируйте детали на сервере, показывайте пользователю общие сообщения
+- Используйте разные уровни логирования для разных сред
+- Регулярно проверяйте логи на наличие чувствительных данных`,
+      },
+      {
+        kind: "code",
+        title: "Безопасная обработка исключений",
+        code: `import logging
+
+logger = logging.getLogger(__name__)
+
+class DatabaseError(Exception):
+    """Ошибка базы данных."""
+    pass
+
+def unsafe_query(user_id):
+    """❌ ОПАСНО: раскрывает информацию."""
+    try:
+        # SQL запрос с user_id
+        result = db.execute(f"SELECT * FROM users WHERE id = {user_id}")
+        return result
+    except Exception as e:
+        # Раскрывает SQL и внутреннюю структуру
+        raise DatabaseError(f"Ошибка запроса: {e} для user_id={user_id}")
+
+def safe_query(user_id):
+    """✅ БЕЗОПАСНО: скрывает детали."""
+    try:
+        # Параметризованный запрос
+        result = db.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+        return result
+    except Exception as e:
+        # Логируем детали на сервере
+        logger.error(f"Database error for user {user_id}: {e}", exc_info=True)
+        # Пользователю показываем общее сообщение
+        raise DatabaseError("Не удалось получить данные пользователя")
+
+# Обработка на верхнем уровне
+def handle_request(user_id):
+    try:
+        data = safe_query(user_id)
+        return {"status": "success", "data": data}
+    except DatabaseError as e:
+        # Пользователь видит только общее сообщение
+        return {"status": "error", "message": str(e)}
+    except Exception as e:
+        # Неожиданные ошибки
+        logger.exception("Unexpected error")
+        return {"status": "error", "message": "Внутренняя ошибка сервера"}`,
+      },
+      {
+        kind: "text",
+        md: `## Исключения и ресурсы
+
+Исключения тесно связаны с управлением ресурсами (файлы, соединения, блокировки). Важно гарантировать освобождение ресурсов даже при возникновении исключений.
+
+**Паттерны управления ресурсами:**
+
+1. **try/finally** — классический подход
+2. **with statement** — современный подход (контекстные менеджеры)
+4. **Декораторы** — для повторяемой логики
+
+**Важно:** Всегда освобождайте ресурсы в \`finally\` или используйте \`with\`.`,
+      },
+      {
+        kind: "code",
+        title: "Управление ресурсами",
+        code: `import threading
+
+# ❌ ПЛОХО: ресурс может не освободиться
+def bad_lock_example():
+    lock = threading.Lock()
+    lock.acquire()
+    try:
+        # критическая секция
+        result = process_data()
+        return result
+    finally:
+        lock.release()  # Освобождается даже при исключении
+
+# ✅ ХОРОШО: используем with
+def good_lock_example():
+    with threading.Lock():
+        # критическая секция
+        return process_data()
+    # Lock автоматически освобождается
+
+# ❌ ПЛОХО: файл может не закрыться
+def bad_file_example():
+    f = open("data.txt")
+    try:
+        return f.read()
+    finally:
+        f.close()
+
+# ✅ ХОРОШО: используем with
+def good_file_example():
+    with open("data.txt") as f:
+        return f.read()
+    # Файл автоматически закрывается
+
+# Собственный контекстный менеджер
+class DatabaseConnection:
+    def __init__(self, connection_string):
+        self.connection_string = connection_string
+        self.connection = None
+    
+    def __enter__(self):
+        self.connection = connect(self.connection_string)
+        return self.connection
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.connection:
+            self.connection.close()
+        return False  # Не подавлять исключения
+
+# Использование
+with DatabaseConnection("postgresql://...") as conn:
+    result = conn.execute("SELECT * FROM users")
+# Соединение автоматически закрывается`,
+      },
+      {
+        kind: "text",
+        md: `## Исключения и транзакции
+
+В базах данных исключения играют ключевую роль в управлении транзакциями. При возникновении исключения транзакция должна быть откатана.
+
+**Паттерны транзакций:**
+\`\`\`python
+# Паттерн 1: try/except с откатом
+def transfer_money(from_acc, to_acc, amount):
+    try:
+        debit(from_acc, amount)
+        credit(to_acc, amount)
+        commit()
+    except Exception as e:
+        rollback()
+        raise
+
+# Паттерн 2: контекстный менеджер
+class Transaction:
+    def __enter__(self):
+        self.conn = get_connection()
+        return self.conn
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type:
+            self.conn.rollback()
+        else:
+            self.conn.commit()
+        self.conn.close()
+        return False
+
+# Использование
+with Transaction() as conn:
+    debit(conn, from_acc, amount)
+    credit(conn, to_acc, amount)
+# Автоматический commit или rollback
+\`\`\``,
+      },
+      {
+        kind: "code",
+        title: "Транзакции с исключениями",
+        code: `class TransactionError(Exception):
+    """Ошибка транзакции."""
+    pass
+
+class InsufficientFundsError(TransactionError):
+    """Недостаточно средств."""
+    pass
+
+class Transaction:
+    def __init__(self, db):
+        self.db = db
+        self.operations = []
+    
+    def __enter__(self):
+        self.db.begin()
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type:
+            self.db.rollback()
+            print(f"Транзакция откатана: {exc_val}")
+        else:
+            self.db.commit()
+            print("Транзакция зафиксирована")
+        return False
+    
+    def transfer(self, from_acc, to_acc, amount):
+        if get_balance(from_acc) < amount:
+            raise InsufficientFundsError(
+                f"Недостаточно средств: {get_balance(from_acc)} < {amount}"
+            )
+        debit(from_acc, amount)
+        credit(to_acc, amount)
+
+# Использование
+try:
+    with Transaction(db) as tx:
+        tx.transfer("acc1", "acc2", 100)
+        tx.transfer("acc2", "acc3", 50)
+except InsufficientFundsError as e:
+    print(f"Ошибка: {e}")
+except TransactionError as e:
+    print(f"Ошибка транзакции: {e}")`,
+      },
+      {
+        kind: "text",
+        md: `## Исключения и валидация
+
+Исключения — мощный инструмент для валидации данных. Они позволяют централизовать логику проверки и четко сигнализировать об ошибках.
+
+**Паттерны валидации:**
+
+1. **Ранняя валидация** — проверяйте данные как можно раньше
+2. **Специфичные исключения** — создавайте исключения для разных типов ошибок
+3. **Цепочки валидации** — собирайте все ошибки, а не останавливайтесь на первой
+4. **Валидация на разных уровнях** — входные данные, бизнес-логика, база данных`,
+      },
+      {
+        kind: "code",
+        title: "Валидация с исключениями",
+        code: `class ValidationError(Exception):
+    """Базовый класс для ошибок валидации."""
+    def __init__(self, field, message):
+        self.field = field
+        self.message = message
+        super().__init__(f"{field}: {message}")
+
+class MultipleValidationErrors(Exception):
+    """Множественные ошибки валидации."""
+    def __init__(self, errors):
+        self.errors = errors
+        super().__init__(f"Ошибки валидации: {len(errors)}")
+
+def validate_email(email):
+    if not email:
+        raise ValidationError("email", "не может быть пустым")
+    if "@" not in email:
+        raise ValidationError("email", "должен содержать @")
+    if "." not in email.split("@")[1]:
+        raise ValidationError("email", "неверный домен")
+    return email
+
+def validate_age(age):
+    if not isinstance(age, int):
+        raise ValidationError("age", "должен быть числом")
+    if age < 0 or age > 150:
+        raise ValidationError("age", "должен быть от 0 до 150")
+    return age
+
+# Валидация с сбором всех ошибок
+def validate_user(data):
+    errors = []
+    
+    try:
+        validate_email(data.get("email"))
+    except ValidationError as e:
+        errors.append(e)
+    
+    try:
+        validate_age(data.get("age"))
+    except ValidationError as e:
+        errors.append(e)
+    
+    if errors:
+        raise MultipleValidationErrors(errors)
+    
+    return True
+
+# Использование
+try:
+    validate_user({"email": "invalid", "age": -5})
+except MultipleValidationErrors as e:
+    for error in e.errors:
+        print(f"{error.field}: {error.message}")`,
+      },
+      {
+        kind: "text",
+        md: `## Исключения и API
+
+В API исключения используются для сигнализации об ошибках клиенту. Важно правильно маппить внутренние исключения на HTTP-статусы.
+
+**Паттерны API:**
+
+1. **Глобальный обработчик** — перехватывает все исключения на верхнем уровне
+2. **Маппинг исключений** — преобразование внутренних исключений в HTTP-ответы
+3. **Стандартные ошибки** — используйте стандартные форматы ошибок (RFC 7807)
+
+**HTTP-статусы для исключений:**
+- 400 Bad Request — ошибки валидации
+- 401 Unauthorized — проблемы аутентификации
+- 403 Forbidden — проблемы авторизации
+- 404 Not Found — ресурс не найден
+- 500 Internal Server Error — внутренние ошибки`,
+      },
+      {
+        kind: "code",
+        title: "Исключения в API",
+        code: `from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
+
+app = FastAPI()
+
+# Свои исключения
+class NotFoundError(Exception):
+    def __init__(self, resource, id):
+        self.resource = resource
+        self.id = id
+
+class ValidationError(Exception):
+    def __init__(self, field, message):
+        self.field = field
+        self.message = message
+
+# Глобальные обработчики
+@app.exception_handler(NotFoundError)
+async def not_found_handler(request: Request, exc: NotFoundError):
+    return JSONResponse(
+        status_code=404,
+        content={
+            "error": "not_found",
+            "message": f"{exc.resource} с id={exc.id} не найден"
+        }
+    )
+
+@app.exception_handler(ValidationError)
+async def validation_handler(request: Request, exc: ValidationError):
+    return JSONResponse(
+        status_code=400,
+        content={
+            "error": "validation_error",
+            "field": exc.field,
+            "message": exc.message
+        }
+    )
+
+@app.exception_handler(Exception)
+async def general_handler(request: Request, exc: Exception):
+    # Логируем детальную ошибку
+    print(f"Unexpected error: {exc}")
+    # Возвращаем общее сообщение
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "internal_error",
+            "message": "Внутренняя ошибка сервера"
+        }
+    )
+
+# Эндпоинты
+@app.get("/users/{user_id}")
+async def get_user(user_id: int):
+    user = db.get_user(user_id)
+    if not user:
+        raise NotFoundError("User", user_id)
+    return user
+
+@app.post("/users")
+async def create_user(data: dict):
+    if "email" not in data:
+        raise ValidationError("email", "обязательное поле")
+    # ...`,
+      },
+      {
+        kind: "text",
+        md: `## Исключения и конфигурация
+
+Исключения могут использоваться для управления конфигурацией приложения. Например, при отсутствии обязательных конфигурационных параметров можно бросать исключение при запуске.
+
+**Паттерны конфигурации:**
+
+1. **Fail-fast** — бросайте исключения при отсутствии обязательных параметров
+2. **Валидация конфигурации** — проверяйте значения при загрузке
+3. **Дефолтные значения** — используйте с осторожностью
+4. **Переменные окружения** — используйте для чувствительных данных`,
+      },
+      {
+        kind: "code",
+        title: "Конфигурация с исключениями",
+        code: `import os
+from typing import Optional
+
+class ConfigError(Exception):
+    """Ошибка конфигурации."""
+    pass
+
+class Config:
+    def __init__(self):
+        # Обязательные параметры
+        self.database_url = self._require_env("DATABASE_URL")
+        self.secret_key = self._require_env("SECRET_KEY")
+        
+        # Опциональные параметры с валидацией
+        self.debug = self._get_bool("DEBUG", default=False)
+        self.port = self._get_int("PORT", default=8000, min=1, max=65535)
+        
+        # Валидация
+        self._validate()
+    
+    def _require_env(self, key: str) -> str:
+        """Требует обязательную переменную окружения."""
+        value = os.getenv(key)
+        if not value:
+            raise ConfigError(f"Обязательная переменная окружения {key} не установлена")
+        return value
+    
+    def _get_bool(self, key: str, default: bool) -> bool:
+        """Получает булево значение из окружения."""
+        value = os.getenv(key)
+        if value is None:
+            return default
+        if value.lower() in ("true", "1", "yes"):
+            return True
+        if value.lower() in ("false", "0", "no"):
+            return False
+        raise ConfigError(f"Неверное булево значение для {key}: {value}")
+    
+    def _get_int(self, key: str, default: int, min: int, max: int) -> int:
+        """Получает целое число с валидацией диапазона."""
+        value = os.getenv(key)
+        if value is None:
+            return default
+        try:
+            value = int(value)
+            if not (min <= value <= max):
+                raise ConfigError(f"{key} должен быть между {min} и {max}")
+            return value
+        except ValueError:
+            raise ConfigError(f"{key} должен быть целым числом")
+    
+    def _validate(self):
+        """Дополнительная валидация конфигурации."""
+        if not self.database_url.startswith(("postgresql://", "mysql://")):
+            raise ConfigError("Неподдерживаемая база данных")
+        if len(self.secret_key) < 32:
+            raise ConfigError("SECRET_KEY должен быть не менее 32 символов")
+
+# Использование
+try:
+    config = Config()
+    print(f"Конфигурация загружена: debug={config.debug}, port={config.port}")
+except ConfigError as e:
+    print(f"Ошибка конфигурации: {e}")
+    exit(1)`,
+      },
+      {
+        kind: "text",
+        md: `## Исключения и мониторинг
+
+Исключения — важный источник информации для мониторинга приложения. Правильная обработка и логирование исключений помогает быстро выявлять и исправлять проблемы.
+
+**Паттерны мониторинга:**
+
+1. **Централизованное логирование** — собирайте логи со всех сервисов в одном месте
+2. **Метрики исключений** — отслеживайте количество и типы исключений
+3. **Алерты** — уведомляйте о критических ошибках
+4. **Трейсинг** — отслеживайте путь запроса через систему
+
+**Инструменты:**
+- **Sentry** — отслеживание ошибок в реальном времени
+- **Prometheus + Grafana** — метрики и графики
+- **ELK Stack** — централизованное логирование
+- **Jaeger** — распределённый трейсинг`,
+      },
+      {
+        kind: "code",
+        title: "Мониторинг исключений",
+        code: `import logging
+import time
+from functools import wraps
+from collections import defaultdict
+
+# Счётчик исключений
+exception_counter = defaultdict(int)
+
+def count_exceptions(func):
+    """Декоратор для подсчёта исключений."""
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            exception_counter[type(e).__name__] += 1
+            raise
+    return wrapper
+
+# Метрики исключений
+def get_exception_metrics():
+    """Возвращает метрики исключений."""
+    return {
+        "total": sum(exception_counter.values()),
+        "by_type": dict(exception_counter)
+    }
+
+# Пример использования
+@count_exceptions
+def risky_operation(x):
+    if x < 0:
+        raise ValueError("Отрицательное число")
+    if x > 100:
+        raise OverflowError("Слишком большое число")
+    return x * 2
+
+# Тестирование
+try:
+    risky_operation(-1)
+except ValueError:
+    pass
+
+try:
+    risky_operation(200)
+except OverflowError:
+    pass
+
+risky_operation(50)
+
+# Метрики
+print("Метрики исключений:")
+metrics = get_exception_metrics()
+print(f"Всего: {metrics['total']}")
+for exc_type, count in metrics['by_type'].items():
+    print(f"  {exc_type}: {count}")
+
+# Интеграция с Sentry (пример)
+import sentry_sdk
+
+sentry_sdk.init(
+    dsn="your-sentry-dsn",
+    traces_sample_rate=1.0,
+    environment="production"
+)
+
+@count_exceptions
+def monitored_operation():
+    # Операция с мониторингом
+    pass`,
+      },
+      {
         kind: "code",
         title: "Свои исключения",
         code: `def safe_int(text):
@@ -10682,6 +11749,128 @@ __test("все попытки не удались", test_all_fail, True)`,
             print(f"Попытка {attempt + 1}/{max_attempts} не удалась: {e}")
             if attempt == max_attempts - 1:
                 raise`,
+      },
+      {
+        id: "py11t7",
+        title: "Иерархия исключений",
+        md: `Создайте иерархию исключений для приложения: \`AppError\` (базовый), \`ValidationError\` (наследует от AppError), \`DatabaseError\` (наследует от AppError). \`ValidationError\` должен иметь атрибут \`field\`, \`DatabaseError\` — атрибут \`query\`. Создайте функцию \`process_data(data)\`, которая бросает \`ValidationError\` если data пустой, и \`DatabaseError\` если data содержит "error".`,
+        starter: `class AppError(Exception):
+    pass
+
+class ValidationError(AppError):
+    # ваш код
+    pass
+
+class DatabaseError(AppError):
+    # ваш код
+    pass
+
+def process_data(data):
+    # ваш код
+    pass
+
+try:
+    process_data({})
+except ValidationError as e:
+    print(f"Валидация: {e.field}")
+
+try:
+    process_data({"query": "error"})
+except DatabaseError as e:
+    print(f"БД: {e.query}")`,
+        tests: `
+def test_validation():
+    try:
+        process_data({})
+        return False
+    except ValidationError as e:
+        return hasattr(e, 'field')
+__test("ValidationError имеет field", test_validation, True)
+def test_database():
+    try:
+        process_data({"query": "error"})
+        return False
+    except DatabaseError as e:
+        return hasattr(e, 'query')
+__test("DatabaseError имеет query", test_database, True)
+def test_hierarchy():
+    return issubclass(ValidationError, AppError) and issubclass(DatabaseError, AppError)
+__test("правильная иерархия", test_hierarchy, True)`,
+        solution: `class AppError(Exception):
+    pass
+
+class ValidationError(AppError):
+    def __init__(self, field, message="Ошибка валидации"):
+        self.field = field
+        super().__init__(f"{field}: {message}")
+
+class DatabaseError(AppError):
+    def __init__(self, query, message="Ошибка базы данных"):
+        self.query = query
+        super().__init__(f"{query}: {message}")
+
+def process_data(data):
+    if not data:
+        raise ValidationError("data", "данные не могут быть пустыми")
+    if "query" in data and data["query"] == "error":
+        raise DatabaseError(data["query"], "ошибка запроса")
+    return True`,
+      },
+      {
+        id: "py11t8",
+        title: "Контекстный менеджер с логированием",
+        md: `Создайте контекстный менеджер \`LoggingContext\`, который логирует вход и выход из блока. В \`__enter__\` выводит "Вход в контекст", в \`__exit__\` выводит "Выход из контекста" и информацию об исключении, если оно было.`,
+        starter: `class LoggingContext:
+    def __enter__(self):
+        # ваш код
+        pass
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        # ваш код
+        pass
+
+with LoggingContext():
+    print("Работаю в контексте")
+
+with LoggingContext():
+    raise ValueError("Ошибка")`,
+        tests: `
+def test_enter_exit():
+    import io
+    import sys
+    captured = io.StringIO()
+    sys.stdout = captured
+    with LoggingContext():
+        pass
+    sys.stdout = sys.__stdout__
+    output = captured.getvalue()
+    return "Вход" in output and "Выход" in output
+__test("логирует вход и выход", test_enter_exit, True)
+def test_exception_logging():
+    import io
+    import sys
+    captured = io.StringIO()
+    sys.stdout = captured
+    try:
+        with LoggingContext():
+            raise ValueError("Тест")
+    except ValueError:
+        pass
+    sys.stdout = sys.__stdout__
+    output = captured.getvalue()
+    return "ValueError" in output
+__test("логирует исключение", test_exception_logging, True)`,
+        solution: `class LoggingContext:
+    def __enter__(self):
+        print("Вход в контекст")
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type:
+            print(f"Выход из контекста с исключением: {exc_type.__name__}: {exc_val}")
+        else:
+            print("Выход из контекста без ошибок")
+        return False`,
       },
     ],
   },
