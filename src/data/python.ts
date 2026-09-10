@@ -9951,9 +9951,375 @@ __test("пустой список", lambda: list(read_chunks([], 3)), [])`,
     blocks: [
       {
         kind: "text",
-        md: `## try/except
+        md: `## try/except/else/finally: полная структура
 
-Ловим **конкретные** типы исключений. \`else\` выполняется, когда исключений не было, \`finally\` — всегда (освобождение ресурсов). Свои ошибки — классы, наследующие \`Exception\`: у них бесплатные \`args\`, строковое представление и место в иерархии.`,
+\`try\` — блок кода, где может возникнуть исключение.
+\`except\` — обработка конкретного типа исключения.
+\`else\` — выполняется, если исключений **не было**.
+\`finally\` — выполняется **всегда** (даже при return или исключении).
+
+**Порядок выполнения:**
+1. Код в \`try\`
+2. Если исключение — переход в \`except\`
+3. Если исключений не было — выполнение \`else\`
+4. В конце — \`finally\` (всегда)`,
+      },
+      {
+        kind: "code",
+        title: "Полная структура try/except",
+        code: `def divide(a, b):
+    try:
+        result = a / b
+    except ZeroDivisionError:
+        print("Деление на ноль!")
+        return None
+    except TypeError as e:
+        print(f"Неверный тип: {e}")
+        return None
+    else:
+        print("Успешно!")
+        return result
+    finally:
+        print("Завершение функции")
+
+print(divide(10, 2))   # Успешно! → Завершение → 5.0
+print(divide(10, 0))   # Деление на ноль! → Завершение → None
+print(divide("10", 2)) # Неверный тип → Завершение → None`,
+      },
+      {
+        kind: "text",
+        md: `## Множественные except
+
+Можно обрабатывать несколько типов исключений в одном \`except\` или использовать несколько блоков \`except\`.
+
+**Правило:** от более специфичных к более общим. Если поставить \`except Exception\` первым — он перехватит всё, и остальные блоки не выполнятся.`,
+      },
+      {
+        kind: "code",
+        title: "Множественные except",
+        code: `def parse_value(text):
+    try:
+        value = int(text)
+        result = 100 / value
+    except ValueError:
+        return "Не число"
+    except ZeroDivisionError:
+        return "Деление на ноль"
+    except (TypeError, AttributeError) as e:
+        return f"Ошибка типа: {e}"
+    except Exception as e:
+        return f"Неизвестная ошибка: {e}"
+
+print(parse_value("10"))    # 10.0
+print(parse_value("abc"))   # Не число
+print(parse_value("0"))     # Деление на ноль
+print(parse_value(None))    # Ошибка типа`,
+      },
+      {
+        kind: "text",
+        md: `## Поднятие исключений (raise)
+
+Ключевое слово \`raise\` бросает исключение. Можно бросить встроенное исключение или своё собственное.
+
+**Когда использовать raise:**
+- Невалидные входные данные
+- Невозможное состояние программы
+- Нарушение контракта функции
+- Критические ошибки бизнес-логики`,
+      },
+      {
+        kind: "code",
+        title: "raise в действии",
+        code: `def validate_age(age):
+    if not isinstance(age, int):
+        raise TypeError("Возраст должен быть числом")
+    if age < 0:
+        raise ValueError("Возраст не может быть отрицательным")
+    if age > 150:
+        raise ValueError("Невероятный возраст")
+    return age
+
+try:
+    age = validate_age(-5)
+except ValueError as e:
+    print(f"Ошибка валидации: {e}")
+
+try:
+    age = validate_age("двадцать")
+except TypeError as e:
+    print(f"Ошибка типа: {e}")`,
+      },
+      {
+        kind: "text",
+        md: `## Свои исключения
+
+Создавайте свои классы исключений, наследуя от \`Exception\` или более специфичных классов. Свои исключения позволяют:
+- Передавать дополнительную информацию
+- Различать типы ошибок в коде
+- Создавать иерархию ошибок для вашего домена`,
+      },
+      {
+        kind: "code",
+        title: "Свои исключения с атрибутами",
+        code: `class ValidationError(Exception):
+    """Базовый класс для ошибок валидации."""
+    pass
+
+class InvalidEmailError(ValidationError):
+    """Ошибка неверного email."""
+    def __init__(self, email):
+        self.email = email
+        super().__init__(f"Неверный email: {email}")
+
+class InvalidAgeError(ValidationError):
+    """Ошибка неверного возраста."""
+    def __init__(self, age, reason):
+        self.age = age
+        self.reason = reason
+        super().__init__(f"Неверный возраст {age}: {reason}")
+
+def validate_user(email, age):
+    if "@" not in email:
+        raise InvalidEmailError(email)
+    if age < 0 or age > 150:
+        raise InvalidAgeError(age, "должен быть от 0 до 150")
+    return True
+
+try:
+    validate_user("invalid-email", 25)
+except InvalidEmailError as e:
+    print(f"Email ошибка: {e.email}")
+
+try:
+    validate_user("test@example.com", 200)
+except InvalidAgeError as e:
+    print(f"Возраст ошибка: {e.age} - {e.reason}")`,
+      },
+      {
+        kind: "text",
+        md: `## Вложенные try/except
+
+Можно вкладывать \`try/except\` друг в друга для обработки ошибок на разных уровнях.
+
+**Когда использовать:**
+- Разная логика обработки для разных уровней
+- Повторные попытки (retry)
+- Частичная обработка ошибок`,
+      },
+      {
+        kind: "code",
+        title: "Вложенные try/except",
+        code: `def process_data(data):
+    try:
+        result = []
+        for item in data:
+            try:
+                value = int(item)
+                result.append(value * 2)
+            except ValueError:
+                print(f"Пропускаю нечисло: {item}")
+                continue
+        return result
+    except Exception as e:
+        print(f"Критическая ошибка: {e}")
+        return []
+
+data = ["1", "2", "abc", "4", "def"]
+print(process_data(data))  # Пропускаю abc, def → [2, 4, 8]`,
+      },
+      {
+        kind: "text",
+        md: `## Практические паттерны обработки исключений
+
+**1. EAFP (Easier to Ask Forgiveness than Permission)**
+Сначала попробуй, потом обрабатывай ошибку. Python-стиль.
+
+**2. LBYL (Look Before You Leap)**
+Сначала проверь, потом делай. Более осторожный подход.
+
+**3. Повторные попытки (Retry)**
+Повторять операцию при временных ошибках.
+
+**4. Цепочка исключений**
+Сохранять оригинальное исключение при поднятии нового.`,
+      },
+      {
+        kind: "code",
+        title: "Паттерн EAFP vs LBYL",
+        code: `# EAFP (Python-стиль)
+def get_value_eafp(dictionary, key):
+    try:
+        return dictionary[key]
+    except KeyError:
+        return "значение по умолчанию"
+
+# LBYL (осторожный стиль)
+def get_value_lbyl(dictionary, key):
+    if key in dictionary:
+        return dictionary[key]
+    return "значение по умолчанию"
+
+data = {"name": "Alice"}
+print(get_value_eafp(data, "name"))   # Alice
+print(get_value_eafp(data, "age"))    # значение по умолчанию
+print(get_value_lbyl(data, "name"))   # Alice
+print(get_value_lbyl(data, "age"))    # значение по умолчанию`,
+      },
+      {
+        kind: "code",
+        title: "Паттерн повторных попыток",
+        code: `import time
+import random
+
+def unreliable_operation():
+    """Операция, которая может временно не работать."""
+    if random.random() < 0.7:  # 70% шанс ошибки
+        raise ConnectionError("Временная ошибка")
+    return "Успех!"
+
+def retry_with_backoff(func, max_attempts=3, base_delay=1):
+    """Повторные попытки с увеличением задержки."""
+    for attempt in range(max_attempts):
+        try:
+            return func()
+        except Exception as e:
+            if attempt == max_attempts - 1:
+                raise
+            delay = base_delay * (2 ** attempt)
+            print(f"Попытка {attempt + 1} не удалась: {e}. Жду {delay}с...")
+            time.sleep(delay)
+
+try:
+    result = retry_with_backoff(unreliable_operation, max_attempts=3)
+    print(result)
+except ConnectionError as e:
+    print(f"Все попытки не удались: {e}")`,
+      },
+      {
+        kind: "code",
+        title: "Цепочка исключений",
+        code: `class DatabaseError(Exception):
+    """Ошибка базы данных."""
+    pass
+
+class ConnectionError(DatabaseError):
+    """Ошибка подключения."""
+    pass
+
+def connect_to_db():
+    try:
+        # Имитация ошибки подключения
+        raise TimeoutError("Таймаут подключения")
+    except TimeoutError as e:
+        # Поднимаем своё исключение, сохраняя оригинальное
+        raise ConnectionError("Не удалось подключиться к БД") from e
+
+try:
+    connect_to_db()
+except ConnectionError as e:
+    print(f"Ошибка: {e}")
+    print(f"Причина: {e.__cause__}")  # Оригинальное исключение`,
+      },
+      {
+        kind: "text",
+        md: `## contextlib: утилиты для контекстных менеджеров
+
+Модуль \`contextlib\` предоставляет утилиты для работы с контекстными менеджерами:
+
+- \`@contextmanager\` — декоратор для создания контекстного менеджера из генератора
+- \`closing\` — контекстный менеджер для объектов с методом \`close()\`
+- \`suppress\` — подавление определённых исключений
+- \`redirect_stdout\` / \`redirect_stderr\` — перенаправление вывода`,
+      },
+      {
+        kind: "code",
+        title: "contextlib в действии",
+        code: `from contextlib import contextmanager, suppress, closing
+
+# @contextmanager — создание из генератора
+@contextmanager
+def timer(label):
+    import time
+    start = time.time()
+    print(f"{label}: начало")
+    try:
+        yield
+    finally:
+        elapsed = time.time() - start
+        print(f"{label}: {elapsed:.2f}с")
+
+with timer("Операция"):
+    total = sum(range(1000000))
+    print(f"Сумма: {total}")
+
+# suppress — подавление исключений
+with suppress(FileNotFoundError):
+    with open("nonexistent.txt") as f:
+        content = f.read()
+print("Файл не найден, но программа продолжает работу")
+
+# closing — для объектов с close()
+class Resource:
+    def __init__(self, name):
+        self.name = name
+        print(f"{self.name}: открыт")
+    
+    def close(self):
+        print(f"{self.name}: закрыт")
+
+with closing(Resource("Ресурс")) as r:
+    print(f"Работаю с {r.name}")`,
+      },
+      {
+        kind: "text",
+        md: `## Лучшие практики обработки исключений
+
+**1. Ловите конкретные исключения**
+Не используйте голый \`except:\` — он ловит всё, включая \`KeyboardInterrupt\` и \`SystemExit\`.
+
+**2. Не глотайте исключения молча**
+Всегда логируйте или обрабатывайте исключения. Молчаливое \`except: pass\` — зло.
+
+**3. Используйте finally для очистки ресурсов**
+Файлы, соединения, блокировки — закрывайте в \`finally\` или используйте \`with\`.
+
+**4. Поднимайте исключения на правильный уровень**
+Обрабатывайте ошибки там, где знаете, что с ними делать.
+
+**5. Документируйте исключения**
+В docstring указывайте, какие исключения может бросить функция.`,
+      },
+      {
+        kind: "code",
+        title: "Плохие и хорошие практики",
+        code: `# ❌ ПЛОХО: ловим всё молча
+def bad_function(data):
+    try:
+        result = process(data)
+    except:
+        pass  # Ошибка проглочена!
+    return result
+
+# ✅ ХОРОШО: ловим конкретное, логируем
+def good_function(data):
+    try:
+        result = process(data)
+    except ValueError as e:
+        print(f"Ошибка валидации: {e}")
+        raise
+    return result
+
+# ✅ ХОРОШО: используем with для ресурсов
+def read_file_bad(filename):
+    f = open(filename)
+    try:
+        return f.read()
+    finally:
+        f.close()
+
+def read_file_good(filename):
+    with open(filename) as f:
+        return f.read()  # Файл закроется автоматически`,
       },
       {
         kind: "code",
@@ -10036,6 +10402,39 @@ except KeyError:
         answer: 0,
         explain: "True от __exit__ означает «я разобрался» — исключение гасится, и код после with выполняется как ни в чём не бывало.",
       },
+      {
+        q: "Что делает ключевое слово raise?",
+        options: [
+          "Ловит исключение",
+          "Бросает исключение",
+          "Игнорирует исключение",
+          "Логирует исключение",
+        ],
+        answer: 1,
+        explain: "raise бросает исключение. Можно бросить встроенное или своё собственное исключение.",
+      },
+      {
+        q: "Какой паттерн обработки исключений предпочтителен в Python?",
+        options: [
+          "LBYL (Look Before You Leap)",
+          "EAFP (Easier to Ask Forgiveness than Permission)",
+          "Оба одинаково хороши",
+          "Ни один не хорош",
+        ],
+        answer: 1,
+        explain: "EAFP — Python-стиль: сначала попробуй, потом обрабатывай ошибку. Более идиоматичен и читаем.",
+      },
+      {
+        q: "Что делает @contextmanager?",
+        options: [
+          "Создаёт класс контекстного менеджера",
+          "Создаёт контекстный менеджер из генератора",
+          "Подавляет исключения",
+          "Перенаправляет вывод",
+        ],
+        answer: 1,
+        explain: "@contextmanager — декоратор из contextlib, позволяющий создать контекстный менеджер из функции с yield.",
+      },
     ],
     tasks: [
       {
@@ -10115,6 +10514,174 @@ __test("исключения не гасятся", propagates, "дошло")`,
 
     def __exit__(self, exc_type, exc, tb):
         return False`,
+      },
+      {
+        id: "py11t3",
+        title: "Безопасное деление с логированием",
+        md: `Реализуйте функцию \`safe_divide(a, b)\`, которая делит \`a\` на \`b\`. При \`ZeroDivisionError\` возвращает \`None\` и логирует ошибку. При \`TypeError\` бросает новое исключение \`ValueError\` с сообщением "Неверные типы данных". При успешном делении возвращает результат.`,
+        starter: `def safe_divide(a, b):
+    # ваш код
+    pass
+
+print(safe_divide(10, 2))      # 5.0
+print(safe_divide(10, 0))      # None (с логом)
+try:
+    safe_divide("10", 2)
+except ValueError as e:
+    print(e)  # Неверные типы данных`,
+        tests: `
+__test("успешное деление", lambda: safe_divide(10, 2), 5.0)
+__test("деление на ноль → None", lambda: safe_divide(10, 0), None)
+def type_error():
+    try:
+        safe_divide("10", 2)
+        return False
+    except ValueError as e:
+        return "Неверные типы данных" in str(e)
+__test("TypeError → ValueError", type_error, True)`,
+        solution: `def safe_divide(a, b):
+    try:
+        return a / b
+    except ZeroDivisionError:
+        print("Ошибка: деление на ноль")
+        return None
+    except TypeError:
+        raise ValueError("Неверные типы данных")`,
+      },
+      {
+        id: "py11t4",
+        title: "Своё исключение с атрибутами",
+        md: `Создайте класс исключения \`ValidationError\` с атрибутами \`field\` (имя поля) и \`message\` (сообщение). Конструктор должен принимать эти параметры. Создайте функцию \`validate_age(age)\`, которая бросает \`ValidationError\` с полем "age", если возраст меньше 0 или больше 150.`,
+        starter: `class ValidationError(Exception):
+    # ваш код
+    pass
+
+def validate_age(age):
+    # ваш код
+    pass
+
+try:
+    validate_age(-5)
+except ValidationError as e:
+    print(f"Поле: {e.field}, Ошибка: {e.message}")`,
+        tests: `
+def test_exception():
+    try:
+        validate_age(-5)
+        return False
+    except ValidationError as e:
+        return e.field == "age" and "не может быть отрицательным" in e.message
+__test("исключение с атрибутами", test_exception, True)
+def test_valid():
+    try:
+        validate_age(25)
+        return True
+    except:
+        return False
+__test("валидный возраст проходит", test_valid, True)
+def test_too_old():
+    try:
+        validate_age(200)
+        return False
+    except ValidationError as e:
+        return e.field == "age"
+__test("слишком большой возраст", test_too_old, True)`,
+        solution: `class ValidationError(Exception):
+    def __init__(self, field, message):
+        self.field = field
+        self.message = message
+        super().__init__(f"{field}: {message}")
+
+def validate_age(age):
+    if age < 0:
+        raise ValidationError("age", "не может быть отрицательным")
+    if age > 150:
+        raise ValidationError("age", "не может быть больше 150")
+    return age`,
+      },
+      {
+        id: "py11t5",
+        title: "Контекстный менеджер с таймером",
+        md: `Создайте контекстный менеджер \`Timer\`, который измеряет время выполнения кода внутри блока \`with\`. В \`__enter__\` запоминает время начала, в \`__exit__\` вычисляет прошедшее время и сохраняет его в атрибут \`elapsed\`.`,
+        starter: `import time
+
+class Timer:
+    # ваш код
+    pass
+
+with Timer() as t:
+    total = sum(range(100000))
+print(f"Время: {t.elapsed:.4f}с")`,
+        tests: `
+def test_timer():
+    with Timer() as t:
+        time.sleep(0.1)
+    return t.elapsed >= 0.1
+__test("измеряет время", test_timer, True)
+def test_attribute():
+    with Timer() as t:
+        pass
+    return hasattr(t, 'elapsed')
+__test("имеет атрибут elapsed", test_attribute, True)`,
+        solution: `import time
+
+class Timer:
+    def __enter__(self):
+        self.start = time.time()
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.elapsed = time.time() - self.start
+        return False`,
+      },
+      {
+        id: "py11t6",
+        title: "Повторные попытки с логированием",
+        md: `Реализуйте функцию \`retry_with_log(func, max_attempts=3)\`, которая вызывает \`func()\` до \`max_attempts\` раз. При каждой неудаче логирует номер попытки и ошибку. Если все попытки не удались, бросает последнее исключение.`,
+        starter: `def retry_with_log(func, max_attempts=3):
+    # ваш код
+    pass
+
+import random
+def flaky_function():
+    if random.random() < 0.7:
+        raise ValueError("Временная ошибка")
+    return "Успех!"
+
+result = retry_with_log(flaky_function, max_attempts=5)
+print(result)`,
+        tests: `
+def test_success():
+    def always_ok():
+        return "OK"
+    return retry_with_log(always_ok, max_attempts=3)
+__test("успех с первой попытки", test_success, "OK")
+def test_retry():
+    attempts = [0]
+    def sometimes_fail():
+        attempts[0] += 1
+        if attempts[0] < 3:
+            raise ValueError("Ошибка")
+        return "OK"
+    return retry_with_log(sometimes_fail, max_attempts=5)
+__test("успех после повторных попыток", test_retry, "OK")
+def test_all_fail():
+    def always_fail():
+        raise ValueError("Всегда ошибка")
+    try:
+        retry_with_log(always_fail, max_attempts=3)
+        return False
+    except ValueError:
+        return True
+__test("все попытки не удались", test_all_fail, True)`,
+        solution: `def retry_with_log(func, max_attempts=3):
+    for attempt in range(max_attempts):
+        try:
+            return func()
+        except Exception as e:
+            print(f"Попытка {attempt + 1}/{max_attempts} не удалась: {e}")
+            if attempt == max_attempts - 1:
+                raise`,
       },
     ],
   },
