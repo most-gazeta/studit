@@ -3270,50 +3270,446 @@ def distance(p1, p2):
     language: "python",
     title: "Строки и форматирование",
     subtitle: "Методы строк, f-строки с форматами, неизменяемость",
-    minutes: 25,
+    minutes: 30,
     blocks: [
       {
         kind: "text",
-        md: `Строки **неизменяемы**: любой метод возвращает новую строку. Набор методов покрывает почти всё: \`strip\`, \`split\`, \`join\`, \`replace\`, \`upper/lower\`, \`startswith\`. f-строки умеют не только подставлять, но и **форматировать**: \`:>.2f\`, запятые в числах, выравнивание.`,
+        md: `## Строки: текст в Python 📝
+
+Строки — это **неизменяемые** последовательности символов. Любая операция со строкой создаёт **новую** строку, оригинал не меняется.
+
+**Аналогия:** Представьте книгу. Вы не можете изменить напечатанное слово, но можете:
+- Сделать копию страницы и изменить её
+- Вырезать часть текста
+- Склеить несколько страниц
+
+**Важно:** Строки неизменяемы — \`s[0] = "П"\` вызовет \`TypeError\`.`,
+      },
+      {
+        kind: "text",
+        md: `## Основные методы строк
+
+Python предоставляет множество встроенных методов для работы со строками. Они делятся на несколько категорий:
+
+**Регистр:**
+- \`upper()\` — в верхний регистр
+- \`lower()\` — в нижний регистр
+- \`title()\` — каждое слово с заглавной буквы
+- \`capitalize()\` — первое слово с заглавной
+- \`swapcase()\` — поменять регистр
+
+**Удаление пробелов:**
+- \`strip()\` — пробелы с обоих концов
+- \`lstrip()\` — слева
+- \`rstrip()\` — справа`,
       },
       {
         kind: "code",
-        title: "Методы и f-форматы",
-        code: `s = "  Привет, мир  "
-print(s.strip())                   # "Привет, мир"
-print("a,b,c".split(","))          # ['a', 'b', 'c']
-print("-".join(["2026", "02"]))    # 2026-02
-print("код".upper(), "КОД".lower())
+        title: "Методы регистра и удаления пробелов",
+        code: `text = "  Привет, мир!  "
 
-pi = 3.14159
-print(f"пи ≈ {pi:.2f}")            # пи ≈ 3.14
-print(f"{1234567:,}")              # 1,234,567
-print(f"{'текст':>10}|")           # выравнивание вправо`,
+# Регистр
+print(text.upper())           # "  ПРИВЕТ, МИР!  "
+print(text.lower())           # "  привет, мир!  "
+print(text.title())           # "  Привет, Мир!  "
+print(text.capitalize())      # "  привет, мир!  "
+
+# Удаление пробелов
+print(text.strip())           # "Привет, мир!"
+print(text.lstrip())          # "Привет, мир!  "
+print(text.rstrip())          # "  Привет, мир!"
+
+# Комбинирование
+print(text.strip().upper())   # "ПРИВЕТ, МИР!"`,
+      },
+      {
+        kind: "text",
+        md: `## Поиск и замена
+
+**Поиск:**
+- \`find(sub)\` — индекс первого вхождения (-1 если не найдено)
+- \`rfind(sub)\` — индекс последнего вхождения
+- \`index(sub)\` — как find, но вызывает ValueError если не найдено
+- \`count(sub)\` — количество вхождений
+
+**Замена:**
+- \`replace(old, new)\` — заменить все вхождения
+- \`replace(old, new, count)\` — заменить первые count вхождений`,
+      },
+      {
+        kind: "code",
+        title: "Поиск и замена",
+        code: `text = "Привет, мир! Привет, Python!"
+
+# Поиск
+print(text.find("Привет"))        # 0 (первое вхождение)
+print(text.rfind("Привет"))       # 15 (последнее вхождение)
+print(text.find("Java"))          # -1 (не найдено)
+# print(text.index("Java"))       # ValueError!
+
+print(text.count("Привет"))       # 2
+
+# Замена
+print(text.replace("мир", "Вселенная"))
+# "Привет, Вселенная! Привет, Python!"
+
+print(text.replace("Привет", "Здравствуй", 1))
+# "Здравствуй, мир! Привет, Python!" (только первое)`,
+      },
+      {
+        kind: "text",
+        md: `## Разделение и соединение
+
+**Разделение:**
+- \`split(sep)\` — разделить по разделителю в список
+- \`rsplit(sep)\` — разделить справа
+- \`splitlines()\` — разделить по строкам
+
+**Соединение:**
+- \`join(iterable)\` — соединить список строк с разделителем
+
+**Важно:** \`join\` — метод строки, а не списка! \`"-".join(list)\``,
+      },
+      {
+        kind: "code",
+        title: "Разделение и соединение",
+        code: `# split — разделение
+csv_line = "Иван,25,Москва"
+parts = csv_line.split(",")
+print(parts)  # ['Иван', '25', 'Москва']
+
+text = "один два  три   четыре"
+words = text.split()  # по пробелам (игнорирует множественные)
+print(words)  # ['один', 'два', 'три', 'четыре']
+
+# splitlines
+multiline = """первая строка
+вторая строка
+третья строка"""
+lines = multiline.splitlines()
+print(lines)
+
+# join — соединение
+words = ["2026", "02", "14"]
+date = "-".join(words)
+print(date)  # "2026-02-14"
+
+path = "/".join(["home", "user", "documents"])
+print(path)  # "home/user/documents"
+
+# join с пустой строкой
+letters = ["P", "y", "t", "h", "o", "n"]
+word = "".join(letters)
+print(word)  # "Python"`,
+      },
+      {
+        kind: "text",
+        md: `## Проверки строк
+
+Python предоставляет множество методов для проверки содержимого строки:
+
+**Тип содержимого:**
+- \`isdigit()\` — только цифры
+- \`isalpha()\` — только буквы
+- \`isalnum()\` — буквы или цифры
+- \`isspace()\` — только пробелы
+
+**Регистр:**
+- \`isupper()\` — все буквы в верхнем регистре
+- \`islower()\` — все буквы в нижнем регистре
+- \`istitle()\` — каждое слово с заглавной буквы
+
+**Начало/конец:**
+- \`startswith(prefix)\` — начинается с
+- \`endswith(suffix)\` — заканчивается на`,
+      },
+      {
+        kind: "code",
+        title: "Проверки строк",
+        code: `# Тип содержимого
+print("123".isdigit())      # True
+print("abc".isalpha())      # True
+print("abc123".isalnum())   # True
+print("   ".isspace())      # True
+
+print("123abc".isdigit())   # False
+print("abc 123".isalpha())  # False
+
+# Регистр
+print("ПРИВЕТ".isupper())   # True
+print("привет".islower())   # True
+print("Привет Мир".istitle())  # True
+
+# Начало/конец
+filename = "document.pdf"
+print(filename.endswith(".pdf"))  # True
+print(filename.startswith("doc"))  # True
+
+# Практическое применение
+files = ["image.png", "doc.pdf", "video.mp4", "readme.txt"]
+pdf_files = [f for f in files if f.endswith(".pdf")]
+print(pdf_files)  # ['doc.pdf']`,
+      },
+      {
+        kind: "text",
+        md: `## f-строки: форматирование 🎨
+
+f-строки позволяют не только подставлять значения, но и **форматировать** их.
+
+**Синтаксис:**
+\`\`\`python
+f"{выражение:формат}"
+\`\`\`
+
+**Форматы для чисел:**
+- \`:d\` — целое число
+- \`:f\` — дробное число
+- \`:.<n>f\` — n знаков после запятой
+- \`:,\` — разделитель тысяч
+- \`:x\` — шестнадцатеричное
+- \`:o\` — восьмеричное
+- \`:b\` — двоичное`,
+      },
+      {
+        kind: "code",
+        title: "Форматирование чисел",
+        code: `pi = 3.141592653589793
+price = 1234567.89
+
+# Дробные числа
+print(f"π ≈ {pi:.2f}")        # π ≈ 3.14
+print(f"π ≈ {pi:.4f}")        # π ≈ 3.1416
+
+# Разделитель тысяч
+print(f"Цена: {price:,}")     # Цена: 1,234,567.89
+print(f"Цена: {price:,.2f}")  # Цена: 1,234,567.89
+
+# Проценты
+rate = 0.1234
+print(f"Ставка: {rate:.1%}")  # Ставка: 12.3%
+
+# Системы счисления
+num = 255
+print(f"Двоичное: {num:b}")   # 11111111
+print(f"Восьмеричное: {num:o}")  # 377
+print(f"Шестнадцатеричное: {num:x}")  # ff
+
+# Знак числа
+print(f"{5:+d}")   # +5
+print(f"{-5:+d}")  # -5`,
+      },
+      {
+        kind: "text",
+        md: `## Выравнивание в f-строках
+
+**Синтаксис:**
+\`\`\`python
+f"{значение:<ширина}"  # выравнивание влево
+f"{значение:>ширина}"  # выравнивание вправо
+f"{значение:^ширина}"  # по центру
+\`\`\`
+
+**Заполнитель:**
+\`\`\`python
+f"{значение:*^10}"  # заполнить звёздочками
+\`\`\``,
+      },
+      {
+        kind: "code",
+        title: "Выравнивание текста",
+        code: `name = "Python"
+version = 3.11
+
+# Выравнивание
+print(f"|{name:<10}|")  # |Python    |
+print(f"|{name:>10}|")  # |    Python|
+print(f"|{name:^10}|")  # |  Python  |
+
+# Заполнитель
+print(f"{name:*^10}")   # ***Python***
+print(f"{name:-<10}")   # Python----
+print(f"{name:->10}")   # ----Python
+
+# Практический пример: таблица
+print(f"{'Имя':<10} {'Возраст':>7}")
+print("-" * 18)
+print(f"{'Алиса':<10} {25:>7}")
+print(f"{'Боб':<10} {30:>7}")
+print(f"{'Виктор':<10} {28:>7}")`,
+      },
+      {
+        kind: "text",
+        md: `## Многострочные строки
+
+Для длинных строк или строк с переносами используйте тройные кавычки:
+
+\`\`\`python
+text = """Первая строка
+Вторая строка
+Третья строка"""
+\`\`\`
+
+**Важно:** переносы строк сохраняются как есть!`,
+      },
+      {
+        kind: "code",
+        title: "Многострочные строки",
+        code: `# Обычная многострочная строка
+poem = """Розы красные,
+Фиалки синие,
+Python прекрасный,
+И ты тоже."""
+print(poem)
+
+# SQL-запрос
+query = """
+SELECT name, age
+FROM users
+WHERE age > 18
+ORDER BY name
+"""
+print(query)
+
+# Экранирование не нужно
+text = """Он сказал: "Привет!"
+Она ответила: 'Здравствуй!'"""
+print(text)`,
+      },
+      {
+        kind: "text",
+        md: `## Сырые строки (raw strings)
+
+Обычные строки обрабатывают escape-последовательности:
+- \`\\n\` — перенос строки
+- \`\\t\` — табуляция
+- \`\\\\\` — обратный слэш
+
+**Сырые строки** (r"...") не обрабатывают escape-последовательности. Полезно для регулярных выражений и путей Windows.`,
+      },
+      {
+        kind: "code",
+        title: "Сырые строки",
+        code: `# Обычная строка
+print("Первая строка\\nВторая строка")
+# Первая строка
+# Вторая строка
+
+# Сырая строка
+print(r"Первая строка\\nВторая строка")
+# Первая строка\\nВторая строка
+
+# Пути Windows
+path = r"C:\\Users\\User\\Documents"
+print(path)  # C:\\Users\\User\\Documents
+
+# Регулярные выражения
+pattern = r"\\d+\\.\\d+"  # проще, чем "\\d+\\.\\d+"
+print(pattern)  # \\d+\\.\\d+`,
       },
       {
         kind: "text",
         md: `## Неизменяемость на практике
 
-\`s[0] = "П"\` — ошибка \`TypeError\`. Хочется «изменить» — собираем новую строку: конкатенацией, \`replace\` или срезом.`,
+Строки неизменяемы: \`s[0] = "П"\` вызовет \`TypeError\`.
+
+**Как «изменить» строку?**
+1. Конкатенация: \`"П" + s[1:]\`
+2. \`replace()\`: \`s.replace("п", "П")\`
+3. Срезы: \`s[:1] + "П" + s[2:]\`
+4. f-строки: \`f"П{s[1:]}"\``,
       },
       {
         kind: "code",
-        title: "Собираем новую строку",
+        title: "Работа с неизменяемыми строками",
         code: `word = "питон"
-print(word[::-1])       # нотип — разворот срезом
-print("тон" in word)    # True — подстрока
 
-# word[0] = "П"         # TypeError!
-print("П" + word[1:])   # Питон
+# word[0] = "П"  # TypeError!
 
-# эффективно склеить много частей:
-parts = ["2026", "02", "14"]
-print(".".join(parts))  # 2026.02.14`,
+# Способ 1: конкатенация
+new_word = "П" + word[1:]
+print(new_word)  # Питон
+
+# Способ 2: replace
+new_word = word.replace("п", "П")
+print(new_word)  # Питон
+
+# Способ 3: срезы
+new_word = word[:1].upper() + word[1:]
+print(new_word)  # Питон
+
+# Способ 4: f-строка
+new_word = f"{word[0].upper()}{word[1:]}"
+print(new_word)  # Питон
+
+# Разворот строки
+print(word[::-1])  # нотип
+
+# Проверка подстроки
+print("тон" in word)  # True`,
       },
       {
         kind: "warn",
         title: "Конкатенация в цикле — O(n²)",
-        md: `Каждое \`result += piece\` создаёт новую строку и копирует всё накопленное. Для сотен частей собирайте список и делайте \`"".join(parts)\` — линейно.`,
+        md: `Каждое \`result += piece\` создаёт новую строку и копирует всё накопленное. Для сотен частей собирайте список и делайте \`"".join(parts)\` — линейно.
+
+**Плохо:**
+\`\`\`python
+result = ""
+for word in words:
+    result += word + " "  # O(n²)
+\`\`\`
+
+**Хорошо:**
+\`\`\`python
+result = " ".join(words)  # O(n)
+\`\`\``,
+      },
+      {
+        kind: "code",
+        title: "Эффективное склеивание строк",
+        code: `# Плохо: O(n²)
+words = ["Python", "is", "awesome"] * 1000
+result = ""
+for word in words:
+    result += word + " "
+
+# Хорошо: O(n)
+words = ["Python", "is", "awesome"] * 1000
+result = " ".join(words)
+
+# Ещё лучше: генератор
+result = " ".join(word for word in words if len(word) > 2)
+
+# join с любыми итерируемыми объектами
+numbers = [1, 2, 3, 4, 5]
+result = ", ".join(str(n) for n in numbers)
+print(result)  # "1, 2, 3, 4, 5"`,
+      },
+      {
+        kind: "tip",
+        title: "Полезные приёмы",
+        md: `**1. Удаление символов из строки:**
+\`\`\`python
+text = "Hello, World!"
+cleaned = text.replace(",", "").replace("!", "")
+# или
+import re
+cleaned = re.sub(r'[,!]', '', text)
+\`\`\`
+
+**2. Подсчёт слов:**
+\`\`\`python
+text = "Python is awesome and powerful"
+words = text.split()
+print(len(words))  # 5
+\`\`\`
+
+**3. Проверка палиндрома:**
+\`\`\`python
+def is_palindrome(s):
+    cleaned = s.replace(" ", "").lower()
+    return cleaned == cleaned[::-1]
+\`\`\``,
       },
     ],
     quiz: [
@@ -3333,6 +3729,45 @@ print(".".join(parts))  # 2026.02.14`,
         ],
         answer: 1,
         explain: "s[0] = 'X' даст TypeError. Любое «изменение» — это создание новой строки.",
+      },
+      {
+        q: "Что вернёт 'hello world'.split()?",
+        options: [
+          "['hello', 'world']",
+          "['hello world']",
+          "['h', 'e', 'l', 'l', 'o', ' ', 'w', 'o', 'r', 'l', 'd']",
+          "ошибку",
+        ],
+        answer: 0,
+        explain: "split() без аргументов разделяет строку по пробелам, игнорируя множественные пробелы.",
+      },
+      {
+        q: "Что делает метод strip()?",
+        options: [
+          "Удаляет все пробелы из строки",
+          "Удаляет пробелы с начала и конца строки",
+          "Заменяет пробелы на другие символы",
+          "Подсчитывает количество пробелов",
+        ],
+        answer: 1,
+        explain: "strip() удаляет пробелы (и другие символы) только с начала и конца строки, не затрагивая середину.",
+      },
+      {
+        q: "Что вернёт f'{3.14159:.2f}'?",
+        options: ["'3.14'", "'3.14159'", "'3.1'", "'3.15'"],
+        answer: 0,
+        explain: "Формат :.2f округляет число до 2 знаков после запятой: 3.14159 → 3.14.",
+      },
+      {
+        q: "Как проверить, что строка заканчивается на '.pdf'?",
+        options: [
+          "s.endswith('.pdf')",
+          "s.endswith('.pdf') == True",
+          "s[-4:] == '.pdf'",
+          "Все варианты верны",
+        ],
+        answer: 3,
+        explain: "Все три способа работают. endswith() — самый читаемый, срез — самый гибкий.",
       },
     ],
     tasks: [
@@ -3372,6 +3807,69 @@ __test("a_b_c → aBC", lambda: snake_to_camel("a_b_c"), "aBC")`,
         solution: `def snake_to_camel(s):
     parts = s.split("_")
     return parts[0] + "".join(p.title() for p in parts[1:])`,
+      },
+      {
+        id: "py7t3",
+        title: "Подсчёт слов",
+        md: `Реализуйте \`count_words(text)\`, которая возвращает количество слов в тексте. Слова разделены пробелами. Игнорируйте множественные пробелы.`,
+        starter: `def count_words(text):
+    # ваш код
+    pass
+
+print(count_words("Python is awesome"))
+print(count_words("  hello   world  "))`,
+        tests: `
+__test("count_words('Python is awesome') → 3", lambda: count_words("Python is awesome"), 3)
+__test("count_words('  hello   world  ') → 2", lambda: count_words("  hello   world  "), 2)
+__test("count_words('') → 0", lambda: count_words(""), 0)
+__test("count_words('one') → 1", lambda: count_words("one"), 1)`,
+        solution: `def count_words(text):
+    return len(text.split())`,
+      },
+      {
+        id: "py7t4",
+        title: "Форматирование таблицы",
+        md: `Реализуйте \`format_table(headers, rows)\`, которая возвращает строку с отформатированной таблицей. Столбцы выравниваются по ширине заголовка.`,
+        starter: `def format_table(headers, rows):
+    # ваш код
+    pass
+
+headers = ["Имя", "Возраст"]
+rows = [["Алиса", 25], ["Боб", 30]]
+print(format_table(headers, rows))`,
+        tests: `
+__test("простая таблица", lambda: "Алиса" in format_table(["Имя", "Возраст"], [["Алиса", 25]]), True)
+__test("заголовки в таблице", lambda: "Имя" in format_table(["Имя", "Возраст"], [["Алиса", 25]]), True)`,
+        solution: `def format_table(headers, rows):
+    widths = [len(str(h)) for h in headers]
+    for row in rows:
+        for i, cell in enumerate(row):
+            widths[i] = max(widths[i], len(str(cell)))
+    
+    result = " | ".join(h.ljust(widths[i]) for i, h in enumerate(headers))
+    result += "\\n" + "-+-".join("-" * w for w in widths)
+    for row in rows:
+        result += "\\n" + " | ".join(str(cell).ljust(widths[i]) for i, cell in enumerate(row))
+    return result`,
+      },
+      {
+        id: "py7t5",
+        title: "Удаление гласных",
+        md: `Реализуйте \`remove_vowels(text)\`, которая удаляет все гласные буквы (а, е, ё, и, о, у, ы, э, ю, я) из текста. Регистр не важен.`,
+        starter: `def remove_vowels(text):
+    # ваш код
+    pass
+
+print(remove_vowels("Привет, мир!"))
+print(remove_vowels("Python is awesome"))`,
+        tests: `
+__test("remove_vowels('Привет') → 'Првт'", lambda: remove_vowels("Привет"), "Првт")
+__test("remove_vowels('Python') → 'Pythn'", lambda: remove_vowels("Python"), "Pythn")
+__test("remove_vowels('AEIOU') → ''", lambda: remove_vowels("AEIOU"), "")
+__test("remove_vowels('bcdfg') → 'bcdfg'", lambda: remove_vowels("bcdfg"), "bcdfg")`,
+        solution: `def remove_vowels(text):
+    vowels = "аеёиоуыэюяАЕЁИОУЫЭЮЯ"
+    return "".join(ch for ch in text if ch not in vowels)`,
       },
     ],
   },
