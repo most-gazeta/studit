@@ -1967,6 +1967,491 @@ else:
       },
       {
         kind: "text",
+        md: `## Оператор pass: пустая операция
+
+Иногда нужно создать цикл или условие без тела (например, как заглушку). Используйте \`pass\` — пустую операцию, которая ничего не делает.
+
+**Когда использовать:**
+- Создание заглушек для будущих функций
+- Пустые циклы (ожидание события)
+- Минимальная реализация интерфейса
+
+**Примеры:**
+\`\`\`python
+# Пустой цикл (бесконечное ожидание)
+while True:
+    pass  # ждём события
+
+# Заглушка для будущей функции
+def my_function():
+    pass  # реализуем позже
+
+# Пустой класс
+class MyClass:
+    pass  # добавим методы позже
+\`\`\``,
+      },
+      {
+        kind: "code",
+        title: "Примеры использования pass",
+        code: `# Пустой цикл ожидания
+import time
+
+print("Ожидание...")
+while True:
+    pass  # бесконечный цикл (в реальности используйте time.sleep())
+    # break  # раскомментируйте для выхода
+
+# Заглушка для будущей логики
+def process_data(data):
+    pass  # реализуем обработку позже
+
+# Пустой обработчик исключений
+try:
+    risky_operation()
+except Exception:
+    pass  # игнорируем все ошибки (плохая практика!)
+
+# Минимальная реализация
+class BaseHandler:
+    def handle(self):
+        pass  # переопределяется в наследниках
+
+class ConcreteHandler(BaseHandler):
+    def handle(self):
+        print("Обработка выполнена")`,
+      },
+      {
+        kind: "text",
+        md: `## Паттерны использования циклов
+
+Рассмотрим распространённые паттерны (шаблоны) использования циклов.
+
+### 1. Подсчёт элементов
+\`\`\`python
+count = 0
+for item in items:
+    if condition(item):
+        count += 1
+\`\`\`
+
+### 2. Поиск элемента
+\`\`\`python
+found = False
+for item in items:
+    if item == target:
+        found = True
+        break
+\`\`\`
+
+### 3. Фильтрация
+\`\`\`python
+result = []
+for item in items:
+    if condition(item):
+        result.append(item)
+\`\`\`
+
+### 4. Трансформация
+\`\`\`python
+result = []
+for item in items:
+    result.append(transform(item))
+\`\`\``,
+      },
+      {
+        kind: "code",
+        title: "Паттерны циклов в действии",
+        code: `# Паттерн 1: Подсчёт
+numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+even_count = 0
+for num in numbers:
+    if num % 2 == 0:
+        even_count += 1
+print(f"Чётных чисел: {even_count}")  # 5
+
+# Паттерн 2: Поиск
+words = ["python", "java", "javascript", "c++"]
+target = "python"
+found_index = -1
+for i, word in enumerate(words):
+    if word == target:
+        found_index = i
+        break
+print(f"Найдено на позиции: {found_index}")  # 0
+
+# Паттерн 3: Фильтрация
+numbers = [1, -2, 3, -4, 5, -6]
+positives = []
+for num in numbers:
+    if num > 0:
+        positives.append(num)
+print(positives)  # [1, 3, 5]
+
+# Паттерн 4: Трансформация
+words = ["hello", "world"]
+upper_words = []
+for word in words:
+    upper_words.append(word.upper())
+print(upper_words)  # ['HELLO', 'WORLD']
+
+# Более питоничные версии (используйте их!)
+even_count = sum(1 for num in numbers if num % 2 == 0)
+positives = [num for num in numbers if num > 0]
+upper_words = [word.upper() for word in words]`,
+      },
+      {
+        kind: "text",
+        md: `## Оптимизация циклов
+
+Циклы могут быть медленными, особенно вложенные. Рассмотрим способы оптимизации.
+
+### 1. Избегайте лишних вычислений в цикле
+\`\`\`python
+# Плохо: вычисление в каждой итерации
+for i in range(len(data)):
+    result = expensive_function(data[i])
+
+# Хорошо: вычисление один раз
+length = len(data)
+for i in range(length):
+    result = expensive_function(data[i])
+\`\`\`
+
+### 2. Используйте генераторы для больших данных
+\`\`\`python
+# Плохо: создаёт список в памяти
+squares = [x**2 for x in range(1000000)]
+
+# Хорошо: генератор (ленивые вычисления)
+squares = (x**2 for x in range(1000000))
+\`\`\`
+
+### 3. Избегайте вложенных циклов, когда возможно
+\`\`\`python
+# Плохо: O(n²)
+for item1 in list1:
+    for item2 in list2:
+        if item1 == item2:
+            ...
+
+# Хорошо: O(n) с использованием множеств
+set2 = set(list2)
+for item1 in list1:
+    if item1 in set2:
+        ...
+\`\`\``,
+      },
+      {
+        kind: "code",
+        title: "Оптимизация циклов",
+        code: `import time
+
+# Пример 1: Избегайте лишних вычислений
+data = list(range(10000))
+
+# Плохо
+start = time.time()
+for i in range(len(data)):
+    _ = data[i] * 2
+print(f"Плохо: {time.time() - start:.4f} сек")
+
+# Хорошо
+start = time.time()
+length = len(data)
+for i in range(length):
+    _ = data[i] * 2
+print(f"Хорошо: {time.time() - start:.4f} сек")
+
+# Пример 2: Генераторы vs списки
+# Создаём генератор (не занимает память)
+def generate_numbers(n):
+    for i in range(n):
+        yield i * 2
+
+# Используем генератор
+total = sum(generate_numbers(1000000))
+print(f"Сумма: {total}")
+
+# Пример 3: Использование множеств для поиска
+list1 = list(range(1000))
+list2 = list(range(500, 1500))
+
+# Плохо: O(n²)
+start = time.time()
+common = []
+for item1 in list1:
+    for item2 in list2:
+        if item1 == item2:
+            common.append(item1)
+print(f"Плохо: {time.time() - start:.4f} сек")
+
+# Хорошо: O(n)
+start = time.time()
+set2 = set(list2)
+common = [item for item in list1 if item in set2]
+print(f"Хорошо: {time.time() - start:.4f} сек")`,
+      },
+      {
+        kind: "text",
+        md: `## Распространённые ошибки
+
+Рассмотрим типичные ошибки при работе с циклами.
+
+### 1. Изменение коллекции во время итерации
+\`\`\`python
+# Ошибка!
+numbers = [1, 2, 3, 4, 5]
+for num in numbers:
+    if num % 2 == 0:
+        numbers.remove(num)  # изменяем коллекцию!
+
+# Правильно: создайте новую коллекцию
+numbers = [1, 2, 3, 4, 5]
+numbers = [num for num in numbers if num % 2 != 0]
+\`\`\`
+
+### 2. Забытый счётчик в while
+\`\`\`python
+# Ошибка: бесконечный цикл
+count = 0
+while count < 5:
+    print(count)
+    # забыли count += 1
+
+# Правильно
+count = 0
+while count < 5:
+    print(count)
+    count += 1
+\`\`\`
+
+### 3. Неправильное использование range
+\`\`\`python
+# Ошибка: range(5) даёт 0-4, а не 1-5
+for i in range(5):
+    print(i)  # 0, 1, 2, 3, 4
+
+# Правильно: range(1, 6) для 1-5
+for i in range(1, 6):
+    print(i)  # 1, 2, 3, 4, 5
+\`\`\``,
+      },
+      {
+        kind: "code",
+        title: "Избегаем распространённых ошибок",
+        code: `# Ошибка 1: Изменение коллекции во время итерации
+numbers = [1, 2, 3, 4, 5, 6]
+
+# ❌ Плохо: изменяем список во время итерации
+# for num in numbers:
+#     if num % 2 == 0:
+#         numbers.remove(num)
+
+# ✅ Хорошо: создаём новый список
+odd_numbers = [num for num in numbers if num % 2 != 0]
+print(odd_numbers)  # [1, 3, 5]
+
+# ✅ Или итерируем по копии
+for num in numbers[:]:  # [:] создаёт копию
+    if num % 2 == 0:
+        numbers.remove(num)
+print(numbers)  # [1, 3, 5]
+
+# Ошибка 2: Забытый счётчик
+# ❌ Плохо: бесконечный цикл
+# count = 0
+# while count < 5:
+#     print(count)
+
+# ✅ Хорошо: не забываем увеличивать счётчик
+count = 0
+while count < 5:
+    print(count, end=" ")
+    count += 1
+print()
+
+# Ошибка 3: Неправильный диапазон
+# ❌ Плохо: range(5) даёт 0-4
+# for i in range(5):
+#     print(i + 1)  # 1, 2, 3, 4, 5 (неудобно)
+
+# ✅ Хорошо: range(1, 6) для 1-5
+for i in range(1, 6):
+    print(i, end=" ")  # 1, 2, 3, 4, 5
+print()
+
+# Практический пример: безопасное удаление
+users = ["Alice", "Bob", "Charlie", "David"]
+users_to_remove = ["Bob", "David"]
+
+# ✅ Правильный способ
+for user in users_to_remove:
+    if user in users:
+        users.remove(user)
+print(users)  # ['Alice', 'Charlie']`,
+      },
+      {
+        kind: "text",
+        md: `## Циклы и области видимости
+
+Переменные, созданные в цикле, остаются доступными после его завершения.
+
+**Важно:** В Python нет блочной области видимости (как в JavaScript с \`let\`). Переменные из циклов доступны во всей функции.
+
+\`\`\`python
+# Переменная из цикла доступна после него
+for i in range(5):
+    x = i * 2
+print(x)  # 8 — доступна!
+
+# Это может привести к ошибкам
+if condition:
+    result = "найдено"
+print(result)  # Ошибка, если condition был False!
+\`\`\`
+
+**Совет:** Инициализируйте переменные до цикла или условия.`,
+      },
+      {
+        kind: "code",
+        title: "Области видимости в циклах",
+        code: `# Переменные из цикла доступны после него
+for i in range(5):
+    value = i * 2
+print(f"Последнее значение: {value}")  # 8
+
+# Переменная из if тоже доступна
+found = False
+for num in [1, 3, 5, 8, 9]:
+    if num % 2 == 0:
+        found = True
+        even_num = num
+        break
+
+if found:
+    print(f"Найдено чётное число: {even_num}")  # 8
+
+# ❌ Опасно: переменная может не существовать
+# if False:
+#     result = "значение"
+# print(result)  # NameError!
+
+# ✅ Правильно: инициализируйте переменные
+result = None
+if False:
+    result = "значение"
+print(result)  # None
+
+# Практический пример: поиск с инициализацией
+target = 10
+found_index = -1  # инициализируем до цикла
+for i, num in enumerate([1, 3, 5, 7, 9]):
+    if num == target:
+        found_index = i
+        break
+
+if found_index != -1:
+    print(f"Найдено на позиции {found_index}")
+else:
+    print("Не найдено")`,
+      },
+      {
+        kind: "text",
+        md: `## Практические советы
+
+### 1. Используйте enumerate вместо ручного счётчика
+\`\`\`python
+# ❌ Плохо
+i = 0
+for item in items:
+    print(f"{i}: {item}")
+    i += 1
+
+# ✅ Хорошо
+for i, item in enumerate(items):
+    print(f"{i}: {item}")
+\`\`\`
+
+### 2. Используйте zip для параллельной итерации
+\`\`\`python
+names = ["Alice", "Bob", "Charlie"]
+ages = [25, 30, 35]
+
+for name, age in zip(names, ages):
+    print(f"{name}: {age}")
+\`\`\`
+
+### 3. Используйте генераторы для больших данных
+\`\`\`python
+# ✅ Не загружает всё в память
+for line in open("huge_file.txt"):
+    process(line)
+\`\`\`
+
+### 4. Избегайте вложенных циклов, когда возможно
+\`\`\`python
+# ✅ Используйте словари или множества
+lookup = {item.id: item for item in items}
+for other in others:
+    if other.id in lookup:
+        ...
+\`\`\``,
+      },
+      {
+        kind: "code",
+        title: "Практические советы в действии",
+        code: `# Совет 1: enumerate вместо ручного счётчика
+fruits = ["яблоко", "банан", "апельсин"]
+
+# ❌ Плохо
+i = 0
+for fruit in fruits:
+    print(f"{i}: {fruit}")
+    i += 1
+
+# ✅ Хорошо
+for i, fruit in enumerate(fruits):
+    print(f"{i}: {fruit}")
+
+# Совет 2: zip для параллельной итерации
+names = ["Алиса", "Боб", "Чарли"]
+ages = [25, 30, 35]
+cities = ["Москва", "СПб", "Казань"]
+
+for name, age, city in zip(names, ages, cities):
+    print(f"{name}, {age} лет, {city}")
+
+# Совет 3: reversed для обратного порядка
+numbers = [1, 2, 3, 4, 5]
+for num in reversed(numbers):
+    print(num, end=" ")  # 5 4 3 2 1
+print()
+
+# Совет 4: sorted для сортированной итерации
+numbers = [3, 1, 4, 1, 5, 9]
+for num in sorted(numbers):
+    print(num, end=" ")  # 1 1 3 4 5 9
+print()
+
+# Совет 5: Избегайте вложенных циклов
+# ❌ Плохо: O(n²)
+users = [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}]
+orders = [{"user_id": 1, "amount": 100}, {"user_id": 2, "amount": 200}]
+
+for user in users:
+    for order in orders:
+        if user["id"] == order["user_id"]:
+            print(f"{user['name']}: {order['amount']}")
+
+# ✅ Хорошо: O(n) с использованием словаря
+user_map = {user["id"]: user["name"] for user in users}
+for order in orders:
+    if order["user_id"] in user_map:
+        print(f"{user_map[order['user_id']]}: {order['amount']}"`,
+      },
+      {
+        kind: "text",
         md: `## Вложенные циклы
 
 Циклы можно вкладывать друг в друга. Внутренний цикл выполняется полностью для каждой итерации внешнего.
