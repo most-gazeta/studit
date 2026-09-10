@@ -4058,7 +4058,9 @@ list[start:stop:step]
 - \`stop\` — конечный индекс (**не включается**!)
 - \`step\` — шаг (по умолчанию 1)
 
-**Важно:** \`stop\` не включается в результат!`,
+**Важно:** \`stop\` не включается в результат!
+
+**Аналогия:** Представьте, что вы режете торт. Вы делаете разрез в определённых местах, но сам разрез не входит в кусок торта.`,
       },
       {
         kind: "code",
@@ -4160,6 +4162,580 @@ b = [1, 2, 3]
 c = [1, 2, 4]
 print(a == b)  # True
 print(a == c)  # False`,
+      },
+      {
+        kind: "text",
+        md: `## List comprehensions: генераторы списков 🚀
+
+List comprehension — это компактный способ создания списков. Синтаксис:
+
+\`\`\`python
+[выражение for элемент in коллекция if условие]
+\`\`\`
+
+Это **идиома номер один** в Python — вы будете видеть её постоянно.
+
+**Преимущества:**
+- Более читаемый код
+- Быстрее, чем цикл for с append
+- Питоничный стиль`,
+      },
+      {
+        kind: "code",
+        title: "List comprehensions в примерах",
+        code: `# Квадраты чисел
+squares = [x ** 2 for x in range(6)]
+print(squares)  # [0, 1, 4, 9, 16, 25]
+
+# Эквивалент с циклом
+squares = []
+for x in range(6):
+    squares.append(x ** 2)
+
+# С условием (фильтрация)
+evens = [x for x in range(10) if x % 2 == 0]
+print(evens)  # [0, 2, 4, 6, 8]
+
+# Длина строк
+words = ["код", "ещё код", "питон"]
+lengths = [len(w) for w in words]
+print(lengths)  # [3, 7, 5]
+
+# Преобразование типов
+strings = ["1", "2", "3", "4"]
+numbers = [int(s) for s in strings]
+print(numbers)  # [1, 2, 3, 4]
+
+# Фильтрация и преобразование
+prices = [120, 45, 300, 78]
+discounted = [p * 0.9 for p in prices if p > 100]
+print(discounted)  # [108.0, 270.0]
+
+# Вложенный list comprehension (матрица)
+matrix = [[i * j for j in range(1, 4)] for i in range(1, 4)]
+print(matrix)  # [[1, 2, 3], [2, 4, 6], [3, 6, 9]]
+
+# Плоский список из вложенного
+nested = [[1, 2], [3, 4], [5, 6]]
+flat = [item for sublist in nested for item in sublist]
+print(flat)  # [1, 2, 3, 4, 5, 6]`,
+      },
+      {
+        kind: "text",
+        md: `## Вложенные списки и матрицы
+
+Списки могут содержать другие списки. Это называется вложенными списками или матрицами.
+
+**Доступ к элементам:**
+\`\`\`python
+matrix[i][j]  # элемент в строке i, столбце j
+\`\`\`
+
+**Когда использовать:**
+- Матрицы и таблицы
+- Деревья и графы
+- Многомерные данные`,
+      },
+      {
+        kind: "code",
+        title: "Работа с матрицами",
+        code: `# Создание матрицы 3x3
+matrix = [
+    [1, 2, 3],
+    [4, 5, 6],
+    [7, 8, 9]
+]
+
+# Доступ к элементам
+print(matrix[0])  # [1, 2, 3] — первая строка
+print(matrix[0][0])  # 1 — первый элемент первой строки
+print(matrix[1][2])  # 6 — третий элемент второй строки
+print(matrix[-1][-1])  # 9 — последний элемент
+
+# Изменение элемента
+matrix[1][1] = 99
+print(matrix)
+
+# Обход матрицы
+for row in matrix:
+    for item in row:
+        print(item, end=" ")
+    print()
+
+# Транспонирование матрицы
+transposed = [[matrix[j][i] for j in range(len(matrix))] 
+              for i in range(len(matrix[0]))]
+print(transposed)
+
+# Сумма всех элементов
+total = sum(sum(row) for row in matrix)
+print(f"Сумма: {total}")
+
+# Поиск максимального элемента
+max_val = max(max(row) for row in matrix)
+print(f"Максимум: {max_val}")`,
+      },
+      {
+        kind: "text",
+        md: `## Копирование списков
+
+**Важно:** \`b = a\` создаёт **ссылку** на тот же список, а не копию!
+
+**Поверхностная копия:**
+- \`a[:]\` — срез
+- \`list(a)\` — функция list
+- \`a.copy()\` — метод copy
+
+**Глубокая копия:**
+- \`copy.deepcopy(a)\` — для вложенных списков
+
+**Когда что использовать:**
+- Поверхностная копия — для простых списков
+- Глубокая копия — для вложенных структур`,
+      },
+      {
+        kind: "code",
+        title: "Копирование списков",
+        code: `# ❌ Плохо: создаётся ссылка, а не копия
+a = [1, 2, 3]
+b = a
+b.append(4)
+print(a)  # [1, 2, 3, 4] — a тоже изменился!
+
+# ✅ Хорошо: поверхностная копия
+a = [1, 2, 3]
+b = a[:]  # или list(a), или a.copy()
+b.append(4)
+print(a)  # [1, 2, 3] — a не изменился
+print(b)  # [1, 2, 3, 4]
+
+# Проблема с вложенными списками
+matrix = [[1, 2], [3, 4]]
+shallow_copy = matrix[:]
+shallow_copy[0][0] = 99
+print(matrix[0][0])  # 99 — изменился и оригинал!
+
+# ✅ Глубокая копия
+import copy
+matrix = [[1, 2], [3, 4]]
+deep_copy = copy.deepcopy(matrix)
+deep_copy[0][0] = 99
+print(matrix[0][0])  # 1 — оригинал не изменился
+
+# Сравнение методов копирования
+import time
+
+# Поверхностная копия (быстро)
+large_list = list(range(1000000))
+start = time.time()
+copy1 = large_list[:]
+print(f"Срез: {time.time() - start:.4f} сек")
+
+# Глубокая копия (медленно для простых списков)
+start = time.time()
+copy2 = copy.deepcopy(large_list)
+print(f"Deepcopy: {time.time() - start:.4f} сек")`,
+      },
+      {
+        kind: "text",
+        md: `## Производительность списков
+
+**Временная сложность операций:**
+- \`append()\` — O(1) — быстро
+- \`pop()\` (с конца) — O(1) — быстро
+- \`pop(i)\` (с начала) — O(n) — медленно
+- \`insert(i, x)\` — O(n) — медленно
+- \`in\` (проверка) — O(n) — медленно
+- \`sort()\` — O(n log n)
+
+**Советы по оптимизации:**
+- Используйте \`append()\` вместо \`insert(0, x)\`
+- Для частых операций с началом используйте \`collections.deque\`
+- Для проверок вхождения используйте \`set\` вместо \`list\``,
+      },
+      {
+        kind: "code",
+        title: "Оптимизация списков",
+        code: `import time
+
+# ❌ Плохо: вставка в начало (медленно)
+numbers = []
+start = time.time()
+for i in range(10000):
+    numbers.insert(0, i)
+print(f"Insert в начало: {time.time() - start:.4f} сек")
+
+# ✅ Хорошо: append + reverse (быстро)
+numbers = []
+start = time.time()
+for i in range(10000):
+    numbers.append(i)
+numbers.reverse()
+print(f"Append + reverse: {time.time() - start:.4f} сек")
+
+# ❌ Плохо: проверка вхождения в списке (медленно)
+large_list = list(range(1000000))
+start = time.time()
+if 999999 in large_list:
+    pass
+print(f"Поиск в списке: {time.time() - start:.4f} сек")
+
+# ✅ Хорошо: проверка в множестве (быстро)
+large_set = set(range(1000000))
+start = time.time()
+if 999999 in large_set:
+    pass
+print(f"Поиск в множестве: {time.time() - start:.4f} сек")
+
+# Использование deque для очередей
+from collections import deque
+
+queue = deque()
+start = time.time()
+for i in range(10000):
+    queue.appendleft(i)  # быстро, O(1)
+print(f"Deque appendleft: {time.time() - start:.4f} сек")`,
+      },
+      {
+        kind: "text",
+        md: `## Распространённые ошибки
+
+### 1. Изменение списка во время итерации
+\`\`\`python
+# ❌ Ошибка!
+numbers = [1, 2, 3, 4, 5]
+for num in numbers:
+    if num % 2 == 0:
+        numbers.remove(num)  # изменяем список!
+
+# ✅ Правильно: создайте новый список
+numbers = [1, 2, 3, 4, 5]
+numbers = [num for num in numbers if num % 2 != 0]
+\`\`\`
+
+### 2. Забытый return в функции
+\`\`\`python
+def get_even(numbers):
+    result = [n for n in numbers if n % 2 == 0]
+    # забыли return!
+
+print(get_even([1, 2, 3, 4]))  # None
+\`\`\`
+
+### 3. Неправильное копирование
+\`\`\`python
+a = [1, 2, 3]
+b = a  # это ссылка, а не копия!
+b.append(4)
+print(a)  # [1, 2, 3, 4] — a тоже изменился!
+\`\`\``,
+      },
+      {
+        kind: "code",
+        title: "Избегаем распространённых ошибок",
+        code: `# Ошибка 1: Изменение списка во время итерации
+numbers = [1, 2, 3, 4, 5, 6]
+
+# ❌ Плохо: изменяем список во время итерации
+# for num in numbers:
+#     if num % 2 == 0:
+#         numbers.remove(num)
+
+# ✅ Хорошо: создаём новый список
+odd_numbers = [num for num in numbers if num % 2 != 0]
+print(odd_numbers)  # [1, 3, 5]
+
+# ✅ Или итерируем по копии
+for num in numbers[:]:  # [:] создаёт копию
+    if num % 2 == 0:
+        numbers.remove(num)
+print(numbers)  # [1, 3, 5]
+
+# Ошибка 2: Забытый return
+def get_even(numbers):
+    result = [n for n in numbers if n % 2 == 0]
+    return result  # не забываем return!
+
+print(get_even([1, 2, 3, 4]))  # [2, 4]
+
+# Ошибка 3: Неправильное копирование
+a = [1, 2, 3]
+
+# ❌ Плохо: создаётся ссылка
+# b = a
+
+# ✅ Хорошо: создаётся копия
+b = a[:]  # или list(a), или a.copy()
+b.append(4)
+print(a)  # [1, 2, 3] — не изменился
+print(b)  # [1, 2, 3, 4]
+
+# Практический пример: безопасное удаление
+users = ["Alice", "Bob", "Charlie", "David"]
+users_to_remove = ["Bob", "David"]
+
+# ✅ Правильный способ
+for user in users_to_remove:
+    if user in users:
+        users.remove(user)
+print(users)  # ['Alice', 'Charlie']`,
+      },
+      {
+        kind: "text",
+        md: `## Сортировка с ключевой функцией
+
+Метод \`sort()\` и функция \`sorted()\` принимают параметр \`key\` — функцию, которая возвращает значение для сортировки.
+
+**Примеры:**
+- Сортировка по длине строки
+- Сортировка по второму элементу кортежа
+- Сортировка по атрибуту объекта
+- Сортировка в обратном порядке`,
+      },
+      {
+        kind: "code",
+        title: "Сортировка с ключевой функцией",
+        code: `# Сортировка по длине строки
+words = ["python", "java", "c", "javascript", "go"]
+words.sort(key=len)
+print(words)  # ['c', 'go', 'java', 'python', 'javascript']
+
+# Сортировка по второму элементу кортежа
+pairs = [(1, 'b'), (2, 'a'), (3, 'c')]
+pairs.sort(key=lambda x: x[1])
+print(pairs)  # [(2, 'a'), (1, 'b'), (3, 'c')]
+
+# Сортировка в обратном порядке
+numbers = [3, 1, 4, 1, 5, 9]
+numbers.sort(reverse=True)
+print(numbers)  # [9, 5, 4, 3, 1, 1]
+
+# Сортировка объектов по атрибуту
+class Person:
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
+    
+    def __repr__(self):
+        return f"{self.name}({self.age})"
+
+people = [Person("Alice", 30), Person("Bob", 25), Person("Charlie", 35)]
+people.sort(key=lambda p: p.age)
+print(people)  # [Bob(25), Alice(30), Charlie(35)]
+
+# Множественная сортировка
+people.sort(key=lambda p: (p.age, p.name))
+print(people)  # сортировка по возрасту, затем по имени`,
+      },
+      {
+        kind: "text",
+        md: `## Работа с несколькими списками
+
+Часто нужно работать с несколькими списками одновременно. Python предоставляет удобные инструменты для этого.
+
+**Функция zip():**
+- Объединяет несколько списков в кортежи
+- Прекращает работу, когда самый короткий список заканчивается
+- Используется для параллельной итерации
+
+**Функция map():**
+- Применяет функцию к каждому элементу
+- Возвращает итератор (ленивый)
+- Может работать с несколькими списками`,
+      },
+      {
+        kind: "code",
+        title: "Работа с несколькими списками",
+        code: `# zip — параллельная итерация
+names = ["Alice", "Bob", "Charlie"]
+ages = [25, 30, 35]
+cities = ["NYC", "LA", "Chicago"]
+
+for name, age, city in zip(names, ages, cities):
+    print(f"{name}, {age}, {city}")
+
+# Создание словаря из двух списков
+keys = ["a", "b", "c"]
+values = [1, 2, 3]
+dictionary = dict(zip(keys, values))
+print(dictionary)  # {'a': 1, 'b': 2, 'c': 3}
+
+# map — применение функции
+numbers = [1, 2, 3, 4, 5]
+squared = list(map(lambda x: x ** 2, numbers))
+print(squared)  # [1, 4, 9, 16, 25]
+
+# map с несколькими списками
+list1 = [1, 2, 3]
+list2 = [10, 20, 30]
+sums = list(map(lambda x, y: x + y, list1, list2))
+print(sums)  # [11, 22, 33]
+
+# filter — фильтрация
+numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+evens = list(filter(lambda x: x % 2 == 0, numbers))
+print(evens)  # [2, 4, 6, 8, 10]
+
+# Комбинация map и filter
+numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+result = list(map(lambda x: x ** 2, filter(lambda x: x % 2 == 0, numbers)))
+print(result)  # [4, 16, 36, 64, 100]`,
+      },
+      {
+        kind: "text",
+        md: `## Статистические методы
+
+Python предоставляет встроенные функции для статистических вычислений.
+
+**Встроенные функции:**
+- \`len()\` — количество элементов
+- \`sum()\` — сумма элементов
+- \`min()\` — минимальный элемент
+- \`max()\` — максимальный элемент
+- \`sorted()\` — отсортированный список
+
+**Модуль statistics:**
+- \`mean()\` — среднее значение
+- \`median()\` — медиана
+- \`mode()\` — мода
+- \`stdev()\` — стандартное отклонение`,
+      },
+      {
+        kind: "code",
+        title: "Статистические методы",
+        code: `# Встроенные функции
+numbers = [3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5]
+
+print(f"Количество: {len(numbers)}")  # 11
+print(f"Сумма: {sum(numbers)}")  # 44
+print(f"Минимум: {min(numbers)}")  # 1
+print(f"Максимум: {max(numbers)}")  # 9
+
+# Среднее значение (вручную)
+average = sum(numbers) / len(numbers)
+print(f"Среднее: {average:.2f}")  # 4.00
+
+# Модуль statistics
+import statistics
+
+numbers = [3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5]
+
+print(f"Среднее: {statistics.mean(numbers):.2f}")  # 4.00
+print(f"Медиана: {statistics.median(numbers)}")  # 4
+print(f"Мода: {statistics.mode(numbers)}")  # 5
+print(f"Стд. отклонение: {statistics.stdev(numbers):.2f}")  # 2.49
+
+# Работа с пустым списком
+empty = []
+print(f"Сумма пустого: {sum(empty, 0)}")  # 0 (начальное значение)
+print(f"Максимум с default: {max(empty, default=0)}")  # 0`,
+      },
+      {
+        kind: "text",
+        md: `## Модуль itertools
+
+Модуль \`itertools\` предоставляет мощные инструменты для работы с итерируемыми объектами.
+
+**Полезные функции:**
+- \`chain()\` — объединение нескольких итераторов
+- \`cycle()\` — бесконечное повторение
+- \`repeat()\` — повторение значения
+- \`combinations()\` — все комбинации
+- \`permutations()\` — все перестановки
+- \`groupby()\` — группировка элементов`,
+      },
+      {
+        kind: "code",
+        title: "Модуль itertools",
+        code: `from itertools import chain, cycle, repeat, combinations, permutations
+
+# chain — объединение итераторов
+list1 = [1, 2, 3]
+list2 = [4, 5, 6]
+list3 = [7, 8, 9]
+combined = list(chain(list1, list2, list3))
+print(combined)  # [1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+# cycle — бесконечное повторение
+counter = 0
+for item in cycle(['A', 'B', 'C']):
+    print(item, end=" ")
+    counter += 1
+    if counter >= 9:
+        break
+print()  # A B C A B C A B C
+
+# repeat — повторение значения
+repeated = list(repeat('X', 5))
+print(repeated)  # ['X', 'X', 'X', 'X', 'X']
+
+# combinations — все комбинации
+items = ['A', 'B', 'C', 'D']
+combos = list(combinations(items, 2))
+print(combos)  # [('A', 'B'), ('A', 'C'), ('A', 'D'), ('B', 'C'), ('B', 'D'), ('C', 'D')]
+
+# permutations — все перестановки
+perms = list(permutations(['A', 'B', 'C']))
+print(perms)  # [('A', 'B', 'C'), ('A', 'C', 'B'), ('B', 'A', 'C'), ...]
+
+# groupby — группировка
+from itertools import groupby
+
+data = [('A', 1), ('A', 2), ('B', 3), ('B', 4), ('A', 5)]
+for key, group in groupby(data, lambda x: x[0]):
+    print(f"{key}: {list(group)}")`,
+      },
+      {
+        kind: "text",
+        md: `## Практические советы
+
+### 1. Используйте list comprehension вместо цикла
+\`\`\`python
+# ❌ Плохо
+squares = []
+for x in range(10):
+    squares.append(x ** 2)
+
+# ✅ Хорошо
+squares = [x ** 2 for x in range(10)]
+\`\`\`
+
+### 2. Используйте enumerate для индексов
+\`\`\`python
+# ❌ Плохо
+i = 0
+for item in items:
+    print(f"{i}: {item}")
+    i += 1
+
+# ✅ Хорошо
+for i, item in enumerate(items):
+    print(f"{i}: {item}")
+\`\`\`
+
+### 3. Используйте zip для параллельной итерации
+\`\`\`python
+names = ["Alice", "Bob", "Charlie"]
+ages = [25, 30, 35]
+
+for name, age in zip(names, ages):
+    print(f"{name}: {age}")
+\`\`\`
+
+### 4. Избегайте вложенных списков, когда возможно
+\`\`\`python
+# ❌ Плохо: O(n²)
+for item1 in list1:
+    for item2 in list2:
+        if item1 == item2:
+            ...
+
+# ✅ Хорошо: O(n) с использованием множеств
+set2 = set(list2)
+for item1 in list1:
+    if item1 in set2:
+        ...
+\`\`\``,
       },
       {
         kind: "text",
