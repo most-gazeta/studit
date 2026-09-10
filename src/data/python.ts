@@ -7506,6 +7506,337 @@ greet("Алиса")
         kind: "code",
         title: "Декоратор для кэширования",
         code: `def cache(func):
+    """Декоратор для кэширования результатов"""
+    memo = {}
+    
+    def wrapper(*args):
+        if args not in memo:
+            memo[args] = func(*args)
+        return memo[args]
+    
+    return wrapper
+
+@cache
+def fibonacci(n):
+    if n < 2:
+        return n
+    return fibonacci(n - 1) + fibonacci(n - 2)
+
+# Без кэша: очень медленно
+# С кэшем: мгновенно
+print(fibonacci(50))  # 12586269025`,
+      },
+      {
+        kind: "text",
+        md: `## Вложенные декораторы
+
+Декораторы можно применять несколько раз. Они применяются **снизу вверх**.
+
+\`\`\`python
+@decorator1
+@decorator2
+def function():
+    pass
+
+# Эквивалентно:
+function = decorator1(decorator2(function))
+\`\`\``,
+      },
+      {
+        kind: "code",
+        title: "Вложенные декораторы",
+        code: `def bold(func):
+    def wrapper(*args, **kwargs):
+        result = func(*args, **kwargs)
+        return f"<b>{result}</b>"
+    return wrapper
+
+def italic(func):
+    def wrapper(*args, **kwargs):
+        result = func(*args, **kwargs)
+        return f"<i>{result}</i>"
+    return wrapper
+
+@bold
+@italic
+def greet(name):
+    return f"Привет, {name}!"
+
+print(greet("Алиса"))
+# <b><i>Привет, Алиса!</i></b>
+
+# Порядок применения: сначала italic, потом bold`,
+      },
+      {
+        kind: "text",
+        md: `## Декораторы классов
+
+Декораторы можно применять не только к функциям, но и к классам. Декоратор класса принимает класс и возвращает новый класс или модифицирует существующий.
+
+**Применения:**
+- Добавление методов к классу
+- Модификация поведения всех методов
+- Регистрация классов в реестре`,
+      },
+      {
+        kind: "code",
+        title: "Декоратор класса",
+        code: `def add_repr(cls):
+    """Добавляет метод __repr__ к классу"""
+    def __repr__(self):
+        attrs = ", ".join(f"{k}={v!r}" for k, v in self.__dict__.items())
+        return f"{cls.__name__}({attrs})"
+    cls.__repr__ = __repr__
+    return cls
+
+@add_repr
+class Person:
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
+
+person = Person("Алиса", 30)
+print(person)  # Person(name='Алиса', age=30)`,
+      },
+      {
+        kind: "text",
+        md: `## Практические паттерны декораторов
+
+### 1. Декоратор с сохранением состояния
+\`\`\`python
+def counter(func):
+    count = 0
+    def wrapper(*args, **kwargs):
+        nonlocal count
+        count += 1
+        print(f"Вызов #{count}")
+        return func(*args, **kwargs)
+    return wrapper
+\`\`\`
+
+### 2. Декоратор для проверки типов
+\`\`\`python
+def type_check(*types):
+    def decorator(func):
+        def wrapper(*args):
+            for arg, expected_type in zip(args, types):
+                if not isinstance(arg, expected_type):
+                    raise TypeError(f"Ожидался {expected_type}")
+            return func(*args)
+        return wrapper
+    return decorator
+\`\`\`
+
+### 3. Декоратор для повторных попыток
+\`\`\`python
+def retry(max_attempts=3):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            for attempt in range(max_attempts):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    if attempt == max_attempts - 1:
+                        raise
+                    print(f"Попытка {attempt + 1} не удалась")
+        return wrapper
+    return decorator
+\`\`\``,
+      },
+      {
+        kind: "code",
+        title: "Практические примеры",
+        code: `# Паттерн 1: Декоратор с сохранением состояния
+def call_counter(func):
+    count = 0
+    def wrapper(*args, **kwargs):
+        nonlocal count
+        count += 1
+        wrapper.calls = count
+        return func(*args, **kwargs)
+    wrapper.calls = 0
+    return wrapper
+
+@call_counter
+def greet(name):
+    return f"Привет, {name}!"
+
+greet("Алиса")
+greet("Боб")
+print(f"Функция вызвана {greet.calls} раз")  # 2
+
+# Паттерн 2: Декоратор для проверки типов
+def validate_types(*expected_types):
+    def decorator(func):
+        def wrapper(*args):
+            for arg, expected in zip(args, expected_types):
+                if not isinstance(arg, expected):
+                    raise TypeError(f"Ожидался {expected.__name__}, получено {type(arg).__name__}")
+            return func(*args)
+        return wrapper
+    return decorator
+
+@validate_types(str, int)
+def create_user(name, age):
+    return {"name": name, "age": age}
+
+print(create_user("Алиса", 30))  # OK
+# create_user(123, "тридцать")  # TypeError!
+
+# Паттерн 3: Декоратор для повторных попыток
+import random
+
+def retry(max_attempts=3):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            for attempt in range(max_attempts):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    print(f"Попытка {attempt + 1} не удалась: {e}")
+                    if attempt == max_attempts - 1:
+                        raise
+        return wrapper
+    return decorator
+
+@retry(max_attempts=3)
+def unstable_function():
+    if random.random() < 0.7:  # 70% шанс ошибки
+        raise ValueError("Случайная ошибка")
+    return "Успех!"
+
+try:
+    result = unstable_function()
+    print(result)
+except ValueError:
+    print("Все попытки не удались")`,
+      },
+      {
+        kind: "text",
+        md: `## Декораторы в реальных проектах
+
+**Веб-фреймворки (Flask, FastAPI):**
+\`\`\`python
+@app.route("/api/users")
+def get_users():
+    return users
+\`\`\`
+
+**ORM (SQLAlchemy, Django ORM):**
+\`\`\`python
+@dataclass
+class User:
+    name: str
+    age: int
+\`\`\`
+
+**Тестирование (pytest):**
+\`\`\`python
+@pytest.fixture
+def sample_data():
+    return [1, 2, 3]
+\`\`\`
+
+**Асинхронное программирование:**
+\`\`\`python
+@asyncio.coroutine
+def async_function():
+    yield from asyncio.sleep(1)
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Распространённые ошибки
+
+### 1. Забытый return в wrapper
+\`\`\`python
+def my_decorator(func):
+    def wrapper(*args, **kwargs):
+        func(*args, **kwargs)
+        # забыли return!
+    return wrapper
+\`\`\`
+
+### 2. Неиспользование functools.wraps
+\`\`\`python
+def my_decorator(func):
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+    # wrapper теряет метаданные func
+    return wrapper
+\`\`\`
+
+### 3. Неправильный порядок декораторов
+\`\`\`python
+@decorator1
+@decorator2
+def func():
+    pass
+
+# Применяется: decorator1(decorator2(func))
+# Порядок важен!
+\`\`\``,
+      },
+      {
+        kind: "code",
+        title: "Избегаем распространённых ошибок",
+        code: `from functools import wraps
+
+# ❌ Плохо: забытый return
+def bad_decorator(func):
+    def wrapper(*args, **kwargs):
+        print("Вызов функции")
+        func(*args, **kwargs)
+        # забыли return!
+    return wrapper
+
+@bad_decorator
+def get_value():
+    return 42
+
+print(get_value())  # None!
+
+# ✅ Хорошо: правильный return
+def good_decorator(func):
+    @wraps(func)  # сохраняем метаданные
+    def wrapper(*args, **kwargs):
+        print("Вызов функции")
+        return func(*args, **kwargs)  # возвращаем результат
+    return wrapper
+
+@good_decorator
+def get_value():
+    return 42
+
+print(get_value())  # 42
+
+# ❌ Плохо: неправильный порядок
+def uppercase(func):
+    def wrapper(*args, **kwargs):
+        result = func(*args, **kwargs)
+        return result.upper()
+    return wrapper
+
+def exclaim(func):
+    def wrapper(*args, **kwargs):
+        result = func(*args, **kwargs)
+        return result + "!"
+    return wrapper
+
+@uppercase
+@exclaim
+def greet(name):
+    return f"привет, {name}"
+
+print(greet("алиса"))  # ПРИВЕТ, АЛИСА!
+
+# Порядок: сначала exclaim, потом uppercase
+# "привет, алиса" -> "привет, алиса!" -> "ПРИВЕТ, АЛИСА!"`,
+      },
+      {
+        kind: "code",
+        title: "Декоратор для кэширования",
+        code: `def cache(func):
     """Простой декоратор для кэширования результатов"""
     memo = {}
     
