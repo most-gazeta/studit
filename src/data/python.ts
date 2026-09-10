@@ -8554,6 +8554,404 @@ class MyClass:
         pass
 \`\`\``,
       },
+      {
+        kind: "text",
+        md: `## Множественное наследование
+
+Python поддерживает множественное наследование — класс может наследовать от нескольких родительских классов.
+
+**Синтаксис:**
+\`\`\`python
+class Child(Parent1, Parent2, Parent3):
+    pass
+\`\`\`
+
+**MRO (Method Resolution Order)** — порядок поиска методов. Python использует алгоритм C3 линеаризации.
+
+**Проблема ромбовидного наследования:**
+\`\`\`python
+class A:
+    def method(self):
+        return "A"
+
+class B(A):
+    pass
+
+class C(A):
+    def method(self):
+        return "C"
+
+class D(B, C):
+    pass
+
+d = D()
+print(d.method())  # "C" — по MRO: D -> B -> C -> A
+\`\`\`
+
+Используйте \`ClassName.mro()\` для просмотра порядка.`,
+      },
+      {
+        kind: "code",
+        title: "Множественное наследование",
+        code: `class Flyable:
+    def fly(self):
+        return "Лечу по небу"
+
+class Swimmable:
+    def swim(self):
+        return "Плыву по воде"
+
+class Duck(Flyable, Swimmable):
+    def quack(self):
+        return "Кря!"
+
+duck = Duck()
+print(duck.fly())    # Лечу по небу
+print(duck.swim())   # Плыву по воде
+print(duck.quack())  # Кря!
+
+# Проверка MRO
+print(Duck.mro())
+# [Duck, Flyable, Swimmable, object]`,
+      },
+      {
+        kind: "text",
+        md: `## Data Classes (dataclasses)
+
+Модуль \`dataclasses\` (Python 3.7+) упрощает создание классов для хранения данных. Автоматически генерирует \`__init__\`, \`__repr__\`, \`__eq__\`.
+
+**Преимущества:**
+- Меньше шаблонного кода
+- Автоматическая генерация методов
+- Поддержка типизации
+- Можно сделать неизменяемым (\`frozen=True\`)`,
+      },
+      {
+        kind: "code",
+        title: "Data classes в действии",
+        code: `from dataclasses import dataclass, field
+
+@dataclass
+class Point:
+    x: float
+    y: float
+    z: float = 0.0  # значение по умолчанию
+
+# Автоматически генерируется __init__, __repr__, __eq__
+p1 = Point(1.0, 2.0)
+p2 = Point(1.0, 2.0)
+p3 = Point(3.0, 4.0)
+
+print(p1)        # Point(x=1.0, y=2.0, z=0.0)
+print(p1 == p2)  # True — автоматическое сравнение
+print(p1 == p3)  # False
+
+# Неизменяемый dataclass
+@dataclass(frozen=True)
+class ImmutablePoint:
+    x: float
+    y: float
+
+p = ImmutablePoint(1.0, 2.0)
+# p.x = 3.0  # FrozenInstanceError!
+
+# Вычисляемые поля
+@dataclass
+class Rectangle:
+    width: float
+    height: float
+    
+    @property
+    def area(self):
+        return self.width * self.height
+    
+    @property
+    def perimeter(self):
+        return 2 * (self.width + self.height)
+
+rect = Rectangle(5, 3)
+print(rect.area)       # 15
+print(rect.perimeter)  # 16`,
+      },
+      {
+        kind: "text",
+        md: `## Slots: оптимизация памяти
+
+По умолчанию Python хранит атрибуты объектов в словаре \`__dict__\`. Это гибко, но занимает много памяти. \`__slots__\` позволяет явно указать, какие атрибуты разрешены, и хранить их более эффективно.
+
+**Преимущества:**
+- Меньше памяти (до 40-50% экономии)
+- Быстрее доступ к атрибутам
+- Запрет на создание новых атрибутов`,
+      },
+      {
+        kind: "code",
+        title: "Slots в действии",
+        code: `class PointNormal:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+class PointSlots:
+    __slots__ = ['x', 'y']
+    
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+# Сравнение размера памяти
+import sys
+
+p1 = PointNormal(1, 2)
+p2 = PointSlots(1, 2)
+
+print(f"Без slots: {sys.getsizeof(p1)} + {sys.getsizeof(p1.__dict__)} байт")
+print(f"Со slots: {sys.getsizeof(p2)} байт")
+
+# Попытка создать новый атрибут
+# p1.z = 3  # Работает
+# p2.z = 3  # AttributeError!`,
+      },
+      {
+        kind: "text",
+        md: `## Магические методы для сравнения
+
+Магические методы позволяют определить, как объекты сравниваются друг с другом.
+
+**Методы сравнения:**
+- \`__eq__(self, other)\` — \`==\`
+- \`__ne__(self, other)\` — \`!=\`
+- \`__lt__(self, other)\` — \`<\`
+- \`__le__(self, other)\` — \`<=\`
+- \`__gt__(self, other)\` — \`>\`
+- \`__ge__(self, other)\` — \`>=\``,
+      },
+      {
+        kind: "code",
+        title: "Магические методы сравнения",
+        code: `from functools import total_ordering
+
+@total_ordering  # автоматически генерирует все методы сравнения
+class Student:
+    def __init__(self, name, grade):
+        self.name = name
+        self.grade = grade
+    
+    def __eq__(self, other):
+        return self.grade == other.grade
+    
+    def __lt__(self, other):
+        return self.grade < other.grade
+    
+    def __repr__(self):
+        return f"Student({self.name}, {self.grade})"
+
+students = [
+    Student("Алиса", 85),
+    Student("Боб", 92),
+    Student("Чарли", 78)
+]
+
+# Сортировка работает автоматически
+students.sort()
+print(students)
+# [Student(Чарли, 78), Student(Алиса, 85), Student(Боб, 92)]
+
+# Сравнения работают
+print(students[0] < students[1])  # True
+print(students[0] == students[0])  # True`,
+      },
+      {
+        kind: "text",
+        md: `## Магические методы для контейнеров
+
+Если ваш класс ведёт себя как контейнер (список, словарь), реализуйте эти методы:
+
+- \`__len__(self)\` — \`len(obj)\`
+- \`__getitem__(self, key)\` — \`obj[key]\`
+- \`__setitem__(self, key, value)\` — \`obj[key] = value\`
+- \`__delitem__(self, key)\` — \`del obj[key]\`
+- \`__contains__(self, item)\` — \`item in obj\`
+- \`__iter__(self)\` — итерация (\`for item in obj\`)`,
+      },
+      {
+        kind: "code",
+        title: "Класс-контейнер",
+        code: `class CustomList:
+    def __init__(self):
+        self._items = []
+    
+    def __len__(self):
+        return len(self._items)
+    
+    def __getitem__(self, index):
+        return self._items[index]
+    
+    def __setitem__(self, index, value):
+        self._items[index] = value
+    
+    def __contains__(self, item):
+        return item in self._items
+    
+    def __iter__(self):
+        return iter(self._items)
+    
+    def append(self, item):
+        self._items.append(item)
+
+cl = CustomList()
+cl.append(1)
+cl.append(2)
+cl.append(3)
+
+print(len(cl))      # 3
+print(cl[1])        # 2
+print(2 in cl)      # True
+
+for item in cl:
+    print(item)     # 1, 2, 3`,
+      },
+      {
+        kind: "text",
+        md: `## Контекстные менеджеры
+
+Контекстный менеджер — объект, определяющий контекст выполнения с помощью \`with\`. Автоматически вызывает \`__enter__\` при входе и \`__exit__\` при выходе.
+
+**Зачем нужно?**
+- Автоматическое освобождение ресурсов (файлы, соединения)
+- Гарантия выполнения кода очистки
+- Читаемый синтаксис`,
+      },
+      {
+        kind: "code",
+        title: "Контекстный менеджер",
+        code: `class Timer:
+    def __enter__(self):
+        import time
+        self.start = time.time()
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        import time
+        self.elapsed = time.time() - self.start
+        print(f"Время выполнения: {self.elapsed:.4f} сек")
+        return False  # не подавлять исключения
+
+# Использование
+with Timer() as t:
+    # Код, время которого измеряем
+    total = sum(range(1000000))
+
+print(f"Сумма: {total}")
+
+# Контекстный менеджер для файлов (встроенный)
+with open('example.txt', 'w') as f:
+    f.write("Привет, мир!")
+# Файл автоматически закрывается`,
+      },
+      {
+        kind: "text",
+        md: `## Дескрипторы
+
+Дескриптор — класс, определяющий методы \`__get__\`, \`__set__\`, \`__delete__\`. Позволяет создать переиспользуемую логику для атрибутов.
+
+**Типы дескрипторов:**
+- **Data descriptor** — определяет \`__get__\` и \`__set__\`
+- **Non-data descriptor** — определяет только \`__get__\`
+
+Дескрипторы используются внутри Python для \`@property\`, \`@classmethod\`, \`@staticmethod\`.`,
+      },
+      {
+        kind: "code",
+        title: "Дескриптор в действии",
+        code: `class Validator:
+    def __init__(self, min_value=0, max_value=100):
+        self.min_value = min_value
+        self.max_value = max_value
+    
+    def __set_name__(self, owner, name):
+        self.name = name
+    
+    def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self
+        return getattr(obj, f'_{self.name}')
+    
+    def __set__(self, obj, value):
+        if not self.min_value <= value <= self.max_value:
+            raise ValueError(f"{self.name} must be between {self.min_value} and {self.max_value}")
+        setattr(obj, f'_{self.name}', value)
+
+class Product:
+    price = Validator(0, 1000)
+    quantity = Validator(0, 10000)
+    
+    def __init__(self, name, price, quantity):
+        self.name = name
+        self.price = price
+        self.quantity = quantity
+
+product = Product("Книга", 500, 10)
+print(product.price)     # 500
+# product.price = 1500   # ValueError!`,
+      },
+      {
+        kind: "text",
+        md: `## Метаклассы
+
+Метакласс — это класс для классов. Он определяет, как создаются классы. По умолчанию все классы создаются метаклассом \`type\`.
+
+**Зачем нужно?**
+- Автоматическая модификация классов при создании
+- Валидация атрибутов класса
+- Регистрация классов
+- Singleton паттерн
+
+**Синтаксис:**
+\`\`\`python
+class MyClass(metaclass=MyMeta):
+    pass
+\`\`\``,
+      },
+      {
+        kind: "code",
+        title: "Метакласс для Singleton",
+        code: `class SingletonMeta(type):
+    _instances = {}
+    
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super().__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+class Database(metaclass=SingletonMeta):
+    def __init__(self):
+        self.connection = "Connected to DB"
+
+# Создаём "экземпляры"
+db1 = Database()
+db2 = Database()
+
+print(db1 is db2)  # True — один и тот же объект
+print(db1.connection)  # Connected to DB
+
+# Метакласс для автоматической валидации
+class ValidatedMeta(type):
+    def __new__(mcs, name, bases, namespace):
+        # Проверяем, что все методы имеют docstring
+        for name, value in namespace.items():
+            if callable(value) and not value.__doc__:
+                print(f"Warning: {name} has no docstring")
+        return super().__new__(mcs, name, bases, namespace)
+
+class MyClass(metaclass=ValidatedMeta):
+    def method1(self):
+        """Документация есть"""
+        pass
+    
+    def method2(self):
+        pass  # Warning: method2 has no docstring`,
+      },
     ],
     quiz: [
       {
@@ -8605,6 +9003,45 @@ class MyClass:
         ],
         answer: 1,
         explain: "Полиморфизм позволяет писать общий код, работающий с разными типами объектов, если они реализуют одинаковый интерфейс.",
+      },
+      {
+        q: "Что делает @dataclass?",
+        options: [
+          "Делает класс абстрактным",
+          "Автоматически генерирует __init__, __repr__, __eq__",
+          "Делает класс неизменяемым",
+          "Добавляет методы сравнения",
+        ],
+        answer: 1,
+        explain: "@dataclass автоматически генерирует __init__, __repr__ и __eq__ на основе определённых атрибутов, уменьшая шаблонный код.",
+      },
+      {
+        q: "Зачем нужны __slots__?",
+        options: [
+          "Для создания приватных атрибутов",
+          "Для оптимизации памяти и скорости доступа",
+          "Для создания статических методов",
+          "Для определения абстрактных методов",
+        ],
+        answer: 1,
+        explain: "__slots__ явно указывает, какие атрибуты разрешены, и хранит их более эффективно, экономя до 40-50% памяти.",
+      },
+      {
+        q: "Что такое метакласс?",
+        options: [
+          "Класс для создания объектов",
+          "Класс для создания классов",
+          "Абстрактный класс",
+          "Статический класс",
+        ],
+        answer: 1,
+        explain: "Метакласс — это класс для классов. Он определяет, как создаются классы. По умолчанию все классы создаются метаклассом type.",
+      },
+      {
+        q: "Какой метод определяет поведение оператора 'in'?",
+        options: ["__contains__", "__in__", "__has__", "__includes__"],
+        answer: 0,
+        explain: "__contains__ определяет поведение оператора 'in' для проверки наличия элемента в контейнере.",
       },
     ],
     tasks: [
@@ -8827,6 +9264,183 @@ class Rectangle(Shape):
     
     def area(self):
         return self.width * self.height`,
+      },
+      {
+        id: "py9t6",
+        title: "Dataclass: Книга",
+        md: `Создайте dataclass \`Book\` с полями: \`title\` (str), \`author\` (str), \`year\` (int), \`isbn\` (str, по умолчанию "unknown"). Добавьте метод \`info()\`, который возвращает строку вида "Title by Author (Year)".`,
+        starter: `from dataclasses import dataclass
+
+@dataclass
+class Book:
+    # ваши поля
+    pass
+
+book = Book("1984", "George Orwell", 1949)
+print(book.info())`,
+        tests: `
+__test("создание книги", lambda: Book("Test", "Author", 2020).title, "Test")
+__test("isbn по умолчанию", lambda: Book("Test", "Author", 2020).isbn, "unknown")
+__test("метод info", lambda: Book("1984", "George Orwell", 1949).info(), "1984 by George Orwell (1949)")
+__test("равенство книг", lambda: Book("A", "B", 2020) == Book("A", "B", 2020), True)`,
+        solution: `from dataclasses import dataclass
+
+@dataclass
+class Book:
+    title: str
+    author: str
+    year: int
+    isbn: str = "unknown"
+    
+    def info(self):
+        return f"{self.title} by {self.author} ({self.year})"`,
+      },
+      {
+        id: "py9t7",
+        title: "Контейнер с валидацией",
+        md: `Создайте класс \`ValidatedList\`, который ведёт себя как список, но принимает только положительные числа. Реализуйте методы: \`append(item)\`, \`__len__()\`, \`__getitem__(index)\`, \`__contains__(item)\`. При попытке добавить неположительное число бросайте \`ValueError\`.`,
+        starter: `class ValidatedList:
+    # ваш код
+    pass
+
+vl = ValidatedList()
+vl.append(5)
+vl.append(10)
+print(len(vl))  # 2
+print(5 in vl)  # True
+# vl.append(-1)  # ValueError!`,
+        tests: `
+__test("добавление элементов", lambda: (lambda vl: (vl.append(5), vl.append(10), len(vl))[-1])(ValidatedList()), 2)
+__test("проверка наличия", lambda: (lambda vl: (vl.append(5), 5 in vl)[-1])(ValidatedList()), True)
+__test("отрицательные числа отклоняются", lambda: (lambda vl: (lambda: (vl.append(-1), False)[-1])() if False else True)(), True)
+__test("доступ по индексу", lambda: (lambda vl: (vl.append(5), vl.append(10), vl[1])[-1])(ValidatedList()), 10)`,
+        solution: `class ValidatedList:
+    def __init__(self):
+        self._items = []
+    
+    def append(self, item):
+        if item <= 0:
+            raise ValueError("Только положительные числа")
+        self._items.append(item)
+    
+    def __len__(self):
+        return len(self._items)
+    
+    def __getitem__(self, index):
+        return self._items[index]
+    
+    def __contains__(self, item):
+        return item in self._items`,
+      },
+      {
+        id: "py9t8",
+        title: "Множественное наследование",
+        md: `Создайте классы: \`Flyable\` с методом \`fly()\`, возвращающим "Летает", \`Swimmable\` с методом \`swim()\`, возвращающим "Плавает", и \`Duck\`, наследующий от обоих. Добавьте метод \`quack()\`, возвращающий "Кря!".`,
+        starter: `class Flyable:
+    # ваш код
+    pass
+
+class Swimmable:
+    # ваш код
+    pass
+
+class Duck(Flyable, Swimmable):
+    # ваш код
+    pass
+
+duck = Duck()
+print(duck.fly())    # Летает
+print(duck.swim())   # Плавает
+print(duck.quack())  # Кря!`,
+        tests: `
+__test("метод fly", lambda: Duck().fly(), "Летает")
+__test("метод swim", lambda: Duck().swim(), "Плавает")
+__test("метод quack", lambda: Duck().quack(), "Кря!")
+__test("наследование", lambda: isinstance(Duck(), Flyable) and isinstance(Duck(), Swimmable), True)`,
+        solution: `class Flyable:
+    def fly(self):
+        return "Летает"
+
+class Swimmable:
+    def swim(self):
+        return "Плавает"
+
+class Duck(Flyable, Swimmable):
+    def quack(self):
+        return "Кря!"`,
+      },
+      {
+        id: "py9t9",
+        title: "Контекстный менеджер",
+        md: `Создайте контекстный менеджер \`FileManager\`, который открывает файл для записи в \`__enter__\` и закрывает его в \`__exit__\`. В \`__enter__\` возвращайте файловый объект.`,
+        starter: `class FileManager:
+    def __init__(self, filename, mode='w'):
+        self.filename = filename
+        self.mode = mode
+    
+    def __enter__(self):
+        # ваш код
+        pass
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        # ваш код
+        pass
+
+with FileManager('test.txt', 'w') as f:
+    f.write("Привет, мир!")`,
+        tests: `
+__test("открытие файла", lambda: (lambda fm: (fm.__enter__(), True)[-1])(FileManager('test.txt', 'w')), True)
+__test("закрытие файла", lambda: (lambda fm: (fm.__enter__(), fm.__exit__(None, None, None), True)[-1])(FileManager('test.txt', 'w')), True)`,
+        solution: `class FileManager:
+    def __init__(self, filename, mode='w'):
+        self.filename = filename
+        self.mode = mode
+        self.file = None
+    
+    def __enter__(self):
+        self.file = open(self.filename, self.mode)
+        return self.file
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.file:
+            self.file.close()`,
+      },
+      {
+        id: "py9t10",
+        title: "Сравнение объектов",
+        md: `Создайте класс \`Temperature\` с полем \`celsius\`. Реализуйте магические методы сравнения: \`__eq__\`, \`__lt__\`, \`__le__\`, \`__gt__\`, \`__ge__\`. Используйте декоратор \`@total_ordering\` для автоматической генерации остальных методов.`,
+        starter: `from functools import total_ordering
+
+@total_ordering
+class Temperature:
+    def __init__(self, celsius):
+        self.celsius = celsius
+    
+    # реализуйте __eq__ и __lt__
+    pass
+
+t1 = Temperature(20)
+t2 = Temperature(30)
+print(t1 < t2)   # True
+print(t1 == t1)  # True`,
+        tests: `
+__test("равенство", lambda: Temperature(20) == Temperature(20), True)
+__test("меньше", lambda: Temperature(20) < Temperature(30), True)
+__test("больше", lambda: Temperature(30) > Temperature(20), True)
+__test("меньше или равно", lambda: Temperature(20) <= Temperature(20), True)
+__test("больше или равно", lambda: Temperature(30) >= Temperature(20), True)`,
+        solution: `from functools import total_ordering
+
+@total_ordering
+class Temperature:
+    def __init__(self, celsius):
+        self.celsius = celsius
+    
+    def __eq__(self, other):
+        return self.celsius == other.celsius
+    
+    def __lt__(self, other):
+        return self.celsius < other.celsius`,
       },
     ],
   },
