@@ -1135,61 +1135,352 @@ __test("ровно 12 символов", lambda: check_password("123456789012"),
     language: "python",
     title: "Циклы while и for",
     subtitle: "for..in, range, enumerate, break/continue и блок else",
-    minutes: 25,
+    minutes: 30,
     blocks: [
       {
         kind: "text",
-        md: `## for — обход, а не счётчик
+        md: `## Циклы: повторяем действия 🔁
 
-\`for\` в Python обходит **сами элементы** последовательности, индексы не нужны. \`range(start, stop, step)\` генерирует числа: **stop не включается**. \`enumerate\` даёт пару (индекс, элемент) — замена forEach с idx.`,
-      },
-      {
-        kind: "code",
-        title: "for и range",
-        code: `for ch in "PY":
-    print("символ:", ch)
+Циклы позволяют выполнять код многократно. В Python два типа циклов:
 
-for i in range(3):
-    print("i =", i)            # 0 1 2
+- **\`for\`** — обходит элементы последовательности (список, строку, диапазон)
+- **\`while\`** — выполняется, пока условие истинно
 
-for i in range(10, 0, -3):
-    print("обратный:", i)      # 10 7 4 1
-
-for idx, ch in enumerate("abc"):
-    print(idx, "->", ch)`,
+**Аналогия:** Представьте, что вы моете посуду:
+- **for** — вы моете каждую тарелку из стопки (знаете, сколько тарелок)
+- **while** — вы моете тарелки, пока не закончится грязная посуда (не знаете, сколько)`,
       },
       {
         kind: "text",
-        md: `## break, continue и сюрприз: else у цикла
+        md: `## Цикл for: обход элементов
 
-Блок \`else\` у цикла выполняется, когда цикл **завершился без break**. Это идиоматичный способ написать «нашли / не нашли» без флага-переменной.`,
+В Python \`for\` обходит **сами элементы** последовательности, а не индексы. Это удобнее и читаемее, чем в JavaScript.
+
+**Синтаксис:**
+\`\`\`python
+for элемент in последовательность:
+    # код для каждого элемента
+\`\`\`
+
+**Что можно обходить:**
+- Строки: \`for char in "привет":\`
+- Списки: \`for item in [1, 2, 3]:\`
+- Словари: \`for key in dict:\` (по ключам)
+- Множества: \`for item in set:\`
+- Диапазоны: \`for i in range(5):\``,
       },
       {
         kind: "code",
-        title: "Поиск с else",
-        code: `numbers = [4, 8, 15, 16, 23, 42]
+        title: "Простые примеры for",
+        code: `# Обход строки
+for char in "Python":
+    print(char, end=" ")  # P y t h o n
+print()
 
-for n in numbers:
-    if n % 2 != 0:
-        continue        # пропускаем нечётные
-    if n > 20:
-        print("нашли:", n)   # 42
+# Обход списка
+fruits = ["яблоко", "банан", "апельсин"]
+for fruit in fruits:
+    print(f"Я люблю {fruit}")
+
+# Обход словаря (по ключам)
+user = {"name": "Алиса", "age": 25}
+for key in user:
+    print(f"{key}: {user[key]}")
+
+# Обход словаря (ключи и значения)
+for key, value in user.items():
+    print(f"{key} = {value}")`,
+      },
+      {
+        kind: "text",
+        md: `## Функция range(): генерация чисел
+
+\`range(start, stop, step)\` генерирует последовательность чисел.
+
+**Параметры:**
+- \`start\` — начало (по умолчанию 0)
+- \`stop\` — конец (**не включается**!)
+- \`step\` — шаг (по умолчанию 1)
+
+**Важно:** \`stop\` не включается в результат! \`range(1, 5)\` даёт 1, 2, 3, 4 (не 5).
+
+**Аналогия:** Представьте лифт с кнопками этажей 1-5. Вы нажимаете кнопки от 1 до 5, но лифт останавливается на 4, потому что 5 — это "stop" (не включается).`,
+      },
+      {
+        kind: "code",
+        title: "range() в действии",
+        code: `# Простой диапазон
+for i in range(5):
+    print(i, end=" ")  # 0 1 2 3 4
+print()
+
+# С началом и концом
+for i in range(1, 6):
+    print(i, end=" ")  # 1 2 3 4 5
+print()
+
+# С шагом
+for i in range(0, 10, 2):
+    print(i, end=" ")  # 0 2 4 6 8
+print()
+
+# Обратный порядок
+for i in range(10, 0, -2):
+    print(i, end=" ")  # 10 8 6 4 2
+print()
+
+# Преобразование в список
+numbers = list(range(1, 6))
+print(numbers)  # [1, 2, 3, 4, 5]
+
+# Практический пример: таблица умножения
+number = 5
+for i in range(1, 11):
+    print(f"{number} × {i} = {number * i}")`,
+      },
+      {
+        kind: "text",
+        md: `## Функция enumerate(): индексы + элементы
+
+Иногда нужны и индексы, и элементы. Вместо ручного счётчика используйте \`enumerate()\`.
+
+**Синтаксис:**
+\`\`\`python
+for индекс, элемент in enumerate(последовательность):
+    # код
+\`\`\`
+
+**Аналогия:** Представьте, что вы ведёте список покупок с номерами:
+1. Молоко
+2. Хлеб
+3. Яйца
+
+\`enumerate()\` автоматически добавляет номера к элементам.`,
+      },
+      {
+        kind: "code",
+        title: "enumerate() в примерах",
+        code: `# Без enumerate (плохо)
+fruits = ["яблоко", "банан", "апельсин"]
+i = 0
+for fruit in fruits:
+    print(f"{i}: {fruit}")
+    i += 1
+
+# С enumerate (хорошо)
+for i, fruit in enumerate(fruits):
+    print(f"{i}: {fruit}")
+
+# Со стартовым индексом
+for i, fruit in enumerate(fruits, start=1):
+    print(f"{i}. {fruit}")
+
+# Практический пример: нумерация строк
+text = """Первая строка
+Вторая строка
+Третья строка"""
+
+for i, line in enumerate(text.split("\\n"), 1):
+    print(f"{i}: {line}")`,
+      },
+      {
+        kind: "text",
+        md: `## Цикл while: условие выполнения
+
+\`while\` выполняется, пока условие истинно. Используйте, когда не знаете заранее, сколько раз нужно повторить.
+
+**Синтаксис:**
+\`\`\`python
+while условие:
+    # код
+\`\`\`
+
+**Важно:** Убедитесь, что условие когда-нибудь станет ложным, иначе получите бесконечный цикл!`,
+      },
+      {
+        kind: "code",
+        title: "Примеры while",
+        code: `# Простой счётчик
+count = 0
+while count < 5:
+    print(count, end=" ")
+    count += 1
+print()
+
+# Ввод данных от пользователя
+password = ""
+while password != "secret":
+    password = input("Введите пароль: ")
+print("Доступ разрешён!")
+
+# Обратный отсчёт
+n = 5
+while n > 0:
+    print(n, end=" ")
+    n -= 1
+print("Пуск!")
+
+# Бесконечный цикл (с break)
+while True:
+    command = input("Команда (exit для выхода): ")
+    if command == "exit":
+        break
+    print(f"Вы ввели: {command}")`,
+      },
+      {
+        kind: "text",
+        md: `## break и continue: управление циклом
+
+**\`break\`** — немедленно выходит из цикла.
+
+**\`continue\`** — переходит к следующей итерации, пропуская оставшийся код.
+
+**Аналогия:**
+- **break** — вы нашли нужную книгу в библиотеке и уходите
+- **continue** — вы пропускаете книгу на полке и идёте к следующей`,
+      },
+      {
+        kind: "code",
+        title: "break и continue",
+        code: `# break: выход при нахождении
+numbers = [1, 3, 5, 8, 9, 11]
+for num in numbers:
+    if num % 2 == 0:
+        print(f"Нашёл чётное: {num}")
+        break
+    print(f"Проверяю: {num}")
+
+# continue: пропуск нечётных
+for i in range(10):
+    if i % 2 != 0:
+        continue  # пропускаем нечётные
+    print(i, end=" ")  # 0 2 4 6 8
+print()
+
+# Практический пример: фильтрация
+words = ["Python", "is", "awesome", "and", "powerful"]
+for word in words:
+    if len(word) <= 3:
+        continue  # пропускаем короткие слова
+    print(word.upper())`,
+      },
+      {
+        kind: "text",
+        md: `## else у цикла: уникальная фишка Python 🎯
+
+У циклов \`for\` и \`while\` может быть блок \`else\`. Он выполняется, когда цикл **завершился нормально** (без \`break\`).
+
+**Синтаксис:**
+\`\`\`python
+for item in items:
+    if condition:
         break
 else:
-    print("ничего не нашли")  # не выполнится — был break
+    # выполняется, если break не сработал
+\`\`\`
 
-# while
-n = 8
-steps = 0
-while n > 1:
-    n = n // 2     # целочисленное деление
-    steps += 1
-print("делений:", steps)     # 3`,
+**Аналогия:** Представьте, что вы ищете ключи в комнате:
+- Если нашли ключи → \`break\` → \`else\` не выполняется
+- Если обошли всю комнату и не нашли → \`else\` выполняется`,
+      },
+      {
+        kind: "code",
+        title: "else у цикла",
+        code: `# Поиск элемента с else
+numbers = [1, 3, 5, 7, 9]
+target = 6
+
+for num in numbers:
+    if num == target:
+        print(f"Нашёл {target}!")
+        break
+else:
+    print(f"{target} не найден")  # выполнится
+
+# Проверка на простые числа
+def is_prime(n):
+    if n < 2:
+        return False
+    for i in range(2, n):
+        if n % i == 0:
+            print(f"{n} делится на {i}")
+            return False
+    else:
+        print(f"{n} — простое число")
+        return True
+
+is_prime(7)   # 7 — простое число
+is_prime(12)  # 12 делится на 2
+
+# while с else
+count = 0
+while count < 3:
+    print(count)
+    count += 1
+else:
+    print("Цикл завершён нормально")`,
+      },
+      {
+        kind: "text",
+        md: `## Вложенные циклы
+
+Циклы можно вкладывать друг в друга. Внутренний цикл выполняется полностью для каждой итерации внешнего.
+
+**Важно:** Вложенные циклы могут быть медленными! Если внешний цикл выполняется N раз, а внутренний M раз, общее количество итераций — N × M.`,
+      },
+      {
+        kind: "code",
+        title: "Вложенные циклы",
+        code: `# Таблица умножения
+for i in range(1, 4):
+    for j in range(1, 4):
+        print(f"{i}×{j}={i*j}", end="\\t")
+    print()
+
+# Перебор двумерного списка
+matrix = [
+    [1, 2, 3],
+    [4, 5, 6],
+    [7, 8, 9]
+]
+
+for row in matrix:
+    for item in row:
+        print(item, end=" ")
+    print()
+
+# Практический пример: все комбинации
+colors = ["красный", "синий"]
+sizes = ["S", "M", "L"]
+
+for color in colors:
+    for size in sizes:
+        print(f"{color} {size}")`,
       },
       {
         kind: "warn",
         title: "Stop не включается",
-        md: `\`range(1, 5)\` — это 1, 2, 3, 4. Правило «полуинтервала» соблюдается везде: срезы, \`range\`, \`islice\`. Длина всегда \`stop - start\` — удобно, но непривычно первые пару недель.`,
+        md: `\`range(1, 5)\` — это 1, 2, 3, 4. Правило «полуинтервала» соблюдается везде: срезы, \`range\`, \`islice\`. Длина всегда \`stop - start\` — удобно, но непривычно первые пару недель.
+
+**Почему так?** Это позволяет легко вычислять длину:
+\`\`\`python
+len(range(1, 5))  # 5 - 1 = 4
+\`\`\``,
+      },
+      {
+        kind: "tip",
+        title: "Когда какой цикл использовать?",
+        md: `**Используйте \`for\`, когда:**
+- Знаете количество итераций
+- Обходите коллекцию (список, строку, словарь)
+- Нужны индексы (с \`enumerate\`)
+
+**Используйте \`while\`, когда:**
+- Не знаете количество итераций
+- Условие зависит от внешних факторов
+- Нужен бесконечный цикл с \`break\`
+
+**Совет:** В 90% случаев \`for\` предпочтительнее — он безопаснее и читаемее.`,
       },
     ],
     quiz: [
@@ -1209,6 +1500,34 @@ print("делений:", steps)     # 3`,
         ],
         answer: 1,
         explain: "else — «цикл отработал полностью». Прервались через break — else пропускается.",
+      },
+      {
+        q: "Что делает enumerate()?",
+        options: [
+          "Сортирует элементы",
+          "Возвращает пары (индекс, элемент)",
+          "Подсчитывает количество элементов",
+          "Фильтрует элементы",
+        ],
+        answer: 1,
+        explain: "enumerate() возвращает пары (индекс, элемент), что удобно, когда нужны и индексы, и значения.",
+      },
+      {
+        q: "Что делает break?",
+        options: [
+          "Пропускает текущую итерацию",
+          "Немедленно выходит из цикла",
+          "Останавливает программу",
+          "Перезапускает цикл",
+        ],
+        answer: 1,
+        explain: "break немедленно выходит из цикла, игнорируя оставшиеся итерации и блок else.",
+      },
+      {
+        q: "Сколько раз выполнится внутренний цикл: for i in range(3): for j in range(4):?",
+        options: ["3 раза", "4 раза", "7 раз", "12 раз"],
+        answer: 3,
+        explain: "Вложенные циклы: внешний выполняется 3 раза, внутренний — 4 раза для каждой итерации внешнего. Итого: 3 × 4 = 12 раз.",
       },
     ],
     tasks: [
@@ -1253,6 +1572,50 @@ __test("регистр не важен", lambda: count_vowels("АаАа"), 4)`,
         if ch in vowels:
             count += 1
     return count`,
+      },
+      {
+        id: "py3t3",
+        title: "Факториал",
+        md: `Реализуйте функцию \`factorial(n)\`, которая вычисляет факториал числа n (произведение всех чисел от 1 до n) с помощью цикла. \`factorial(5)\` → \`120\` (1×2×3×4×5).`,
+        starter: `def factorial(n):
+    # ваш код с циклом
+    pass
+
+print(factorial(5), factorial(10))`,
+        tests: `
+__test("factorial(0) → 1", lambda: factorial(0), 1)
+__test("factorial(1) → 1", lambda: factorial(1), 1)
+__test("factorial(5) → 120", lambda: factorial(5), 120)
+__test("factorial(10) → 3628800", lambda: factorial(10), 3628800)`,
+        solution: `def factorial(n):
+    result = 1
+    for i in range(1, n + 1):
+        result *= i
+    return result`,
+      },
+      {
+        id: "py3t4",
+        title: "Поиск простого числа",
+        md: `Реализуйте функцию \`find_first_prime(start)\`, которая находит первое простое число, большее или равное \`start\`. Используйте цикл с \`else\`. Простое число делится только на 1 и на себя.`,
+        starter: `def find_first_prime(start):
+    # ваш код с циклом и else
+    pass
+
+print(find_first_prime(10), find_first_prime(20))`,
+        tests: `
+__test("find_first_prime(10) → 11", lambda: find_first_prime(10), 11)
+__test("find_first_prime(20) → 23", lambda: find_first_prime(20), 23)
+__test("find_first_prime(1) → 2", lambda: find_first_prime(1), 2)
+__test("find_first_prime(100) → 101", lambda: find_first_prime(100), 101)`,
+        solution: `def find_first_prime(start):
+    n = max(2, start)
+    while True:
+        for i in range(2, n):
+            if n % i == 0:
+                break
+        else:
+            return n
+        n += 1`,
       },
     ],
   },
