@@ -3879,18 +3879,54 @@ __test("remove_vowels('bcdfg') → 'bcdfg'", lambda: remove_vowels("bcdfg"), "bc
     language: "python",
     title: "Замыкания и декораторы",
     subtitle: "nonlocal, функции-обёртки и синтаксис @",
-    minutes: 35,
+    minutes: 40,
     blocks: [
       {
         kind: "text",
-        md: `## Замыкания
+        md: `## Замыкания: функции с памятью 🧠
 
-Как и в JS, внутренняя функция запоминает переменные внешней. Но присваивание внутри без объявления \`nonlocal\` создаёт **локальную** переменную — для изменения «чужой» переменной её нужно объявить явно.`,
+**Замыкание** — это функция, которая "помнит" переменные из окружающей области видимости, даже когда эта область уже завершилась.
+
+**Аналогия:** Представьте, что вы создали функцию-счётчик. Она должна помнить своё текущее значение между вызовами. Замыкание позволяет функции "закрыть" в себе переменную и работать с ней.
+
+**Зачем нужны замыкания?**
+- Создание фабрик функций
+- Инкапсуляция состояния
+- Декораторы
+- Callback-функции с контекстом`,
+      },
+      {
+        kind: "text",
+        md: `## Как работает замыкание?
+
+Когда внутренняя функция ссылается на переменную внешней функции, Python создаёт **замыкание** — специальную структуру, которая хранит эти переменные.
+
+**Важно:** В Python для **изменения** переменной из внешней области нужно использовать ключевое слово \`nonlocal\`. Без него Python создаст новую локальную переменную.`,
+      },
+      {
+        kind: "code",
+        title: "Простое замыкание",
+        code: `def make_greeter(name):
+    """Создаёт функцию-приветствие для конкретного имени"""
+    def greeter():
+        print(f"Привет, {name}!")
+    return greeter
+
+# Создаём функции для разных людей
+greet_alice = make_greeter("Алиса")
+greet_bob = make_greeter("Боб")
+
+greet_alice()  # Привет, Алиса!
+greet_bob()    # Привет, Боб!
+
+# Каждая функция "помнит" своё имя
+# Даже после завершения make_greeter`,
       },
       {
         kind: "code",
         title: "Счётчик на замыканиях",
         code: `def make_counter(start=0):
+    """Создаёт счётчик с начальным значением"""
     count = start
 
     def inc():
@@ -3898,30 +3934,135 @@ __test("remove_vowels('bcdfg') → 'bcdfg'", lambda: remove_vowels("bcdfg"), "bc
         count += 1
         return count
 
+    def dec():
+        nonlocal count
+        count -= 1
+        return count
+
     def value():
         return count
 
-    return inc, value      # возвращаем кортеж функций
+    return inc, dec, value      # возвращаем кортеж функций
 
-inc, value = make_counter(10)
-inc()
-inc()
-print(value())   # 12`,
+# Используем счётчик
+inc, dec, value = make_counter(10)
+print(inc())      # 11
+print(inc())      # 12
+print(dec())      # 11
+print(value())    # 11
+
+# Создаём независимый счётчик
+inc2, dec2, value2 = make_counter(100)
+print(value2())   # 100 — независим от первого`,
       },
       {
         kind: "text",
-        md: `## Декораторы
+        md: `## nonlocal vs global
 
-Декоратор — функция, которая берёт функцию и возвращает **обёртку** вокруг неё. Запись \`@log_calls\` над \`def\` — сахар для \`add = log_calls(add)\`. Так в Python устроены логирование, кэширование (\`@lru_cache\`), маршруты веб-фреймворков, \`@property\`.`,
+**\`nonlocal\`** — ссылается на переменную из **внешней** (но не глобальной) области видимости.
+
+**\`global\`** — ссылается на переменную из **глобальной** области видимости.
+
+**Правило:** Если вы только **читаете** переменную из внешней области, \`nonlocal\` не нужен. Если **изменяете** — нужен.`,
       },
       {
         kind: "code",
-        title: "Декоратор логирования",
+        title: "nonlocal в действии",
+        code: `# Чтение без nonlocal — работает
+def outer():
+    x = 10
+    def inner():
+        print(x)  # просто читаем
+    inner()
+
+outer()  # 10
+
+# Изменение с nonlocal — работает
+def outer():
+    x = 10
+    def inner():
+        nonlocal x
+        x += 5
+    inner()
+    print(x)
+
+outer()  # 15
+
+# Изменение без nonlocal — ошибка!
+def outer():
+    x = 10
+    def inner():
+        x += 5  # UnboundLocalError!
+    inner()
+
+outer()`,
+      },
+      {
+        kind: "text",
+        md: `## Декораторы: функции-обёртки 🎁
+
+**Декоратор** — это функция, которая принимает другую функцию и расширяет её поведение, не изменяя исходный код.
+
+**Аналогия:** Представьте, что у вас есть функция (подарок). Декоратор — это красивая обёртка вокруг подарка. Подарок остаётся тем же, но теперь у него есть дополнительная функциональность (обёртка).
+
+**Синтаксис:**
+\`\`\`python
+@decorator
+def function():
+    pass
+
+# Эквивалентно:
+function = decorator(function)
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Зачем нужны декораторы?
+
+**Популярные применения:**
+- Логирование вызовов функций
+- Измерение времени выполнения
+- Кэширование результатов
+- Проверка прав доступа
+- Повторные попытки при ошибках
+- Регистрация функций (как в веб-фреймворках)
+
+**Встроенные декораторы Python:**
+- \`@property\` — превращает метод в свойство
+- \`@staticmethod\` — статический метод
+- \`@classmethod\` — метод класса
+- \`@functools.lru_cache\` — кэширование`,
+      },
+      {
+        kind: "code",
+        title: "Простой декоратор",
+        code: `def simple_decorator(func):
+    """Простейший декоратор без изменения поведения"""
+    def wrapper():
+        print("Перед вызовом")
+        func()
+        print("После вызова")
+    return wrapper
+
+@simple_decorator
+def say_hello():
+    print("Привет!")
+
+say_hello()
+# Вывод:
+# Перед вызовом
+# Привет!
+# После вызова`,
+      },
+      {
+        kind: "code",
+        title: "Декоратор с аргументами",
         code: `def log_calls(fn):
+    """Декоратор для логирования вызовов"""
     def wrapper(*args, **kwargs):
-        print("-> вызов", fn.__name__, args)
+        print(f"-> вызов {fn.__name__}({args}, {kwargs})")
         result = fn(*args, **kwargs)
-        print("<- результат:", result)
+        print(f"<- результат: {result}")
         return result
     return wrapper
 
@@ -3929,14 +4070,183 @@ print(value())   # 12`,
 def add(a, b):
     return a + b
 
+@log_calls
+def greet(name):
+    return f"Привет, {name}!"
+
 add(2, 3)
-# -> вызов add (2, 3)
-# <- результат: 5`,
+# -> вызов add((2, 3), {})
+# <- результат: 5
+
+greet("Алиса")
+# -> вызов greet(('Алиса',), {})
+# <- результат: Привет, Алиса!`,
+      },
+      {
+        kind: "code",
+        title: "Декоратор для измерения времени",
+        code: `import time
+
+def timer(func):
+    """Измеряет время выполнения функции"""
+    def wrapper(*args, **kwargs):
+        start = time.time()
+        result = func(*args, **kwargs)
+        end = time.time()
+        print(f"{func.__name__} выполнилась за {end - start:.4f} сек")
+        return result
+    return wrapper
+
+@timer
+def slow_function():
+    time.sleep(1)
+    return "Готово!"
+
+slow_function()
+# slow_function выполнилась за 1.0012 сек`,
+      },
+      {
+        kind: "text",
+        md: `## functools.wraps: сохраняем метаданные
+
+Когда мы создаём декоратор, оригинальная функция теряет свои метаданные (\`__name__\`, \`__doc__\` и т.д.). Чтобы сохранить их, используйте \`@functools.wraps\`.
+
+**Зачем это нужно?**
+- Отладка показывает правильное имя функции
+- \`help()\` показывает правильную документацию
+- Некоторые инструменты полагаются на эти метаданные`,
+      },
+      {
+        kind: "code",
+        title: "functools.wraps в действии",
+        code: `from functools import wraps
+
+def my_decorator(func):
+    @wraps(func)  # сохраняем метаданные
+    def wrapper(*args, **kwargs):
+        """Обёртка"""
+        return func(*args, **kwargs)
+    return wrapper
+
+@my_decorator
+def greet(name):
+    """Приветствует пользователя"""
+    print(f"Привет, {name}!")
+
+print(greet.__name__)  # greet (не wrapper!)
+print(greet.__doc__)   # Приветствует пользователя`,
+      },
+      {
+        kind: "text",
+        md: `## Декораторы с параметрами
+
+Иногда нужно передать параметры в сам декоратор. Для этого создаём **фабрику декораторов** — функцию, которая возвращает декоратор.
+
+**Синтаксис:**
+\`\`\`python
+@decorator_with_args(arg1, arg2)
+def function():
+    pass
+\`\`\``,
+      },
+      {
+        kind: "code",
+        title: "Декоратор с параметрами",
+        code: `def repeat(times):
+    """Декоратор для повторения вызова"""
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            for _ in range(times):
+                result = func(*args, **kwargs)
+            return result
+        return wrapper
+    return decorator
+
+@repeat(3)
+def say_hello():
+    print("Привет!")
+
+say_hello()
+# Привет!
+# Привет!
+# Привет!
+
+@repeat(2)
+def greet(name):
+    print(f"Привет, {name}!")
+
+greet("Алиса")
+# Привет, Алиса!
+# Привет, Алиса!`,
+      },
+      {
+        kind: "code",
+        title: "Декоратор для кэширования",
+        code: `def cache(func):
+    """Простой декоратор для кэширования результатов"""
+    memo = {}
+    
+    def wrapper(*args):
+        if args not in memo:
+            memo[args] = func(*args)
+        return memo[args]
+    
+    return wrapper
+
+@cache
+def fibonacci(n):
+    if n < 2:
+        return n
+    return fibonacci(n - 1) + fibonacci(n - 2)
+
+# Без кэша: очень медленно
+# С кэшем: мгновенно
+print(fibonacci(50))  # 12586269025`,
       },
       {
         kind: "tip",
-        title: "functools.wraps",
-        md: `Хороший декоратор оборачивает wrapper в \`@functools.wraps(fn)\` — тогда у обёртки сохраняются \`__name__\` и docstring оригинала. Без этого отладка и help() сходят с ума.`,
+        title: "Встроенные декораторы",
+        md: `Python предоставляет несколько полезных встроенных декораторов:
+
+**\`@property\`** — превращает метод в свойство (геттер):
+\`\`\`python
+class Circle:
+    def __init__(self, radius):
+        self._radius = radius
+    
+    @property
+    def area(self):
+        return 3.14 * self._radius ** 2
+
+c = Circle(5)
+print(c.area)  # 78.5 — вызываем как свойство
+\`\`\`
+
+**\`@staticmethod\`** — метод без доступа к self:
+\`\`\`python
+class Math:
+    @staticmethod
+    def add(a, b):
+        return a + b
+
+print(Math.add(2, 3))  # 5
+\`\`\`
+
+**\`@classmethod\`** — метод с доступом к cls (класс):
+\`\`\`python
+class Date:
+    def __init__(self, year, month, day):
+        self.year = year
+        self.month = month
+        self.day = day
+    
+    @classmethod
+    def from_string(cls, date_str):
+        year, month, day = map(int, date_str.split('-'))
+        return cls(year, month, day)
+
+d = Date.from_string('2024-01-15')
+\`\`\``,
       },
     ],
     quiz: [
@@ -3961,6 +4271,34 @@ add(2, 3)
         ],
         answer: 1,
         explain: "Синтаксис @ — просто присваивание результата декоратора тому же имени сразу после определения функции.",
+      },
+      {
+        q: "Что делает functools.wraps?",
+        options: [
+          "Ускоряет работу декоратора",
+          "Сохраняет метаданные оригинальной функции",
+          "Автоматически кэширует результаты",
+          "Добавляет обработку ошибок",
+        ],
+        answer: 1,
+        explain: "functools.wraps сохраняет __name__, __doc__ и другие метаданные оригинальной функции, что важно для отладки и документации.",
+      },
+      {
+        q: "Какое ключевое слово нужно для изменения переменной из внешней области?",
+        options: ["global", "nonlocal", "outer", "parent"],
+        answer: 1,
+        explain: "nonlocal используется для ссылки на переменную из внешней (но не глобальной) области видимости. global — для глобальной.",
+      },
+      {
+        q: "Что возвращает декоратор?",
+        options: [
+          "Оригинальную функцию без изменений",
+          "Новую функцию-обёртку",
+          "Ничего",
+          "Список аргументов",
+        ],
+        answer: 1,
+        explain: "Декоратор принимает функцию и возвращает новую функцию-обёртку, которая расширяет поведение оригинала.",
       },
     ],
     tasks: [
@@ -4029,6 +4367,109 @@ __test("до вызовов calls == 0", starts_at_zero, 0)`,
         return fn(*args, **kwargs)
     wrapper.calls = 0
     return wrapper`,
+      },
+      {
+        id: "py8t3",
+        title: "Декоратор для валидации",
+        md: `Реализуйте декоратор \`validate_positive(fn)\`, который проверяет, что все числовые аргументы функции положительны. Если найдено отрицательное число — вызывает \`ValueError\`.`,
+        starter: `def validate_positive(fn):
+    # ваш декоратор
+    pass
+
+@validate_positive
+def calculate_area(width, height):
+    return width * height
+
+print(calculate_area(5, 10))  # 50
+# calculate_area(-5, 10)  # ValueError!`,
+        tests: `
+def test_valid():
+    @validate_positive
+    def add(a, b):
+        return a + b
+    return add(5, 10)
+
+def test_invalid():
+    @validate_positive
+    def add(a, b):
+        return a + b
+    try:
+        add(-5, 10)
+        return False
+    except ValueError:
+        return True
+
+__test("валидные аргументы", test_valid(), 15)
+__test("отрицательные вызывают ошибку", test_invalid(), True)`,
+        solution: `def validate_positive(fn):
+    def wrapper(*args, **kwargs):
+        for arg in args:
+            if isinstance(arg, (int, float)) and arg < 0:
+                raise ValueError(f"Аргумент {arg} должен быть положительным")
+        return fn(*args, **kwargs)
+    return wrapper`,
+      },
+      {
+        id: "py8t4",
+        title: "Кэширующий декоратор",
+        md: `Реализуйте декоратор \`memoize(fn)\`, который кэширует результаты функции. При повторном вызове с теми же аргументами возвращает результат из кэша.`,
+        starter: `def memoize(fn):
+    # ваш декоратор с кэшем
+    pass
+
+@memoize
+def expensive_calculation(x):
+    print(f"Вычисляю для {x}...")
+    return x * x
+
+print(expensive_calculation(5))  # Вычисляю для 5... → 25
+print(expensive_calculation(5))  # 25 (без вычисления!)
+print(expensive_calculation(10)) # Вычисляю для 10... → 100`,
+        tests: `
+def test_caching():
+    call_count = 0
+    
+    @memoize
+    def square(x):
+        nonlocal call_count
+        call_count += 1
+        return x * x
+    
+    square(5)
+    square(5)
+    square(5)
+    return call_count
+
+__test("кэширование работает", test_caching(), 1)`,
+        solution: `def memoize(fn):
+    cache = {}
+    def wrapper(*args):
+        if args not in cache:
+            cache[args] = fn(*args)
+        return cache[args]
+    return wrapper`,
+      },
+      {
+        id: "py8t5",
+        title: "Фабрика функций",
+        md: `Реализуйте \`make_power(exponent)\`, которая возвращает функцию, возводящую число в степень \`exponent\`. \`square = make_power(2); square(5)\` → \`25\`.`,
+        starter: `def make_power(exponent):
+    # верните функцию-замыкание
+    pass
+
+square = make_power(2)
+cube = make_power(3)
+print(square(5))  # 25
+print(cube(2))    # 8`,
+        tests: `
+__test("square(5) → 25", lambda: make_power(2)(5), 25)
+__test("cube(2) → 8", lambda: make_power(3)(2), 8)
+__test("power(4, 0.5) → 2.0", lambda: make_power(0.5)(4), 2.0)
+__test("независимые фабрики", lambda: (make_power(2)(3), make_power(3)(3)), (9, 27))`,
+        solution: `def make_power(exponent):
+    def power(base):
+        return base ** exponent
+    return power`,
       },
     ],
   },
