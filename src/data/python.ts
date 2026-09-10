@@ -5335,6 +5335,485 @@ d = {[1, 2]: "список"}  # TypeError: unhashable type: 'list'
 - Нужен ключ для словаря
 - Важна производительность (кортежи быстрее списков)`,
       },
+      {
+        kind: "text",
+        md: `## Вложенные словари
+
+Словари могут содержать другие словари как значения. Это полезно для представления иерархических данных.
+
+**Доступ к вложенным элементам:**
+\`\`\`python
+value = outer_dict["key1"]["key2"]
+\`\`\`
+
+**Безопасный доступ:**
+\`\`\`python
+value = outer_dict.get("key1", {}).get("key2", "default")
+\`\`\``,
+      },
+      {
+        kind: "code",
+        title: "Работа с вложенными словарями",
+        code: `# Вложенный словарь
+users = {
+    "alice": {"name": "Алиса", "age": 25, "city": "Москва"},
+    "bob": {"name": "Боб", "age": 30, "city": "СПб"},
+    "charlie": {"name": "Чарли", "age": 35, "city": "Казань"}
+}
+
+# Доступ к вложенным элементам
+print(users["alice"]["name"])  # Алиса
+print(users["bob"]["age"])     # 30
+
+# Безопасный доступ с get()
+print(users.get("david", {}).get("name", "Неизвестно"))  # Неизвестно
+
+# Обход вложенного словаря
+for user_id, user_data in users.items():
+    print(f"{user_id}: {user_data['name']}, {user_data['age']} лет")
+
+# Изменение вложенных значений
+users["alice"]["city"] = "Санкт-Петербург"
+users["alice"]["email"] = "alice@example.com"
+print(users["alice"])
+
+# Добавление нового пользователя
+users["david"] = {"name": "Давид", "age": 28, "city": "Москва"}
+
+# Словарь списков
+groups = {
+    "admins": ["alice", "bob"],
+    "users": ["charlie", "david", "eve"],
+    "guests": []
+}
+groups["users"].append("frank")
+print(groups)`,
+      },
+      {
+        kind: "text",
+        md: `## Set comprehensions: генераторы множеств
+
+Set comprehension — компактный способ создания множеств. Синтаксис:
+
+\`\`\`python
+{выражение for элемент in коллекция if условие}
+\`\`\`
+
+**Особенности:**
+- Автоматически удаляет дубликаты
+- Порядок не гарантирован
+- Быстрее, чем создание списка и преобразование в множество`,
+      },
+      {
+        kind: "code",
+        title: "Set comprehensions в примерах",
+        code: `# Уникальные квадраты
+numbers = [1, 2, 2, 3, 3, 3, 4, 4, 4, 4]
+squares = {x ** 2 for x in numbers}
+print(squares)  # {1, 4, 9, 16} — дубликаты удалены
+
+# Уникальные слова из текста
+text = "Python is awesome! Python is powerful! Python is fun!"
+words = {word.lower() for word in text.split()}
+print(words)  # {'python', 'is', 'awesome!', 'powerful!', 'fun!'}
+
+# С условием
+numbers = range(-5, 6)
+positive_squares = {x ** 2 for x in numbers if x > 0}
+print(positive_squares)  # {1, 4, 9, 16, 25}
+
+# Уникальные первые буквы
+names = ["Alice", "Bob", "Charlie", "Alice", "Bob"]
+first_letters = {name[0] for name in names}
+print(first_letters)  # {'A', 'B', 'C'}
+
+# Сравнение с list comprehension
+list_comp = [x ** 2 for x in [1, 2, 2, 3, 3]]
+set_comp = {x ** 2 for x in [1, 2, 2, 3, 3]}
+print(list_comp)  # [1, 4, 4, 9, 9] — дубликаты есть
+print(set_comp)   # {1, 4, 9} — дубликатов нет`,
+      },
+      {
+        kind: "text",
+        md: `## Модуль collections: расширенные коллекции
+
+Модуль \`collections\` предоставляет специализированные контейнеры:
+
+- \`defaultdict\` — словарь с значением по умолчанию
+- \`Counter\` — подсчёт элементов
+- \`OrderedDict\` — словарь с сохранением порядка (в Python 3.7+ обычный dict тоже сохраняет порядок)
+- \`namedtuple\` — именованный кортеж
+- \`deque\` — двусторонняя очередь`,
+      },
+      {
+        kind: "code",
+        title: "defaultdict и Counter",
+        code: `from collections import defaultdict, Counter
+
+# defaultdict — значение по умолчанию
+word_groups = defaultdict(list)
+words = ["apple", "banana", "apricot", "blueberry", "avocado"]
+
+for word in words:
+    word_groups[word[0]].append(word)
+
+print(dict(word_groups))
+# {'a': ['apple', 'apricot', 'avocado'], 'b': ['banana', 'blueberry']}
+
+# defaultdict с int для подсчёта
+counts = defaultdict(int)
+for char in "abracadabra":
+    counts[char] += 1
+print(dict(counts))  # {'a': 5, 'b': 2, 'r': 2, 'c': 1, 'd': 1}
+
+# Counter — специализированный счётчик
+text = "abracadabra"
+counter = Counter(text)
+print(counter)  # Counter({'a': 5, 'b': 2, 'r': 2, 'c': 1, 'd': 1})
+print(counter['a'])  # 5
+print(counter.most_common(3))  # [('a', 5), ('b', 2), ('r', 2)]
+
+# Counter с методами
+words = ["apple", "banana", "apple", "cherry", "banana", "apple"]
+word_counts = Counter(words)
+print(word_counts.most_common(2))  # [('apple', 3), ('banana', 2)]
+
+# Операции с Counter
+c1 = Counter("abracadabra")
+c2 = Counter("alacazam")
+print(c1 + c2)  # сложение счётчиков
+print(c1 - c2)  # разность счётчиков`,
+      },
+      {
+        kind: "code",
+        title: "namedtuple и deque",
+        code: `from collections import namedtuple, deque
+
+# namedtuple — именованный кортеж
+Point = namedtuple("Point", ["x", "y"])
+p = Point(10, 20)
+print(p)  # Point(x=10, y=20)
+print(p.x, p.y)  # 10 20
+print(p[0], p[1])  # 10 20 — работает как обычный кортеж
+
+# Использование namedtuple
+User = namedtuple("User", ["name", "age", "email"])
+user = User("Алиса", 25, "alice@example.com")
+print(f"{user.name}, {user.age} лет")
+
+# deque — двусторонняя очередь
+dq = deque([1, 2, 3])
+dq.append(4)        # добавить в конец
+dq.appendleft(0)    # добавить в начало
+print(dq)  # deque([0, 1, 2, 3, 4])
+
+dq.pop()        # удалить с конца
+dq.popleft()    # удалить с начала
+print(dq)  # deque([1, 2, 3])
+
+# deque с ограничением размера
+dq = deque(maxlen=3)
+for i in range(5):
+    dq.append(i)
+print(dq)  # deque([2, 3, 4]) — только последние 3 элемента
+
+# Производительность deque vs list
+import time
+
+# deque: O(1) для appendleft/popleft
+dq = deque()
+start = time.time()
+for i in range(100000):
+    dq.appendleft(i)
+print(f"deque: {time.time() - start:.4f} сек")
+
+# list: O(n) для insert(0, x)
+lst = []
+start = time.time()
+for i in range(100000):
+    lst.insert(0, i)
+print(f"list: {time.time() - start:.4f} сек")`,
+      },
+      {
+        kind: "text",
+        md: `## Frozen sets: неизменяемые множества
+
+\`frozenset\` — неизменяемая версия множества. После создания нельзя добавить или удалить элементы.
+
+**Зачем нужны:**
+- Можно использовать как ключи словаря
+- Можно добавить в другое множество
+- Гарантия неизменяемости`,
+      },
+      {
+        kind: "code",
+        title: "Frozen sets в примерах",
+        code: `# Создание frozenset
+fs = frozenset([1, 2, 3, 4, 5])
+print(fs)  # frozenset({1, 2, 3, 4, 5})
+
+# fs.add(6)  # AttributeError! Нельзя изменять
+
+# Можно использовать как ключ словаря
+locations = {
+    frozenset([1, 2]): "точка A",
+    frozenset([3, 4]): "точка B"
+}
+print(locations[frozenset([1, 2])])  # точка A
+
+# Можно добавить в множество
+sets = {frozenset([1, 2]), frozenset([3, 4]), frozenset([1, 2])}
+print(sets)  # {frozenset({1, 2}), frozenset({3, 4})} — дубликат удалён
+
+# Операции работают как с обычным множеством
+a = frozenset([1, 2, 3])
+b = frozenset([2, 3, 4])
+print(a & b)  # frozenset({2, 3})
+print(a | b)  # frozenset({1, 2, 3, 4})`,
+      },
+      {
+        kind: "text",
+        md: `## Производительность коллекций
+
+**Временная сложность операций:**
+
+**dict:**
+- Поиск по ключу: O(1)
+- Вставка: O(1)
+- Удаление: O(1)
+- Проверка ключа (\`in\`): O(1)
+
+**set:**
+- Проверка вхождения (\`in\`): O(1)
+- Добавление: O(1)
+- Удаление: O(1)
+- Объединение/пересечение: O(len(set))
+
+**list:**
+- Доступ по индексу: O(1)
+- Поиск элемента (\`in\`): O(n)
+- Вставка в конец: O(1)
+- Вставка в начало: O(n)
+
+**tuple:**
+- Доступ по индексу: O(1)
+- Быстрее и легче списков
+- Неизменяемый`,
+      },
+      {
+        kind: "code",
+        title: "Сравнение производительности",
+        code: `import time
+
+# Проверка вхождения: list vs set
+large_list = list(range(1000000))
+large_set = set(range(1000000))
+
+# list: O(n)
+start = time.time()
+if 999999 in large_list:
+    pass
+print(f"list: {time.time() - start:.6f} сек")
+
+# set: O(1)
+start = time.time()
+if 999999 in large_set:
+    pass
+print(f"set: {time.time() - start:.6f} сек")
+
+# Практический совет: используйте set для проверок
+# ❌ Плохо
+users = ["alice", "bob", "charlie", "david"]
+if "alice" in users:  # O(n)
+    print("Найден")
+
+# ✅ Хорошо
+users_set = set(users)
+if "alice" in users_set:  # O(1)
+    print("Найден")
+
+# Словарь vs список для подсчёта
+words = ["apple", "banana", "apple", "cherry", "banana", "apple"]
+
+# ❌ Плохо: O(n²)
+counts = {}
+for word in words:
+    if word in counts:
+        counts[word] += 1
+    else:
+        counts[word] = 1
+
+# ✅ Хорошо: O(n)
+from collections import Counter
+counts = Counter(words)`,
+      },
+      {
+        kind: "text",
+        md: `## Практические паттерны
+
+### 1. Группировка данных
+\`\`\`python
+from collections import defaultdict
+
+groups = defaultdict(list)
+for item in items:
+    groups[item.category].append(item)
+\`\`\`
+
+### 2. Подсчёт уникальных элементов
+\`\`\`python
+from collections import Counter
+counts = Counter(items)
+most_common = counts.most_common(5)
+\`\`\`
+
+### 3. Удаление дубликатов с сохранением порядка
+\`\`\`python
+unique = list(dict.fromkeys(items))
+\`\`\`
+
+### 4. Словарь с значениями по умолчанию
+\`\`\`python
+from collections import defaultdict
+d = defaultdict(lambda: "значение по умолчанию")
+\`\`\``,
+      },
+      {
+        kind: "code",
+        title: "Практические примеры",
+        code: `from collections import defaultdict, Counter
+
+# Паттерн 1: Группировка по первому символу
+words = ["apple", "apricot", "banana", "blueberry", "cherry"]
+groups = defaultdict(list)
+for word in words:
+    groups[word[0]].append(word)
+print(dict(groups))
+# {'a': ['apple', 'apricot'], 'b': ['banana', 'blueberry'], 'c': ['cherry']}
+
+# Паттерн 2: Подсчёт частоты слов
+text = "python is awesome python is powerful python is fun"
+word_counts = Counter(text.split())
+print(word_counts.most_common(3))
+# [('python', 3), ('is', 3), ('awesome', 1)]
+
+# Паттерн 3: Удаление дубликатов с сохранением порядка
+items = [3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5]
+unique = list(dict.fromkeys(items))
+print(unique)  # [3, 1, 4, 5, 9, 2, 6]
+
+# Паттерн 4: Словарь с автоматической инициализацией
+graph = defaultdict(set)
+edges = [(1, 2), (1, 3), (2, 3), (3, 4)]
+for u, v in edges:
+    graph[u].add(v)
+    graph[v].add(u)
+print(dict(graph))
+# {1: {2, 3}, 2: {1, 3}, 3: {1, 2, 4}, 4: {3}}
+
+# Паттерн 5: Инвертирование словаря
+original = {"a": 1, "b": 2, "c": 3}
+inverted = {v: k for k, v in original.items()}
+print(inverted)  # {1: 'a', 2: 'b', 3: 'c'}`,
+      },
+      {
+        kind: "text",
+        md: `## Распространённые ошибки
+
+### 1. Изменение словаря во время итерации
+\`\`\`python
+# ❌ Ошибка!
+for key in my_dict:
+    if key.startswith("temp"):
+        del my_dict[key]
+
+# ✅ Правильно: итерируем по копии ключей
+for key in list(my_dict.keys()):
+    if key.startswith("temp"):
+        del my_dict[key]
+\`\`\`
+
+### 2. Изменяемые значения по умолчанию
+\`\`\`python
+# ❌ Ошибка!
+def add_item(item, items=[]):
+    items.append(item)
+    return items
+
+# ✅ Правильно
+def add_item(item, items=None):
+    if items is None:
+        items = []
+    items.append(item)
+    return items
+\`\`\`
+
+### 3. Забытая проверка ключа
+\`\`\`python
+# ❌ Может вызвать KeyError
+value = my_dict["key"]
+
+# ✅ Правильно
+value = my_dict.get("key", "значение по умолчанию")
+\`\`\``,
+      },
+      {
+        kind: "code",
+        title: "Избегаем распространённых ошибок",
+        code: `# Ошибка 1: Изменение словаря во время итерации
+my_dict = {"temp1": 1, "temp2": 2, "keep1": 3, "keep2": 4}
+
+# ❌ Плохо: RuntimeError: dictionary changed size during iteration
+# for key in my_dict:
+#     if key.startswith("temp"):
+#         del my_dict[key]
+
+# ✅ Хорошо: итерируем по копии ключей
+for key in list(my_dict.keys()):
+    if key.startswith("temp"):
+        del my_dict[key]
+print(my_dict)  # {'keep1': 3, 'keep2': 4}
+
+# ✅ Или используем dict comprehension
+my_dict = {"temp1": 1, "temp2": 2, "keep1": 3, "keep2": 4}
+my_dict = {k: v for k, v in my_dict.items() if not k.startswith("temp")}
+print(my_dict)  # {'keep1': 3, 'keep2': 4}
+
+# Ошибка 2: Изменяемые значения по умолчанию
+# ❌ Плохо
+def add_item_bad(item, items=[]):
+    items.append(item)
+    return items
+
+print(add_item_bad(1))  # [1]
+print(add_item_bad(2))  # [1, 2] — список общий для всех вызовов!
+
+# ✅ Хорошо
+def add_item_good(item, items=None):
+    if items is None:
+        items = []
+    items.append(item)
+    return items
+
+print(add_item_good(1))  # [1]
+print(add_item_good(2))  # [2] — каждый вызов создаёт новый список
+
+# Ошибка 3: Забытая проверка ключа
+user = {"name": "Алиса", "age": 25}
+
+# ❌ Может вызвать KeyError
+# email = user["email"]
+
+# ✅ Правильно
+email = user.get("email", "не указан")
+print(email)  # не указан
+
+# ✅ Или проверяем наличие ключа
+if "email" in user:
+    email = user["email"]
+else:
+    email = "не указан"`,
+      },
     ],
     quiz: [
       {
@@ -5371,6 +5850,45 @@ d = {[1, 2]: "список"}  # TypeError: unhashable type: 'list'
         ],
         answer: 1,
         explain: "Кортежи неизменяемы. Попытка изменить элемент вызовет TypeError.",
+      },
+      {
+        q: "Что такое frozenset?",
+        options: [
+          "Замороженный список",
+          "Неизменяемое множество",
+          "Словарь с замороженными ключами",
+          "Кортеж из множеств",
+        ],
+        answer: 1,
+        explain: "frozenset — неизменяемая версия множества. Её можно использовать как ключ словаря.",
+      },
+      {
+        q: "Какая временная сложность поиска по ключу в словаре?",
+        options: ["O(1)", "O(n)", "O(log n)", "O(n²)"],
+        answer: 0,
+        explain: "Словари используют хеш-таблицы, поэтому поиск по ключу работает за O(1) в среднем случае.",
+      },
+      {
+        q: "Что вернёт Counter('abracadabra').most_common(2)?",
+        options: [
+          "[('a', 5), ('b', 2)]",
+          "{'a': 5, 'b': 2}",
+          "[('a', 5), ('r', 2)]",
+          "Counter({'a': 5})",
+        ],
+        answer: 0,
+        explain: "most_common(2) возвращает список из 2 самых частых элементов с их частотами.",
+      },
+      {
+        q: "Зачем нужен defaultdict?",
+        options: [
+          "Для создания словаря с значениями по умолчанию",
+          "Для ускорения работы словаря",
+          "Для создания неизменяемого словаря",
+          "Для сортировки словаря",
+        ],
+        answer: 0,
+        explain: "defaultdict автоматически создаёт значение по умолчанию при обращении к несуществующему ключу.",
       },
     ],
     tasks: [
@@ -5469,6 +5987,116 @@ def distance(p1, p2):
     x1, y1 = p1
     x2, y2 = p2
     return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)`,
+      },
+      {
+        id: "py6t6",
+        title: "Группировка слов",
+        md: `Реализуйте \`group_words(words)\` — группирует слова по первому символу. Возвращает словарь, где ключ — первый символ, значение — список слов. Используйте \`defaultdict\`.`,
+        starter: `from collections import defaultdict
+
+def group_words(words):
+    # ваш код
+    pass
+
+print(group_words(["apple", "apricot", "banana", "blueberry"]))`,
+        tests: `
+__test("группировка по первому символу", lambda: group_words(["apple", "apricot", "banana", "blueberry"]), {"a": ["apple", "apricot"], "b": ["banana", "blueberry"]})
+__test("пустой список", lambda: group_words([]), {})
+__test("одно слово", lambda: group_words(["apple"]), {"a": ["apple"]})`,
+        solution: `from collections import defaultdict
+
+def group_words(words):
+    groups = defaultdict(list)
+    for word in words:
+        groups[word[0]].append(word)
+    return dict(groups)`,
+      },
+      {
+        id: "py6t7",
+        title: "Топ частот",
+        md: `Реализуйте \`top_frequent(text, n)\` — возвращает список из n самых частых слов в тексте. Используйте \`Counter\`.`,
+        starter: `from collections import Counter
+
+def top_frequent(text, n):
+    # ваш код
+    pass
+
+print(top_frequent("python is awesome python is fun", 2))`,
+        tests: `
+__test("топ 2 слова", lambda: top_frequent("python is awesome python is fun", 2), [("python", 2), ("is", 2)])
+__test("топ 1 слово", lambda: top_frequent("a b a c a b", 1), [("a", 3)])
+__test("топ 3 слова", lambda: top_frequent("a a a b b c", 3), [("a", 3), ("b", 2), ("c", 1)])`,
+        solution: `from collections import Counter
+
+def top_frequent(text, n):
+    counter = Counter(text.split())
+    return counter.most_common(n)`,
+      },
+      {
+        id: "py6t8",
+        title: "Уникальные с порядком",
+        md: `Реализуйте \`unique_ordered(items)\` — удаляет дубликаты из списка, сохраняя порядок первого появления.`,
+        starter: `def unique_ordered(items):
+    # ваш код
+    pass
+
+print(unique_ordered([3, 1, 4, 1, 5, 9, 2, 6, 5, 3]))`,
+        tests: `
+__test("удаление дубликатов с сохранением порядка", lambda: unique_ordered([3, 1, 4, 1, 5, 9, 2, 6, 5, 3]), [3, 1, 4, 5, 9, 2, 6])
+__test("пустой список", lambda: unique_ordered([]), [])
+__test("нет дубликатов", lambda: unique_ordered([1, 2, 3]), [1, 2, 3])
+__test("все одинаковые", lambda: unique_ordered([5, 5, 5, 5]), [5])`,
+        solution: `def unique_ordered(items):
+    return list(dict.fromkeys(items))`,
+      },
+      {
+        id: "py6t9",
+        title: "Матрица смежности",
+        md: `Реализуйте \`build_graph(edges)\` — строит граф в виде словаря смежности из списка рёбер. Каждое ребро — кортеж (u, v). Граф неориентированный.`,
+        starter: `from collections import defaultdict
+
+def build_graph(edges):
+    # ваш код
+    pass
+
+print(build_graph([(1, 2), (1, 3), (2, 3)]))`,
+        tests: `
+__test("простой граф", lambda: build_graph([(1, 2), (1, 3)]), {1: {2, 3}, 2: {1}, 3: {1}})
+__test("пустой граф", lambda: build_graph([]), {})
+__test("треугольник", lambda: build_graph([(1, 2), (2, 3), (1, 3)]), {1: {2, 3}, 2: {1, 3}, 3: {1, 2}})`,
+        solution: `from collections import defaultdict
+
+def build_graph(edges):
+    graph = defaultdict(set)
+    for u, v in edges:
+        graph[u].add(v)
+        graph[v].add(u)
+    return dict(graph)`,
+      },
+      {
+        id: "py6t10",
+        title: "Словарь с вложенностью",
+        md: `Реализуйте \`get_nested(d, keys, default=None)\` — безопасно получает значение из вложенного словаря по списку ключей. Если ключ не найден, возвращает default.`,
+        starter: `def get_nested(d, keys, default=None):
+    # ваш код
+    pass
+
+user = {"profile": {"name": "Алиса", "age": 25}}
+print(get_nested(user, ["profile", "name"]))
+print(get_nested(user, ["profile", "email"], "не указан"))`,
+        tests: `
+__test("существующий ключ", lambda: get_nested({"a": {"b": {"c": 1}}}, ["a", "b", "c"]), 1)
+__test("несуществующий ключ", lambda: get_nested({"a": {"b": 1}}, ["a", "c"], "нет"), "нет")
+__test("default значение", lambda: get_nested({}, ["a"], 0), 0)
+__test("глубокая вложенность", lambda: get_nested({"a": {"b": {"c": {"d": 42}}}}, ["a", "b", "c", "d"]), 42)`,
+        solution: `def get_nested(d, keys, default=None):
+    current = d
+    for key in keys:
+        if isinstance(current, dict) and key in current:
+            current = current[key]
+        else:
+            return default
+    return current`,
       },
     ],
   },
