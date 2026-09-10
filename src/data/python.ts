@@ -6522,6 +6522,324 @@ result = ", ".join(str(n) for n in numbers)
 print(result)  # "1, 2, 3, 4, 5"`,
       },
       {
+        kind: "text",
+        md: `## Модуль string: дополнительные возможности
+
+Модуль \`string\` предоставляет дополнительные константы и функции для работы со строками.
+
+**Полезные константы:**
+- \`string.ascii_letters\` — все буквы латиницы (a-z, A-Z)
+- \`string.digits\` — все цифры (0-9)
+- \`string.punctuation\` — все знаки препинания
+- \`string.whitespace\` — все пробельные символы`,
+      },
+      {
+        kind: "code",
+        title: "Модуль string в примерах",
+        code: `import string
+
+# Константы модуля string
+print(string.ascii_letters)  # abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ
+print(string.digits)         # 0123456789
+print(string.punctuation)    # !"#$%&'()*+,-./:;<=>?@[\\]^_\`{|}~
+
+# Практическое использование: удаление пунктуации
+text = "Hello, World! How are you?"
+cleaned = text.translate(str.maketrans("", "", string.punctuation))
+print(cleaned)  # Hello World How are you
+
+# Генерация случайного пароля
+import random
+import string
+
+def generate_password(length=12):
+    chars = string.ascii_letters + string.digits + string.punctuation
+    return ''.join(random.choice(chars) for _ in range(length))
+
+print(generate_password(16))
+
+# Проверка, содержит ли строка только цифры
+print("123".isnumeric())  # True
+print("123abc".isnumeric())  # False
+
+# Подсчёт гласных и согласных
+text = "Python Programming"
+vowels = sum(1 for char in text.lower() if char in "aeiou")
+consonants = sum(1 for char in text.lower() if char in string.ascii_lowercase and char not in "aeiou")
+print(f"Гласных: {vowels}, Согласных: {consonants}")`,
+      },
+      {
+        kind: "text",
+        md: `## Кодировки строк: Unicode и UTF-8
+
+Python 3 использует **Unicode** для всех строк. Это означает, что вы можете использовать любые символы из любого языка.
+
+**Важные моменты:**
+- Строки в Python — это последовательности Unicode-символов
+- При записи в файл или сеть строки кодируются в байты (обычно UTF-8)
+- \`len()\` считает символы, а не байты`,
+      },
+      {
+        kind: "code",
+        title: "Работа с Unicode",
+        code: `# Строки могут содержать любые символы
+text = "Привет, мир! 你好世界 🌍"
+print(text)
+print(len(text))  # 18 символов
+
+# Кодирование в байты
+bytes_utf8 = text.encode('utf-8')
+print(bytes_utf8)
+print(len(bytes_utf8))  # больше байт, чем символов
+
+# Декодирование из байтов
+decoded = bytes_utf8.decode('utf-8')
+print(decoded == text)  # True
+
+# Работа с эмодзи
+emoji = "😀😁😂"
+print(emoji)
+print(len(emoji))  # 3 символа
+
+# Нормализация Unicode
+import unicodedata
+text1 = "é"  # один символ
+text2 = "e\u0301"  # e + акцент (два символа)
+print(len(text1), len(text2))  # 1 2
+
+# Нормализация делает их одинаковыми
+normalized1 = unicodedata.normalize('NFC', text1)
+normalized2 = unicodedata.normalize('NFC', text2)
+print(normalized1 == normalized2)  # True`,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения: введение
+
+Регулярные выражения (regex) — мощный инструмент для поиска и обработки текста. Модуль \`re\` предоставляет функции для работы с ними.
+
+**Основные функции:**
+- \`re.search()\` — найти первое совпадение
+- \`re.match()\` — найти совпадение в начале строки
+- \`re.findall()\` — найти все совпадения
+- \`re.sub()\` — заменить все совпадения
+
+**Основные паттерны:**
+- \`\\d\` — цифра
+- \`\\w\` — буква, цифра или подчёркивание
+- \`\\s\` — пробельный символ
+- \`.\` — любой символ
+- \`+\` — одно или более повторений
+- \`*\` — ноль или более повторений
+- \`?\` — ноль или одно повторение`,
+      },
+      {
+        kind: "code",
+        title: "Регулярные выражения в примерах",
+        code: `import re
+
+text = "Мой телефон: +7 (999) 123-45-67, email: user@example.com"
+
+# Поиск email
+email_pattern = r'[\\w\\.-]+@[\\w\\.-]+\\.\\w+'
+emails = re.findall(email_pattern, text)
+print(emails)  # ['user@example.com']
+
+# Поиск телефона
+phone_pattern = r'\\+?\\d[\\d\\s\\(\\)-]{9,}\\d'
+phones = re.findall(phone_pattern, text)
+print(phones)  # ['+7 (999) 123-45-67']
+
+# Замена текста
+text = "Дата: 2024-01-15"
+new_text = re.sub(r'\\d{4}-\\d{2}-\\d{2}', 'ДД.ММ.ГГГГ', text)
+print(new_text)  # Дата: ДД.ММ.ГГГГ
+
+# Валидация email
+def is_valid_email(email):
+    pattern = r'^[\\w\\.-]+@[\\w\\.-]+\\.\\w+$'
+    return bool(re.match(pattern, email))
+
+print(is_valid_email("user@example.com"))  # True
+print(is_valid_email("invalid-email"))     # False
+
+# Извлечение чисел из текста
+text = "В корзине 3 товара на сумму 1500 рублей"
+numbers = re.findall(r'\\d+', text)
+print(numbers)  # ['3', '1500']`,
+      },
+      {
+        kind: "text",
+        md: `## Производительность строковых операций
+
+Строки в Python неизменяемы, поэтому каждая операция создаёт новую строку. Это влияет на производительность.
+
+**Советы по оптимизации:**
+- Используйте \`join()\` вместо конкатенации в цикле
+- Используйте \`f-strings\` вместо \`format()\` или \`%\`
+- Избегайте множественных \`replace()\` — используйте \`translate()\`
+- Для больших текстов используйте \`io.StringIO\``,
+      },
+      {
+        kind: "code",
+        title: "Оптимизация строковых операций",
+        code: `import time
+
+# ❌ Плохо: конкатенация в цикле
+words = ["word"] * 10000
+start = time.time()
+result = ""
+for word in words:
+    result += word
+print(f"Конкатенация: {time.time() - start:.4f} сек")
+
+# ✅ Хорошо: join
+start = time.time()
+result = "".join(words)
+print(f"Join: {time.time() - start:.4f} сек")
+
+# ❌ Плохо: множественные replace
+text = "Hello, World! How are you?"
+start = time.time()
+for _ in range(1000):
+    text = text.replace(",", "").replace("!", "").replace("?", "")
+print(f"Replace: {time.time() - start:.4f} сек")
+
+# ✅ Хорошо: translate
+start = time.time()
+text = "Hello, World! How are you?"
+table = str.maketrans("", "", ",!?")
+for _ in range(1000):
+    text = text.translate(table)
+print(f"Translate: {time.time() - start:.4f} сек")
+
+# ✅ Отлично: f-strings
+name = "Alice"
+age = 30
+start = time.time()
+for _ in range(10000):
+    s = f"Name: {name}, Age: {age}"
+print(f"f-strings: {time.time() - start:.4f} сек")`,
+      },
+      {
+        kind: "text",
+        md: `## Практические паттерны работы со строками
+
+### 1. Парсинг CSV-строки
+\`\`\`python
+csv_line = "Alice,30,New York"
+name, age, city = csv_line.split(",")
+age = int(age)
+\`\`\`
+
+### 2. Извлечение данных из текста
+\`\`\`python
+import re
+text = "Order #12345: 5 items for $99.99"
+order_id = re.search(r'#(\\d+)', text).group(1)
+amount = re.search(r'\\$(\\d+\\.\\d{2})', text).group(1)
+\`\`\`
+
+### 3. Форматирование чисел
+\`\`\`python
+price = 1234567.89
+formatted = f"Price: {price:,.2f} USD"  # Price: 1,234,567.89 USD
+\`\`\`
+
+### 4. Многострочные шаблоны
+\`\`\`python
+template = """
+Dear {name},
+
+Thank you for your order #{order_id}.
+Total amount: {amount} USD
+
+Best regards,
+{company}
+"""
+result = template.format(name="Alice", order_id=12345, amount=99.99, company="Shop")
+\`\`\``,
+      },
+      {
+        kind: "code",
+        title: "Практические примеры",
+        code: `# Паттерн 1: Парсинг CSV
+csv_data = """name,age,city
+Alice,30,New York
+Bob,25,London
+Charlie,35,Paris"""
+
+lines = csv_data.strip().split("\\n")
+headers = lines[0].split(",")
+data = [dict(zip(headers, line.split(","))) for line in lines[1:]]
+print(data)
+
+# Паттерн 2: Извлечение email из текста
+text = """
+Contact us at support@example.com or sales@example.com.
+Visit our website at www.example.com.
+"""
+emails = re.findall(r'[\\w\\.-]+@[\\w\\.-]+\\.\\w+', text)
+print(emails)  # ['support@example.com', 'sales@example.com']
+
+# Паттерн 3: CamelCase в snake_case
+def camel_to_snake(name):
+    s1 = re.sub('(.)([A-Z][a-z]+)', r'\\1_\\2', name)
+    return re.sub('([a-z0-9])([A-Z])', r'\\1_\\2', s1).lower()
+
+print(camel_to_snake("CamelCase"))  # camel_case
+print(camel_to_snake("HTTPResponse"))  # http_response
+
+# Паттерн 4: Шаблонизация
+template = """
+<!DOCTYPE html>
+<html>
+<head><title>{title}</title></head>
+<body>
+  <h1>{title}</h1>
+  <p>By {author}</p>
+</body>
+</html>
+"""
+html = template.format(title="My Page", author="Alice")
+print(html)`,
+      },
+      {
+        kind: "text",
+        md: `## Распространённые ошибки
+
+### 1. Изменение строки в цикле
+\`\`\`python
+# ❌ Плохо: создаёт новую строку на каждой итерации
+result = ""
+for char in text:
+    result += char.upper()
+
+# ✅ Хорошо: использует join
+result = "".join(char.upper() for char in text)
+\`\`\`
+
+### 2. Забывать про неизменяемость
+\`\`\`python
+text = "hello"
+# text[0] = "H"  # TypeError!
+
+# ✅ Правильно: создать новую строку
+text = "H" + text[1:]
+\`\`\`
+
+### 3. Не учитывать кодировку
+\`\`\`python
+# ❌ Плохо: может вызвать ошибку
+with open("file.txt", "w") as f:
+    f.write("Привет, мир!")
+
+# ✅ Хорошо: указать кодировку
+with open("file.txt", "w", encoding="utf-8") as f:
+    f.write("Привет, мир!")
+\`\`\``,
+      },
+      {
         kind: "tip",
         title: "Полезные приёмы",
         md: `**1. Удаление символов из строки:**
@@ -6604,6 +6922,61 @@ def is_palindrome(s):
         ],
         answer: 3,
         explain: "Все три способа работают. endswith() — самый читаемый, срез — самый гибкий.",
+      },
+      {
+        q: "Что делает метод translate()?",
+        options: [
+          "Переводит строку на другой язык",
+          "Заменяет символы по таблице соответствия",
+          "Преобразует строку в байты",
+          "Разделяет строку на части",
+        ],
+        answer: 1,
+        explain: "translate() заменяет символы согласно таблице, созданной maketrans(). Это быстрый способ замены множества символов.",
+      },
+      {
+        q: "Что вернёт re.findall(r'\\d+', 'abc123def456')?",
+        options: [
+          "['123', '456']",
+          "['abc', 'def']",
+          "['123def456']",
+          "ошибку",
+        ],
+        answer: 0,
+        explain: "re.findall() находит все совпадения паттерна. \\d+ означает 'одна или более цифр', поэтому найдёт ['123', '456'].",
+      },
+      {
+        q: "Какой метод быстрее для удаления множества символов?",
+        options: [
+          "Множественные replace()",
+          "translate()",
+          "re.sub()",
+          "Все методы одинаково быстры",
+        ],
+        answer: 1,
+        explain: "translate() быстрее, чем множественные replace() или re.sub(), так как использует оптимизированную таблицу замен.",
+      },
+      {
+        q: "Что такое raw string (r'...')?",
+        options: [
+          "Строка без пробелов",
+          "Строка, которая не обрабатывает escape-последовательности",
+          "Строка только из цифр",
+          "Строка в верхнем регистре",
+        ],
+        answer: 1,
+        explain: "Raw string (r'...') не обрабатывает escape-последовательности, что полезно для регулярных выражений и путей Windows.",
+      },
+      {
+        q: "Что вернёт 'Hello World'.split()?",
+        options: [
+          "['Hello', 'World']",
+          "['Hello World']",
+          "['H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd']",
+          "ошибку",
+        ],
+        answer: 0,
+        explain: "split() без аргументов разделяет строку по пробелам, игнорируя множественные пробелы.",
       },
     ],
     tasks: [
@@ -6706,6 +7079,120 @@ __test("remove_vowels('bcdfg') → 'bcdfg'", lambda: remove_vowels("bcdfg"), "bc
         solution: `def remove_vowels(text):
     vowels = "аеёиоуыэюяАЕЁИОУЫЭЮЯ"
     return "".join(ch for ch in text if ch not in vowels)`,
+      },
+      {
+        id: "py7t6",
+        title: "Извлечение email",
+        md: `Реализуйте \`extract_emails(text)\`, которая извлекает все email-адреса из текста. Используйте регулярные выражения.`,
+        starter: `import re
+
+def extract_emails(text):
+    # ваш код
+    pass
+
+print(extract_emails("Contact us at support@example.com or sales@example.com"))`,
+        tests: `
+__test("извлечение email", lambda: extract_emails("Contact us at support@example.com or sales@example.com"), ["support@example.com", "sales@example.com"])
+__test("нет email", lambda: extract_emails("No emails here"), [])
+__test("один email", lambda: extract_emails("Email: user@example.com"), ["user@example.com"])`,
+        solution: `import re
+
+def extract_emails(text):
+    pattern = r'[\\w\\.-]+@[\\w\\.-]+\\.\\w+'
+    return re.findall(pattern, text)`,
+      },
+      {
+        id: "py7t7",
+        title: "CamelCase в snake_case",
+        md: `Реализуйте \`camel_to_snake(name)\`, которая преобразует строку из CamelCase в snake_case. \`CamelCase\` → \`camel_case\`.`,
+        starter: `import re
+
+def camel_to_snake(name):
+    # ваш код
+    pass
+
+print(camel_to_snake("CamelCase"))
+print(camel_to_snake("HTTPResponse"))`,
+        tests: `
+__test("CamelCase → camel_case", lambda: camel_to_snake("CamelCase"), "camel_case")
+__test("HTTPResponse → http_response", lambda: camel_to_snake("HTTPResponse"), "http_response")
+__test("simpleWord → simple_word", lambda: camel_to_snake("simpleWord"), "simple_word")
+__test("already_snake → already_snake", lambda: camel_to_snake("already_snake"), "already_snake")`,
+        solution: `import re
+
+def camel_to_snake(name):
+    s1 = re.sub('(.)([A-Z][a-z]+)', r'\\1_\\2', name)
+    return re.sub('([a-z0-9])([A-Z])', r'\\1_\\2', s1).lower()`,
+      },
+      {
+        id: "py7t8",
+        title: "Подсчёт символов",
+        md: `Реализуйте \`count_chars(text)\`, которая возвращает словарь с количеством каждого символа в тексте. Регистр учитывается.`,
+        starter: `def count_chars(text):
+    # ваш код
+    pass
+
+print(count_chars("hello"))`,
+        tests: `
+__test("count_chars('hello')", lambda: count_chars("hello"), {"h": 1, "e": 1, "l": 2, "o": 1})
+__test("count_chars('') → {}", lambda: count_chars(""), {})
+__test("count_chars('aaa')", lambda: count_chars("aaa"), {"a": 3})`,
+        solution: `def count_chars(text):
+    counts = {}
+    for ch in text:
+        counts[ch] = counts.get(ch, 0) + 1
+    return counts`,
+      },
+      {
+        id: "py7t9",
+        title: "Форматирование чисел",
+        md: `Реализуйте \`format_price(price)\`, которая форматирует цену с разделителем тысяч и двумя знаками после запятой. \`format_price(1234567.89)\` → \`"1,234,567.89"\`.`,
+        starter: `def format_price(price):
+    # ваш код
+    pass
+
+print(format_price(1234567.89))
+print(format_price(99.9))`,
+        tests: `
+__test("format_price(1234567.89)", lambda: format_price(1234567.89), "1,234,567.89")
+__test("format_price(99.9)", lambda: format_price(99.9), "99.90")
+__test("format_price(1000)", lambda: format_price(1000), "1,000.00")
+__test("format_price(0.5)", lambda: format_price(0.5), "0.50")`,
+        solution: `def format_price(price):
+    return f"{price:,.2f}"`,
+      },
+      {
+        id: "py7t10",
+        title: "Валидация пароля",
+        md: `Реализуйте \`is_strong_password(password)\`, которая проверяет, что пароль:
+- Минимум 8 символов
+- Содержит хотя бы одну заглавную букву
+- Содержит хотя бы одну строчную букву
+- Содержит хотя бы одну цифру
+
+Возвращает \`True\` или \`False\`.`,
+        starter: `def is_strong_password(password):
+    # ваш код
+    pass
+
+print(is_strong_password("Password123"))
+print(is_strong_password("weak"))`,
+        tests: `
+__test("сильный пароль", lambda: is_strong_password("Password123"), True)
+__test("нет цифры", lambda: is_strong_password("Password"), False)
+__test("нет заглавной", lambda: is_strong_password("password123"), False)
+__test("слишком короткий", lambda: is_strong_password("Pass1"), False)
+__test("всё есть", lambda: is_strong_password("MyPassword1"), True)`,
+        solution: `def is_strong_password(password):
+    if len(password) < 8:
+        return False
+    if not any(c.isupper() for c in password):
+        return False
+    if not any(c.islower() for c in password):
+        return False
+    if not any(c.isdigit() for c in password):
+        return False
+    return True`,
       },
     ],
   },
