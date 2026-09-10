@@ -4479,71 +4479,426 @@ __test("независимые фабрики", lambda: (make_power(2)(3), make_
     language: "python",
     title: "Классы и ООП",
     subtitle: "__init__ и self, @property, наследование, dunder-методы",
-    minutes: 35,
+    minutes: 45,
     blocks: [
       {
         kind: "text",
-        md: `## Классы
+        md: `## Объектно-ориентированное программирование (ООП) 🏗️
 
-Конструктор — метод \`__init__\`, первый аргумент любого метода — \`self\` (ссылка на экземпляр, указывается явно). «Приватных» полей нет — есть соглашение: один \`_\` в начале имени означает «внутреннее, не трогать». \`@property\` превращает метод в атрибут-геттер.`,
-      },
-      {
-        kind: "code",
-        title: "Класс с property и цепочками",
-        code: `class Account:
-    def __init__(self, owner, balance=0):
-        self.owner = owner
-        self._balance = balance     # «защищённое» по соглашению
+ООП — парадигма программирования, основанная на концепции **объектов**, которые содержат данные (атрибуты) и код (методы).
 
-    @property
-    def balance(self):
-        return self._balance
+**Четыре принципа ООП:**
+1. **Инкапсуляция** — скрытие внутренней реализации
+2. **Наследование** — создание новых классов на основе существующих
+3. **Полиморфизм** — объекты разных классов могут отвечать на одни и те же методы
+4. **Абстракция** — выделение существенных характеристик объекта
 
-    def deposit(self, amount):
-        if amount <= 0:
-            raise ValueError("Сумма должна быть положительной")
-        self._balance += amount
-        return self                 # цепочки вызовов
-
-acc = Account("Ада")
-acc.deposit(100).deposit(50)
-print(acc.balance)   # 150 — property, без скобок
-print(acc.owner)     # Ада`,
+**Аналогия:** Представьте автомобиль:
+- **Инкапсуляция:** вы не знаете, как работает двигатель, но знаете, как управлять (педали, руль)
+- **Наследование:** грузовик наследует от автомобиля, но добавляет кузов
+- **Полиморфизм:** и автомобиль, и грузовик имеют метод \`drive()\`, но работают по-разному
+- **Абстракция:** автомобиль — это абстракция реального автомобиля с существенными характеристиками`,
       },
       {
         kind: "text",
-        md: `## Наследование и полиморфизм
+        md: `## Создание класса
 
-\`class Dog(Animal)\` — наследование; \`super().__init__(...)\` — вызов конструктора родителя. Переопределённые методы дают полиморфизм: один цикл работает с разными классами. \`isinstance\` проверяет принадлежность с учётом наследования.`,
+Класс создаётся ключевым словом \`class\`. Конструктор — метод \`__init__\`, который вызывается при создании объекта. Первый параметр любого метода — \`self\` (ссылка на текущий экземпляр).
+
+**Атрибуты** — данные объекта (переменные).
+**Методы** — функции объекта (поведение).`,
+      },
+      {
+        kind: "code",
+        title: "Простой класс",
+        code: `class Person:
+    """Класс для представления человека"""
+    
+    def __init__(self, name, age):
+        """Конструктор — вызывается при создании объекта"""
+        self.name = name  # атрибут
+        self.age = age    # атрибут
+    
+    def greet(self):
+        """Метод — действие, которое может выполнять объект"""
+        print(f"Привет, меня зовут {self.name}!")
+    
+    def birthday(self):
+        """Метод изменяет состояние объекта"""
+        self.age += 1
+        print(f"Мне теперь {self.age} лет!")
+
+# Создание объектов (экземпляров класса)
+alice = Person("Алиса", 25)
+bob = Person("Боб", 30)
+
+alice.greet()      # Привет, меня зовут Алиса!
+alice.birthday()   # Мне теперь 26 лет!
+print(bob.age)     # 30`,
+      },
+      {
+        kind: "text",
+        md: `## Инкапсуляция: уровни доступа
+
+Python не имеет строгой инкапсуляции как Java или C++, но использует **соглашения**:
+
+- **Публичные** (\`name\`) — доступны отовсюду
+- **Защищённые** (\`_name\`) — "не трогайте извне" (соглашение)
+- **Приватные** (\`__name\`) — name mangling (искажение имён)
+
+**Важно:** В Python нет настоящей приватности — всё можно обойти. Это философия: "мы все взрослые люди".`,
+      },
+      {
+        kind: "code",
+        title: "Уровни доступа",
+        code: `class BankAccount:
+    def __init__(self, owner, balance):
+        self.owner = owner          # публичный
+        self._bank = "Сбербанк"     # защищённый (соглашение)
+        self.__balance = balance    # приватный (name mangling)
+    
+    def deposit(self, amount):
+        if amount > 0:
+            self.__balance += amount
+    
+    def get_balance(self):
+        return self.__balance
+
+acc = BankAccount("Алиса", 1000)
+print(acc.owner)         # Алиса — публичный
+print(acc._bank)         # Сбербанк — защищённый (можно, но не рекомендуется)
+# print(acc.__balance)   # AttributeError!
+print(acc.get_balance()) # 1000 — через метод
+
+# Name mangling: доступ всё равно возможен
+print(acc._BankAccount__balance)  # 1000 — но это плохая практика!`,
+      },
+      {
+        kind: "text",
+        md: `## @property: геттеры и сеттеры
+
+Декоратор \`@property\` превращает метод в **атрибут только для чтения**. Для создания сеттера используйте \`@<property_name>.setter\`.
+
+**Зачем нужно?**
+- Контроль доступа к атрибутам
+- Валидация данных
+- Вычисляемые свойства`,
+      },
+      {
+        kind: "code",
+        title: "Property в действии",
+        code: `class Temperature:
+    def __init__(self, celsius):
+        self._celsius = celsius
+    
+    @property
+    def celsius(self):
+        """Геттер"""
+        return self._celsius
+    
+    @celsius.setter
+    def celsius(self, value):
+        """Сеттер с валидацией"""
+        if value < -273.15:
+            raise ValueError("Температура не может быть ниже абсолютного нуля!")
+        self._celsius = value
+    
+    @property
+    def fahrenheit(self):
+        """Вычисляемое свойство"""
+        return self._celsius * 9/5 + 32
+
+temp = Temperature(20)
+print(temp.celsius)       # 20 — вызываем как атрибут
+print(temp.fahrenheit)    # 68.0 — вычисляемое свойство
+
+temp.celsius = 30         # вызываем сеттер
+print(temp.celsius)       # 30
+
+# temp.celsius = -300     # ValueError!`,
+      },
+      {
+        kind: "text",
+        md: `## Наследование
+
+Наследование позволяет создать новый класс на основе существующего. Дочерний класс наследует все атрибуты и методы родительского класса и может добавлять свои или переопределять существующие.
+
+**Синтаксис:** \`class Child(Parent):\`
+
+**super()** — вызов методов родительского класса.`,
       },
       {
         kind: "code",
         title: "Наследование",
         code: `class Animal:
-    def __init__(self, name):
+    def __init__(self, name, species):
         self.name = name
-
+        self.species = species
+    
     def speak(self):
-        return "..."
+        return f"{self.name} издаёт звук"
+    
+    def info(self):
+        return f"{self.name} — {self.species}"
 
 class Dog(Animal):
+    def __init__(self, name, breed):
+        super().__init__(name, "Собака")  # вызов конструктора родителя
+        self.breed = breed
+    
     def speak(self):
-        return self.name + ": гав!"
+        return f"{self.name} говорит: Гав!"
+    
+    def fetch(self):
+        return f"{self.name} принёс палку"
 
 class Cat(Animal):
     def speak(self):
-        return self.name + ": мяу!"
+        return f"{self.name} говорит: Мяу!"
 
-zoo = [Dog("Рекс"), Cat("Мурка")]
-for animal in zoo:
-    print(animal.speak())          # полиморфизм
+dog = Dog("Рекс", "Немецкая овчарка")
+cat = Cat("Мурка")
 
-print(isinstance(zoo[0], Animal))  # True — Dog это и Animal`,
+print(dog.speak())     # Рекс говорит: Гав!
+print(cat.speak())     # Мурка говорит: Мяу!
+print(dog.info())      # Рекс — Собака
+print(dog.fetch())     # Рекс принёс палку`,
+      },
+      {
+        kind: "text",
+        md: `## Полиморфизм
+
+Полиморфизм — способность объектов разных классов отвечать на одни и те же методы. Это позволяет писать общий код, работающий с разными типами объектов.
+
+**Аналогия:** И собака, и кошка имеют метод \`speak()\`, но говорят по-разному. Вам не нужно знать тип животного, чтобы вызвать \`speak()\`.`,
+      },
+      {
+        kind: "code",
+        title: "Полиморфизм в действии",
+        code: `class Shape:
+    def area(self):
+        raise NotImplementedError("Подклассы должны реализовать этот метод")
+
+class Circle(Shape):
+    def __init__(self, radius):
+        self.radius = radius
+    
+    def area(self):
+        return 3.14 * self.radius ** 2
+
+class Rectangle(Shape):
+    def __init__(self, width, height):
+        self.width = width
+        self.height = height
+    
+    def area(self):
+        return self.width * self.height
+
+# Полиморфизм: работаем с разными типами одинаково
+shapes = [Circle(5), Rectangle(4, 6), Circle(3)]
+
+for shape in shapes:
+    print(f"Площадь: {shape.area():.2f}")
+
+# Функция работает с любым объектом, имеющим метод area()
+def print_area(shape):
+    print(f"Площадь: {shape.area():.2f}")
+
+print_area(Circle(10))
+print_area(Rectangle(3, 4))`,
+      },
+      {
+        kind: "text",
+        md: `## Магические методы (dunder methods)
+
+Магические методы (или dunder — double underscore) — специальные методы, начинающиеся и заканчивающиеся двойным подчёркиванием. Они определяют, как объекты ведут себя со встроенными операциями.
+
+**Популярные магические методы:**
+- \`__str__\` — строковое представление (для \`print\`)
+- \`__repr__\` — представление для разработчика
+- \`__len__\` — длина объекта (для \`len()\`)
+- \`__add__\` — сложение (для \`+\`)
+- \`__eq__\`, \`__lt__\`, \`__gt__\` — сравнение
+- \`__getitem__\` — индексация (для \`obj[key]\`)`,
+      },
+      {
+        kind: "code",
+        title: "Магические методы",
+        code: `class Vector:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+    
+    def __str__(self):
+        return f"Vector({self.x}, {self.y})"
+    
+    def __repr__(self):
+        return f"Vector({self.x}, {self.y})"
+    
+    def __add__(self, other):
+        return Vector(self.x + other.x, self.y + other.y)
+    
+    def __mul__(self, scalar):
+        return Vector(self.x * scalar, self.y * scalar)
+    
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y
+    
+    def __len__(self):
+        return int((self.x ** 2 + self.y ** 2) ** 0.5)
+
+v1 = Vector(3, 4)
+v2 = Vector(1, 2)
+
+print(v1)              # Vector(3, 4) — __str__
+print(v1 + v2)         # Vector(4, 6) — __add__
+print(v1 * 2)          # Vector(6, 8) — __mul__
+print(v1 == Vector(3, 4))  # True — __eq__
+print(len(v1))         # 5 — __len__ (длина вектора)`,
+      },
+      {
+        kind: "text",
+        md: `## Статические методы и методы класса
+
+**Метод экземпляра** (\`def method(self):\`) — имеет доступ к \`self\`, работает с данными объекта.
+
+**Метод класса** (\`@classmethod\`) — имеет доступ к \`cls\` (класс), а не к экземпляру. Используется для альтернативных конструкторов.
+
+**Статический метод** (\`@staticmethod\`) — не имеет доступа ни к \`self\`, ни к \`cls\`. Это просто функция внутри класса.`,
+      },
+      {
+        kind: "code",
+        title: "Типы методов",
+        code: `class Date:
+    def __init__(self, year, month, day):
+        self.year = year
+        self.month = month
+        self.day = day
+    
+    # Метод экземпляра
+    def display(self):
+        return f"{self.year}-{self.month:02d}-{self.day:02d}"
+    
+    # Метод класса — альтернативный конструктор
+    @classmethod
+    def from_string(cls, date_str):
+        year, month, day = map(int, date_str.split('-'))
+        return cls(year, month, day)
+    
+    # Статический метод — вспомогательная функция
+    @staticmethod
+    def is_valid_date(year, month, day):
+        return 1 <= month <= 12 and 1 <= day <= 31
+
+# Метод экземпляра
+date1 = Date(2024, 1, 15)
+print(date1.display())  # 2024-01-15
+
+# Метод класса
+date2 = Date.from_string("2024-02-20")
+print(date2.display())  # 2024-02-20
+
+# Статический метод
+print(Date.is_valid_date(2024, 13, 1))  # False`,
+      },
+      {
+        kind: "text",
+        md: `## Абстрактные классы
+
+Абстрактный класс — класс, который нельзя инстанциировать. Он определяет интерфейс (набор методов), который должны реализовать дочерние классы.
+
+**Зачем нужно?**
+- Определение контракта для дочерних классов
+- Гарантия реализации определённых методов
+- Архитектурное проектирование
+
+Используйте модуль \`abc\` (Abstract Base Classes).`,
+      },
+      {
+        kind: "code",
+        title: "Абстрактные классы",
+        code: `from abc import ABC, abstractmethod
+
+class Shape(ABC):
+    @abstractmethod
+    def area(self):
+        pass
+    
+    @abstractmethod
+    def perimeter(self):
+        pass
+
+class Circle(Shape):
+    def __init__(self, radius):
+        self.radius = radius
+    
+    def area(self):
+        return 3.14 * self.radius ** 2
+    
+    def perimeter(self):
+        return 2 * 3.14 * self.radius
+
+# shape = Shape()  # TypeError! Нельзя создать экземпляр абстрактного класса
+circle = Circle(5)
+print(circle.area())       # 78.5
+print(circle.perimeter())  # 31.4`,
+      },
+      {
+        kind: "tip",
+        title: "Композиция vs Наследование",
+        md: `**Наследование** — "is-a" relationship (является):
+- Собака **является** Животным
+- Используйте, когда есть чёткая иерархия
+
+**Композиция** — "has-a" relationship (имеет):
+- Автомобиль **имеет** Двигатель
+- Используйте, когда объект состоит из других объектов
+
+**Правило:** Предпочитайте композицию наследованию, если нет чёткой иерархии. Это делает код более гибким.`,
+      },
+      {
+        kind: "code",
+        title: "Композиция",
+        code: `class Engine:
+    def __init__(self, horsepower):
+        self.horsepower = horsepower
+    
+    def start(self):
+        print(f"Двигатель {self.horsepower} л.с. запущен")
+
+class Car:
+    def __init__(self, model, engine):
+        self.model = model
+        self.engine = engine  # композиция: Car имеет Engine
+    
+    def start(self):
+        print(f"{self.model} заводится...")
+        self.engine.start()
+
+engine = Engine(200)
+car = Car("Toyota Camry", engine)
+car.start()
+# Toyota Camry заводится...
+# Двигатель 200 л.с. запущен`,
       },
       {
         kind: "warn",
         title: "Забытый self",
-        md: `Определите метод без \`self\` в сигнатуре — и при вызове получите загадочный \`TypeError: takes 0 positional arguments but 1 was given\`: Python честно передаёт экземпляр первым аргументом, а принимать его некому.`,
+        md: `Определите метод без \`self\` в сигнатуре — и при вызове получите загадочный \`TypeError: takes 0 positional arguments but 1 was given\`: Python честно передаёт экземпляр первым аргументом, а принимать его некому.
+
+**Правильно:**
+\`\`\`python
+class MyClass:
+    def method(self):  # self обязателен!
+        pass
+\`\`\`
+
+**Неправильно:**
+\`\`\`python
+class MyClass:
+    def method():  # TypeError при вызове!
+        pass
+\`\`\``,
       },
     ],
     quiz: [
@@ -4568,6 +4923,34 @@ print(isinstance(zoo[0], Animal))  # True — Dog это и Animal`,
         ],
         answer: 1,
         explain: "property — геттер, вызываемый синтаксисом атрибута: acc.balance вместо acc.balance().",
+      },
+      {
+        q: "Что делает super()?",
+        options: [
+          "Создаёт новый экземпляр класса",
+          "Вызывает методы родительского класса",
+          "Делает метод статическим",
+          "Удаляет атрибуты",
+        ],
+        answer: 1,
+        explain: "super() используется для вызова методов родительского класса, особенно в конструкторе для инициализации унаследованных атрибутов.",
+      },
+      {
+        q: "Какой метод вызывается при print(obj)?",
+        options: ["__repr__", "__str__", "__print__", "__display__"],
+        answer: 1,
+        explain: "__str__ определяет строковое представление объекта для пользователя. __repr__ — для разработчика (используется в отладчике).",
+      },
+      {
+        q: "Что такое полиморфизм?",
+        options: [
+          "Создание новых классов",
+          "Способность объектов разных классов отвечать на одни и те же методы",
+          "Скрытие данных",
+          "Наследование атрибутов",
+        ],
+        answer: 1,
+        explain: "Полиморфизм позволяет писать общий код, работающий с разными типами объектов, если они реализуют одинаковый интерфейс.",
       },
     ],
     tasks: [
@@ -4647,6 +5030,149 @@ __test("peek не снимает", lambda: (lambda s: (s.push(42), s.peek(), s.p
     @property
     def size(self):
         return len(self._items)`,
+      },
+      {
+        id: "py9t3",
+        title: "Очередь",
+        md: `Создайте \`class Queue\` с методами:
+- \`enqueue(item)\` — добавить в конец, вернуть размер
+- \`dequeue()\` — снять первый (пустая очередь → \`None\`)
+- \`front()\` — посмотреть первый, не снимая
+- \`size\` — property с количеством элементов`,
+        starter: `class Queue:
+    # ваш код
+    pass
+
+q = Queue()
+q.enqueue(1)
+q.enqueue(2)
+print(q.dequeue(), q.front(), q.size)`,
+        tests: `
+__test("enqueue возвращает размер", lambda: (lambda q: (q.enqueue("a"), q.enqueue("b")))(Queue()), (1, 2))
+def fifo():
+    q = Queue()
+    q.enqueue(1); q.enqueue(2); q.enqueue(3)
+    return [q.dequeue(), q.dequeue(), q.dequeue()]
+__test("FIFO", fifo, [1, 2, 3])
+__test("dequeue пустой → None", lambda: Queue().dequeue(), None)
+__test("front не снимает", lambda: (lambda q: (q.enqueue(42), q.front(), q.front(), q.size)[-1])(Queue()), 1)`,
+        solution: `class Queue:
+    def __init__(self):
+        self._items = []
+
+    def enqueue(self, item):
+        self._items.append(item)
+        return len(self._items)
+
+    def dequeue(self):
+        if not self._items:
+            return None
+        return self._items.pop(0)
+
+    def front(self):
+        return self._items[0] if self._items else None
+
+    @property
+    def size(self):
+        return len(self._items)`,
+      },
+      {
+        id: "py9t4",
+        title: "Класс Point с магическими методами",
+        md: `Создайте \`class Point\` с полями \`x\`, \`y\` и магическими методами:
+- \`__add__(other)\` — сложение точек
+- \`__sub__(other)\` — вычитание точек
+- \`__eq__(other)\` — сравнение на равенство
+- \`__str__\` — строковое представление \`(x, y)\``,
+        starter: `class Point:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+    # добавьте магические методы
+
+p1 = Point(1, 2)
+p2 = Point(3, 4)
+print(p1 + p2)  # (4, 6)
+print(p1 == Point(1, 2))  # True`,
+        tests: `
+__test("сложение", lambda: str(Point(1, 2) + Point(3, 4)), "(4, 6)")
+__test("вычитание", lambda: str(Point(5, 7) - Point(2, 3)), "(3, 4)")
+__test("равенство", lambda: Point(1, 2) == Point(1, 2), True)
+__test("неравенство", lambda: Point(1, 2) == Point(3, 4), False)
+__test("строковое представление", lambda: str(Point(10, 20)), "(10, 20)")`,
+        solution: `class Point:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+    
+    def __add__(self, other):
+        return Point(self.x + other.x, self.y + other.y)
+    
+    def __sub__(self, other):
+        return Point(self.x - other.x, self.y - other.y)
+    
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y
+    
+    def __str__(self):
+        return f"({self.x}, {self.y})"`,
+      },
+      {
+        id: "py9t5",
+        title: "Наследование: Фигуры",
+        md: `Создайте иерархию классов:
+- \`Shape\` (абстрактный базовый класс) с абстрактным методом \`area()\`
+- \`Circle\` (наследует от Shape) с конструктором \`__init__(radius)\` и реализацией \`area()\`
+- \`Rectangle\` (наследует от Shape) с конструктором \`__init__(width, height)\` и реализацией \`area()\`
+
+Площадь круга: \`π * r²\`, площадь прямоугольника: \`width * height\`.`,
+        starter: `from abc import ABC, abstractmethod
+import math
+
+class Shape(ABC):
+    @abstractmethod
+    def area(self):
+        pass
+
+class Circle(Shape):
+    # ваш код
+    pass
+
+class Rectangle(Shape):
+    # ваш код
+    pass
+
+c = Circle(5)
+r = Rectangle(4, 6)
+print(c.area())  # 78.54
+print(r.area())  # 24`,
+        tests: `
+__test("Circle area", lambda: round(Circle(5).area(), 2), 78.54)
+__test("Rectangle area", lambda: Rectangle(4, 6).area(), 24)
+__test("Circle area (r=1)", lambda: round(Circle(1).area(), 2), 3.14)
+__test("Rectangle area (2x3)", lambda: Rectangle(2, 3).area(), 6)`,
+        solution: `from abc import ABC, abstractmethod
+import math
+
+class Shape(ABC):
+    @abstractmethod
+    def area(self):
+        pass
+
+class Circle(Shape):
+    def __init__(self, radius):
+        self.radius = radius
+    
+    def area(self):
+        return math.pi * self.radius ** 2
+
+class Rectangle(Shape):
+    def __init__(self, width, height):
+        self.width = width
+        self.height = height
+    
+    def area(self):
+        return self.width * self.height`,
       },
     ],
   },
