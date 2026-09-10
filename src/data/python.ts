@@ -3086,6 +3086,510 @@ def add_item(item, lst=None):
 
 Используйте \`None\` как значение по умолчанию и создавайте объект внутри функции.`,
       },
+      {
+        kind: "text",
+        md: `## Область видимости переменных
+
+Область видимости определяет, где переменная доступна. В Python есть несколько уровней области видимости.
+
+**Правило LEGB** — Python ищет переменные в порядке:
+1. **Local** — локальная область (внутри функции)
+2. **Enclosing** — объемлющая область (для вложенных функций)
+3. **Global** — глобальная область (на уровне модуля)
+4. **Built-in** — встроенная область (встроенные имена Python)
+
+**Ключевые слова:**
+- \`global\` — объявляет переменную глобальной
+- \`nonlocal\` — объявляет переменную из объемлющей области`,
+      },
+      {
+        kind: "code",
+        title: "Область видимости в действии",
+        code: `# Глобальная переменная
+x = 10
+
+def outer():
+    # Переменная объемлющей области
+    y = 20
+    
+    def inner():
+        # Локальная переменная
+        z = 30
+        print(f"inner: x={x}, y={y}, z={z}")
+    
+    inner()
+    print(f"outer: x={x}, y={y}")
+
+outer()
+print(f"global: x={x}")
+
+# Изменение глобальной переменной
+counter = 0
+
+def increment():
+    global counter  # указываем, что используем глобальную
+    counter += 1
+
+increment()
+increment()
+print(f"counter = {counter}")  # 2
+
+# Изменение переменной из объемлющей области
+def make_counter():
+    count = 0
+    
+    def increment():
+        nonlocal count  # указываем, что используем из outer
+        count += 1
+        return count
+    
+    return increment
+
+counter_func = make_counter()
+print(counter_func())  # 1
+print(counter_func())  # 2
+print(counter_func())  # 3`,
+      },
+      {
+        kind: "text",
+        md: `## Рекурсия
+
+Рекурсия — это когда функция вызывает сама себя. Каждая рекурсивная функция должна иметь:
+1. **Базовый случай** — условие остановки
+2. **Рекурсивный случай** — вызов самой себя с изменёнными параметрами
+
+**Аналогия:** Представьте матрёшку. Чтобы добраться до самой маленькой, вы открываете каждую следующую (рекурсивный случай), пока не достигнете самой маленькой, которая не открывается (базовый случай).
+
+**Важно:** Без базового случая получите бесконечную рекурсию и \`RecursionError\`.`,
+      },
+      {
+        kind: "code",
+        title: "Примеры рекурсии",
+        code: `# Факториал: n! = n * (n-1) * ... * 1
+def factorial(n):
+    # Базовый случай
+    if n <= 1:
+        return 1
+    # Рекурсивный случай
+    return n * factorial(n - 1)
+
+print(factorial(5))  # 120 (5 * 4 * 3 * 2 * 1)
+print(factorial(0))  # 1
+
+# Сумма чисел от 1 до n
+def sum_to(n):
+    if n <= 0:
+        return 0
+    return n + sum_to(n - 1)
+
+print(sum_to(5))  # 15 (5 + 4 + 3 + 2 + 1)
+
+# Числа Фибоначчи
+def fibonacci(n):
+    if n <= 1:
+        return n
+    return fibonacci(n - 1) + fibonacci(n - 2)
+
+print([fibonacci(i) for i in range(10)])
+# [0, 1, 1, 2, 3, 5, 8, 13, 21, 34]
+
+# Обход вложенного списка
+def flatten(nested):
+    result = []
+    for item in nested:
+        if isinstance(item, list):
+            result.extend(flatten(item))  # рекурсивный вызов
+        else:
+            result.append(item)
+    return result
+
+print(flatten([1, [2, 3], [4, [5, 6]]]))
+# [1, 2, 3, 4, 5, 6]`,
+      },
+      {
+        kind: "text",
+        md: `## Вложенные функции
+
+Функции можно определять внутри других функций. Внутренняя функция имеет доступ к переменным внешней функции (замыкание).
+
+**Зачем использовать:**
+- Инкапсуляция логики
+- Создание замыканий
+- Декораторы
+- Фабрики функций`,
+      },
+      {
+        kind: "code",
+        title: "Вложенные функции",
+        code: `# Простая вложенная функция
+def outer(x):
+    def inner(y):
+        return x + y
+    return inner
+
+add_five = outer(5)
+print(add_five(3))   # 8
+print(add_five(10))  # 15
+
+# Фабрика функций
+def make_operator(operator):
+    def add(a, b):
+        return a + b
+    def multiply(a, b):
+        return a * b
+    
+    if operator == "+":
+        return add
+    elif operator == "*":
+        return multiply
+
+add_func = make_operator("+")
+mul_func = make_operator("*")
+
+print(add_func(3, 4))    # 7
+print(mul_func(3, 4))    # 12
+
+# Валидация с вложенной функцией
+def validate_and_process(data):
+    def is_valid():
+        return data is not None and len(data) > 0
+    
+    if not is_valid():
+        raise ValueError("Невалидные данные")
+    
+    # Обработка данных
+    return [x * 2 for x in data]
+
+print(validate_and_process([1, 2, 3]))  # [2, 4, 6]`,
+      },
+      {
+        kind: "text",
+        md: `## Аннотации типов
+
+Аннотации типов позволяют указать ожидаемые типы параметров и возвращаемого значения. Python не проверяет их во время выполнения, но они помогают IDE и другим инструментам.
+
+**Синтаксис:**
+\`\`\`python
+def function(param: type) -> return_type:
+    pass
+\`\`\`
+
+**Преимущества:**
+- Улучшает читаемость кода
+- Помогает IDE с автодополнением
+- Позволяет использовать статические анализаторы (mypy)`,
+      },
+      {
+        kind: "code",
+        title: "Аннотации типов",
+        code: `# Простые аннотации
+def greet(name: str) -> str:
+    return f"Привет, {name}!"
+
+def add(a: int, b: int) -> int:
+    return a + b
+
+# Аннотации для коллекций
+from typing import List, Dict, Optional, Tuple
+
+def process_numbers(numbers: List[int]) -> int:
+    return sum(numbers)
+
+def get_user(user_id: int) -> Optional[Dict[str, str]]:
+    users = {1: "Алиса", 2: "Боб"}
+    return {"name": users.get(user_id, "Неизвестно")}
+
+def get_coordinates() -> Tuple[float, float]:
+    return (55.75, 37.62)
+
+# Использование
+print(greet("Алиса"))           # Привет, Алиса!
+print(add(5, 3))                # 8
+print(process_numbers([1, 2, 3]))  # 6
+print(get_user(1))              # {'name': 'Алиса'}
+print(get_coordinates())        # (55.75, 37.62)
+
+# Аннотации для *args и **kwargs
+def flexible(*args: int, **kwargs: str) -> None:
+    print(f"args: {args}")
+    print(f"kwargs: {kwargs}")
+
+flexible(1, 2, 3, name="Алиса", city="Москва")`,
+      },
+      {
+        kind: "text",
+        md: `## Функции высшего порядка
+
+Функция высшего порядка — это функция, которая:
+- Принимает другие функции как аргументы, или
+- Возвращает функцию как результат
+
+**Примеры встроенных функций высшего порядка:**
+- \`map(func, iterable)\` — применяет функцию к каждому элементу
+- \`filter(func, iterable)\` — фильтрует элементы по условию
+- \`sorted(iterable, key=func)\` — сортирует по ключу
+- \`reduce(func, iterable)\` — сворачивает в одно значение`,
+      },
+      {
+        kind: "code",
+        title: "Функции высшего порядка",
+        code: `# map — применяет функцию к каждому элементу
+numbers = [1, 2, 3, 4, 5]
+squared = list(map(lambda x: x ** 2, numbers))
+print(squared)  # [1, 4, 9, 16, 25]
+
+# filter — фильтрует элементы
+evens = list(filter(lambda x: x % 2 == 0, numbers))
+print(evens)  # [2, 4]
+
+# sorted с key функцией
+words = ["python", "java", "c", "javascript"]
+by_length = sorted(words, key=len)
+print(by_length)  # ['c', 'java', 'python', 'javascript']
+
+# reduce — сворачивает в одно значение
+from functools import reduce
+
+numbers = [1, 2, 3, 4, 5]
+product = reduce(lambda x, y: x * y, numbers)
+print(product)  # 120 (1*2*3*4*5)
+
+# Создание собственной функции высшего порядка
+def apply_twice(func, value):
+    """Применяет функцию дважды"""
+    return func(func(value))
+
+def add_five(x):
+    return x + 5
+
+result = apply_twice(add_five, 10)
+print(result)  # 20 (10 + 5 + 5)
+
+# Функция, возвращающая функцию
+def make_multiplier(factor):
+    def multiplier(x):
+        return x * factor
+    return multiplier
+
+double = make_multiplier(2)
+triple = make_multiplier(3)
+
+print(double(5))   # 10
+print(triple(5))   # 15`,
+      },
+      {
+        kind: "text",
+        md: `## Декораторы: введение
+
+Декоратор — это функция, которая принимает другую функцию и расширяет её поведение, не изменяя исходный код.
+
+**Синтаксис:**
+\`\`\`python
+@decorator
+def function():
+    pass
+
+# Эквивалентно:
+function = decorator(function)
+\`\`\`
+
+**Зачем использовать:**
+- Логирование вызовов
+- Измерение времени выполнения
+- Кэширование результатов
+- Проверка прав доступа
+- Повторные попытки при ошибках`,
+      },
+      {
+        kind: "code",
+        title: "Простые декораторы",
+        code: `# Декоратор для логирования
+def log_calls(func):
+    def wrapper(*args, **kwargs):
+        print(f"Вызов {func.__name__} с аргументами: {args}, {kwargs}")
+        result = func(*args, **kwargs)
+        print(f"{func.__name__} вернула: {result}")
+        return result
+    return wrapper
+
+@log_calls
+def add(a, b):
+    return a + b
+
+add(3, 5)
+# Вызов add с аргументами: (3, 5), {}
+# add вернула: 8
+
+# Декоратор для измерения времени
+import time
+
+def timer(func):
+    def wrapper(*args, **kwargs):
+        start = time.time()
+        result = func(*args, **kwargs)
+        end = time.time()
+        print(f"{func.__name__} выполнилась за {end - start:.4f} сек")
+        return result
+    return wrapper
+
+@timer
+def slow_function():
+    time.sleep(1)
+    return "Готово!"
+
+slow_function()
+# slow_function выполнилась за 1.0012 сек
+
+# Декоратор с параметрами
+def repeat(times):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            for _ in range(times):
+                result = func(*args, **kwargs)
+            return result
+        return wrapper
+    return decorator
+
+@repeat(3)
+def greet(name):
+    print(f"Привет, {name}!")
+
+greet("Алиса")
+# Привет, Алиса!
+# Привет, Алиса!
+# Привет, Алиса!`,
+      },
+      {
+        kind: "text",
+        md: `## Лучшие практики написания функций
+
+### 1. Принцип единственной ответственности
+Функция должна делать **одну вещь** и делать её хорошо.
+
+### 2. Имена функций
+- Используйте глаголы: \`calculate_total\`, \`get_user\`, \`process_data\`
+- Имя должно описывать, что делает функция
+- Избегайте аббревиатур
+
+### 3. Длина функции
+- Идеально: 10-20 строк
+- Максимум: 50 строк
+- Если функция длиннее — разбейте на части
+
+### 4. Параметры
+- Максимум 3-4 параметра
+- Используйте \`*args\` и \`**kwargs\` для гибкости
+- Параметры по умолчанию для необязательных значений
+
+### 5. Возвращаемые значения
+- Возвращайте один тип данных
+- Используйте \`None\` для отсутствия результата
+- Документируйте, что возвращает функция`,
+      },
+      {
+        kind: "code",
+        title: "Примеры хороших и плохих функций",
+        code: `# ❌ Плохо: функция делает слишком много
+def process_user_data(user):
+    # Валидация
+    if not user:
+        return None
+    if "name" not in user:
+        return None
+    
+    # Трансформация
+    name = user["name"].strip().title()
+    age = user.get("age", 0)
+    
+    # Сохранение
+    database.save(user)
+    
+    # Отправка уведомления
+    email.send(user["email"], "Добро пожаловать!")
+    
+    return {"name": name, "age": age}
+
+# ✅ Хорошо: разбито на маленькие функции
+def validate_user(user):
+    return user and "name" in user
+
+def transform_user(user):
+    return {
+        "name": user["name"].strip().title(),
+        "age": user.get("age", 0)
+    }
+
+def save_user(user):
+    database.save(user)
+
+def send_welcome_email(user):
+    email.send(user["email"], "Добро пожаловать!")
+
+def process_user_data(user):
+    if not validate_user(user):
+        return None
+    
+    transformed = transform_user(user)
+    save_user(transformed)
+    send_welcome_email(user)
+    
+    return transformed
+
+# ❌ Плохо: неясное имя
+def calc(x, y):
+    return x * y + x - y
+
+# ✅ Хорошо: понятное имя
+def calculate_adjusted_total(price, quantity):
+    return price * quantity + price - quantity`,
+      },
+      {
+        kind: "text",
+        md: `## Распространённые ошибки
+
+### 1. Забытый return
+\`\`\`python
+def add(a, b):
+    result = a + b
+    # забыли return!
+
+print(add(2, 3))  # None
+\`\`\`
+
+### 2. Изменение глобальной переменной без global
+\`\`\`python
+counter = 0
+
+def increment():
+    counter += 1  # UnboundLocalError!
+
+# Нужно: global counter
+\`\`\`
+
+### 3. Изменяемые параметры по умолчанию
+\`\`\`python
+def add_item(item, lst=[]):  # ОПАСНО!
+    lst.append(item)
+    return lst
+
+# Используйте None вместо []
+\`\`\`
+
+### 4. Слишком длинные функции
+Если функция длиннее 50 строк — разбейте её на части.
+
+### 5. Магические числа
+\`\`\`python
+# ❌ Плохо
+def calculate_discount(price):
+    return price * 0.15
+
+# ✅ Хорошо
+DISCOUNT_RATE = 0.15
+def calculate_discount(price):
+    return price * DISCOUNT_RATE
+\`\`\``,
+      },
     ],
     quiz: [
       {
@@ -3132,6 +3636,39 @@ def add_item(item, lst=None):
         options: ["[1, 2, 3]", "[1, 4, 9]", "[2, 4, 6]", "[1, 8, 27]"],
         answer: 1,
         explain: "map применяет функцию к каждому элементу: 1²=1, 2²=4, 3²=9.",
+      },
+      {
+        q: "Что делает ключевое слово nonlocal?",
+        options: [
+          "Объявляет переменную глобальной",
+          "Объявляет переменную из объемлющей области",
+          "Создаёт новую локальную переменную",
+          "Делает переменную константой",
+        ],
+        answer: 1,
+        explain: "nonlocal используется для изменения переменной из объемлющей (внешней) функции, но не глобальной.",
+      },
+      {
+        q: "Что такое рекурсия?",
+        options: [
+          "Цикл while",
+          "Функция, вызывающая сама себя",
+          "Импортирование модуля",
+          "Создание класса",
+        ],
+        answer: 1,
+        explain: "Рекурсия — это когда функция вызывает сама себя. Должна иметь базовый случай для остановки.",
+      },
+      {
+        q: "Что такое декоратор?",
+        options: [
+          "Функция, которая украшает код",
+          "Функция, которая расширяет поведение другой функции",
+          "Тип данных",
+          "Модуль Python",
+        ],
+        answer: 1,
+        explain: "Декоратор принимает функцию и возвращает новую функцию с расширенным поведением, не изменяя исходный код.",
       },
     ],
     tasks: [
@@ -3210,6 +3747,71 @@ __test("sum_of_squares() → 0", lambda: sum_of_squares(), 0)
 __test("sum_of_squares(5) → 25", lambda: sum_of_squares(5), 25)`,
         solution: `def sum_of_squares(*nums):
     return sum(x ** 2 for x in nums)`,
+      },
+      {
+        id: "py4t5",
+        title: "Рекурсивный факториал",
+        md: `Реализуйте \`factorial(n)\` — факториал числа с помощью рекурсии. \`factorial(5)\` → \`120\` (5! = 5×4×3×2×1). Базовый случай: \`factorial(0) = 1\`.`,
+        starter: `def factorial(n):
+    # базовый случай и рекурсивный вызов
+    pass
+
+print(factorial(0))   # 1
+print(factorial(5))   # 120
+print(factorial(10))  # 3628800`,
+        tests: `
+__test("factorial(0) → 1", lambda: factorial(0), 1)
+__test("factorial(1) → 1", lambda: factorial(1), 1)
+__test("factorial(5) → 120", lambda: factorial(5), 120)
+__test("factorial(10) → 3628800", lambda: factorial(10), 3628800)`,
+        solution: `def factorial(n):
+    if n <= 1:
+        return 1
+    return n * factorial(n - 1)`,
+      },
+      {
+        id: "py4t6",
+        title: "Декоратор-таймер",
+        md: `Реализуйте декоратор \`timer(func)\`, который измеряет время выполнения функции и выводит его в формате: "\`{имя_функции} выполнилась за {время:.4f} сек\`". Используйте \`time.time()\` для измерения времени.`,
+        starter: `import time
+
+def timer(func):
+    # ваш декоратор
+    pass
+
+@timer
+def slow_function():
+    time.sleep(0.5)
+    return "Готово!"
+
+result = slow_function()
+print(result)`,
+        tests: `
+import time
+
+def test_timer():
+    @timer
+    def test_func():
+        time.sleep(0.1)
+        return "test"
+    
+    start = time.time()
+    result = test_func()
+    elapsed = time.time() - start
+    
+    return result == "test" and elapsed >= 0.1
+
+__test("декоратор работает", test_timer, True)`,
+        solution: `import time
+
+def timer(func):
+    def wrapper(*args, **kwargs):
+        start = time.time()
+        result = func(*args, **kwargs)
+        end = time.time()
+        print(f"{func.__name__} выполнилась за {end - start:.4f} сек")
+        return result
+    return wrapper`,
       },
     ],
   },
