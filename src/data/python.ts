@@ -5182,18 +5182,106 @@ class Rectangle(Shape):
     language: "python",
     title: "Генераторы и итераторы",
     subtitle: "yield, ленивые последовательности, генераторные выражения",
-    minutes: 30,
+    minutes: 35,
     blocks: [
       {
         kind: "text",
-        md: `## yield
+        md: `## Итераторы и генераторы: ленивые вычисления 🚀
 
-Функция с \`yield\` при вызове не выполняется — она возвращает **генератор**. Каждый \`next()\` исполняет код до следующего \`yield\`, «выдаёт» значение и ставит функцию на паузу. Генераторы могут быть **бесконечными** — значения производятся по запросу.`,
+**Итератор** — объект, который может возвращать элементы по одному. Он реализует протокол итерации: методы \`__iter__()\` и \`__next__()\`.
+
+**Генератор** — это упрощённый способ создать итератор. Функция с \`yield\` автоматически становится генератором.
+
+**Аналогия:** Представьте конвейер на заводе:
+- **Список** — все детали уже произведены и лежат на складе (занимают память)
+- **Генератор** — детали производятся по одной по мере необходимости (экономия памяти)
+
+**Зачем нужны генераторы?**
+- Экономия памяти при работе с большими данными
+- Бесконечные последовательности
+- Ленивые вычисления (отложенные во времени)`,
+      },
+      {
+        kind: "text",
+        md: `## Протокол итерации
+
+Чтобы объект был итерабельным, он должен реализовать:
+- \`__iter__()\` — возвращает итератор
+- \`__next__()\` — возвращает следующий элемент или бросает \`StopIteration\`
+
+**Встроенные итерабельные объекты:** списки, строки, словари, множества, файлы.`,
+      },
+      {
+        kind: "code",
+        title: "Создание итератора вручную",
+        code: `class Countdown:
+    """Итератор обратного отсчёта"""
+    def __init__(self, start):
+        self.current = start
+    
+    def __iter__(self):
+        return self
+    
+    def __next__(self):
+        if self.current <= 0:
+            raise StopIteration
+        self.current -= 1
+        return self.current + 1
+
+# Использование
+for num in Countdown(5):
+    print(num, end=" ")  # 5 4 3 2 1
+
+# Ручная итерация
+counter = Countdown(3)
+print(next(counter))  # 3
+print(next(counter))  # 2
+print(next(counter))  # 1
+# print(next(counter))  # StopIteration!`,
+      },
+      {
+        kind: "text",
+        md: `## yield: упрощённое создание генераторов
+
+Функция с \`yield\` при вызове не выполняется — она возвращает **генератор**. Каждый \`next()\` исполняет код до следующего \`yield\`, «выдаёт» значение и ставит функцию на паузу.
+
+**Ключевые моменты:**
+- Генераторы ленивы: значения производятся по запросу
+- Состояние сохраняется между вызовами
+- Генераторы одноразовые: после исчерпания их нельзя использовать снова
+- Можно создавать бесконечные последовательности`,
+      },
+      {
+        kind: "code",
+        title: "Простой генератор",
+        code: `def count_up_to(n):
+    """Генератор чисел от 1 до n"""
+    num = 1
+    while num <= n:
+        yield num
+        num += 1
+
+# Создание генератора
+gen = count_up_to(5)
+print(type(gen))  # <class 'generator'>
+
+# Получение значений
+print(next(gen))  # 1
+print(next(gen))  # 2
+print(next(gen))  # 3
+
+# Итерация в цикле
+for num in count_up_to(5):
+    print(num, end=" ")  # 1 2 3 4 5
+
+# Преобразование в список
+print(list(count_up_to(5)))  # [1, 2, 3, 4, 5]`,
       },
       {
         kind: "code",
         title: "Бесконечная последовательность",
         code: `def naturals():
+    """Бесконечная последовательность натуральных чисел"""
     n = 1
     while True:
         yield n
@@ -5202,8 +5290,10 @@ class Rectangle(Shape):
 gen = naturals()
 print(next(gen))   # 1
 print(next(gen))   # 2
+print(next(gen))   # 3
 
 def take(it, count):
+    """Берёт первые count элементов из итератора"""
     result = []
     for item in it:
         if len(result) >= count:
@@ -5211,32 +5301,204 @@ def take(it, count):
         result.append(item)
     return result
 
-print(take(naturals(), 5))   # [1, 2, 3, 4, 5]`,
+print(take(naturals(), 5))   # [1, 2, 3, 4, 5]
+print(take(naturals(), 10))  # [6, 7, 8, 9, 10, 11, 12, 13, 14, 15]`,
       },
       {
         kind: "text",
         md: `## Генераторные выражения
 
-Круглые скобки вместо квадратных — \`(... for ...)\` — создают **ленивый** генератор: элементы вычисляются по одному, память O(1). \`sum(...)\`, \`min(...)\`, \`any(...)\` happily работают прямо с генератором.`,
+Круглые скобки вместо квадратных — \`(... for ...)\` — создают **ленивый** генератор: элементы вычисляются по одному, память O(1).
+
+**Преимущества:**
+- Экономия памяти (O(1) вместо O(n))
+- Можно работать с бесконечными последовательностями
+- Функции \`sum()\`, \`min()\`, \`max()\`, \`any()\`, \`all()\` работают с генераторами`,
       },
       {
         kind: "code",
         title: "Список против генератора",
-        code: `squares_list = [x ** 2 for x in range(10_000)]  # весь в памяти
-squares_gen  = (x ** 2 for x in range(10_000))  # ленивый
+        code: `# Список: все значения сразу в памяти
+squares_list = [x ** 2 for x in range(10_000)]
+print(f"Размер списка: {squares_list.__sizeof__()} байт")
 
+# Генератор: значения по одному
+squares_gen = (x ** 2 for x in range(10_000))
+print(f"Размер генератора: {squares_gen.__sizeof__()} байт")
+
+# Работа с генератором
 print(sum(squares_gen))              # 333283335000, память O(1)
 print(sum(x for x in range(5) if x % 2))  # 1 + 3 = 4
 
-# генератор одноразовый:
+# Генератор одноразовый:
 g = (x for x in [1, 2, 3])
 print(list(g))   # [1, 2, 3]
-print(list(g))   # [] — уже исчерпан`,
+print(list(g))   # [] — уже исчерпан!
+
+# Практический пример: чтение большого файла
+def read_large_file(file_path):
+    with open(file_path) as f:
+        for line in f:
+            yield line.strip()
+
+# Обработка файла построчно без загрузки в память
+# for line in read_large_file("huge.txt"):
+#     process(line)`,
+      },
+      {
+        kind: "text",
+        md: `## yield from: делегирование итерации
+
+\`yield from another_gen\` делегирует итерацию другому генератору. Это упрощает вложенные генераторы и позволяет "плоско" возвращать значения из вложенных структур.`,
+      },
+      {
+        kind: "code",
+        title: "yield from в действии",
+        code: `def flatten(nested_list):
+    """Рекурсивное выравнивание вложенных списков"""
+    for item in nested_list:
+        if isinstance(item, list):
+            yield from flatten(item)
+        else:
+            yield item
+
+nested = [1, [2, 3], [4, [5, 6]], 7]
+print(list(flatten(nested)))  # [1, 2, 3, 4, 5, 6, 7]
+
+# Комбинирование генераторов
+def gen1():
+    yield from range(3)
+
+def gen2():
+    yield from range(10, 13)
+
+def combined():
+    yield from gen1()
+    yield from gen2()
+
+print(list(combined()))  # [0, 1, 2, 10, 11, 12]`,
+      },
+      {
+        kind: "text",
+        md: `## itertools: мощные инструменты для итераторов
+
+Модуль \`itertools\` предоставляет функции для эффективной работы с итераторами:
+
+- \`count(start, step)\` — бесконечный счётчик
+- \`cycle(iterable)\` — бесконечный цикл по элементам
+- \`repeat(value, times)\` — повторение значения
+- \`chain(*iterables)\` — цепочка итераторов
+- \`islice(iterable, stop)\` — срез итератора
+- \`tee(iterable, n)\` — создание n независимых копий`,
+      },
+      {
+        kind: "code",
+        title: "Полезные функции itertools",
+        code: `from itertools import count, cycle, repeat, chain, islice
+
+# count — бесконечный счётчик
+print(list(islice(count(10, 2), 5)))  # [10, 12, 14, 16, 18]
+
+# cycle — бесконечный цикл
+print(list(islice(cycle(['A', 'B', 'C']), 7)))
+# ['A', 'B', 'C', 'A', 'B', 'C', 'A']
+
+# repeat — повторение
+print(list(repeat('X', 5)))  # ['X', 'X', 'X', 'X', 'X']
+
+# chain — цепочка итераторов
+print(list(chain([1, 2], [3, 4], [5])))  # [1, 2, 3, 4, 5]
+
+# islice — срез итератора
+gen = (x ** 2 for x in count())
+print(list(islice(gen, 5)))  # [0, 1, 4, 9, 16]`,
+      },
+      {
+        kind: "text",
+        md: `## Генераторы с состоянием
+
+Генераторы могут сохранять состояние между вызовами. Это позволяет создавать сложные последовательности с внутренней логикой.`,
+      },
+      {
+        kind: "code",
+        title: "Генератор с состоянием",
+        code: `def fibonacci():
+    """Генератор чисел Фибоначчи"""
+    a, b = 0, 1
+    while True:
+        yield a
+        a, b = b, a + b
+
+fib = fibonacci()
+print([next(fib) for _ in range(10)])
+# [0, 1, 1, 2, 3, 5, 8, 13, 21, 34]
+
+# Генератор с параметрами
+def powers(base):
+    """Генератор степеней числа"""
+    exp = 0
+    while True:
+        yield base ** exp
+        exp += 1
+
+squares = powers(2)
+print([next(squares) for _ in range(8)])
+# [1, 2, 4, 8, 16, 32, 64, 128]`,
+      },
+      {
+        kind: "code",
+        title: "Генератор для чтения файла",
+        code: `def read_lines(filename):
+    """Ленивое чтение файла построчно"""
+    with open(filename, 'r') as f:
+        for line in f:
+            yield line.strip()
+
+# Пример использования (создадим тестовый файл)
+with open('test.txt', 'w') as f:
+    f.write("Строка 1\\nСтрока 2\\nСтрока 3\\n")
+
+# Чтение без загрузки всего файла в память
+for line in read_lines('test.txt'):
+    print(line)
+
+# Обработка больших файлов
+def process_large_file(filename):
+    for line in read_lines(filename):
+        # Обработка каждой строки
+        yield line.upper()
+
+# Цепочка генераторов
+result = list(process_large_file('test.txt'))
+print(result)`,
+      },
+      {
+        kind: "warn",
+        title: "Генераторы одноразовые",
+        md: `Генератор можно итерировать только **один раз**. После исчерпания он становится пустым.
+
+\`\`\`python
+gen = (x for x in range(3))
+print(list(gen))  # [0, 1, 2]
+print(list(gen))  # [] — генератор исчерпан!
+\`\`\`
+
+Если нужно использовать значения несколько раз — преобразуйте в список или создайте новый генератор.`,
       },
       {
         kind: "tip",
-        title: "yield from",
-        md: `\`yield from another_gen\` делегирует итерацию другому генератору — аналог \`yield*\` из JavaScript. Удобен для сборки пайплайнов обработки данных.`,
+        title: "Когда использовать генераторы?",
+        md: `**Используйте генераторы, когда:**
+- Работаете с большими данными (файлы, базы данных)
+- Нужны бесконечные последовательности
+- Хотите экономить память
+- Обрабатываете данные потоком
+
+**Используйте списки, когда:**
+- Нужно обращаться по индексу
+- Нужно итерировать несколько раз
+- Нужно знать длину
+- Данные помещаются в память`,
       },
     ],
     quiz: [
@@ -5261,6 +5523,34 @@ print(list(g))   # [] — уже исчерпан`,
         ],
         answer: 1,
         explain: "Круглые скобки создают генератор (O(1) памяти, одноразовый), квадратные — готовый список.",
+      },
+      {
+        q: "Что делает yield from?",
+        options: [
+          "Завершает генератор",
+          "Делегирует итерацию другому генератору",
+          "Возвращает значение из функции",
+          "Создаёт новый генератор",
+        ],
+        answer: 1,
+        explain: "yield from делегирует итерацию другому генератору, позволяя 'плоско' возвращать значения из вложенных структур.",
+      },
+      {
+        q: "Что произойдёт при повторной итерации генератора?",
+        options: [
+          "Он начнёт сначала",
+          "Будет пустой (исчерпан)",
+          "Вызовет ошибку",
+          "Создаст копию",
+        ],
+        answer: 1,
+        explain: "Генераторы одноразовые. После исчерпания они становятся пустыми и не могут быть использованы снова.",
+      },
+      {
+        q: "Какая функция itertools создаёт бесконечный счётчик?",
+        options: ["cycle", "repeat", "count", "chain"],
+        answer: 2,
+        explain: "count(start, step) создаёт бесконечную последовательность чисел, начиная с start с шагом step.",
       },
     ],
     tasks: [
@@ -5318,6 +5608,68 @@ def fib():
     while True:
         yield a
         a, b = b, a + b`,
+      },
+      {
+        id: "py10t3",
+        title: "Выравнивание списков",
+        md: `Реализуйте генератор \`flatten(nested)\`, который рекурсивно выравнивает вложенные списки. \`list(flatten([1, [2, 3], [4, [5, 6]]]))\` → \`[1, 2, 3, 4, 5, 6]\`. Используйте \`yield from\` для рекурсии.`,
+        starter: `def flatten(nested):
+    # ваш код с yield from
+    pass
+
+print(list(flatten([1, [2, 3], [4, [5, 6]]])))`,
+        tests: `
+__test("простой случай", lambda: list(flatten([1, [2, 3], [4, [5, 6]]])), [1, 2, 3, 4, 5, 6])
+__test("плоский список", lambda: list(flatten([1, 2, 3])), [1, 2, 3])
+__test("глубокая вложенность", lambda: list(flatten([[[1]], [[2]], [[3]]])), [1, 2, 3])
+__test("пустой список", lambda: list(flatten([])), [])`,
+        solution: `def flatten(nested):
+    for item in nested:
+        if isinstance(item, list):
+            yield from flatten(item)
+        else:
+            yield item`,
+      },
+      {
+        id: "py10t4",
+        title: "Генератор степеней",
+        md: `Реализуйте генератор \`powers(base)\`, который выдаёт бесконечную последовательность степеней числа: \`base^0, base^1, base^2, ...\`. \`list(islice(powers(2), 8))\` → \`[1, 2, 4, 8, 16, 32, 64, 128]\`.`,
+        starter: `from itertools import islice
+
+def powers(base):
+    # бесконечный генератор степеней
+    pass
+
+print(list(islice(powers(2), 8)))`,
+        tests: `
+__test("powers(2) первые 8", lambda: list(islice(powers(2), 8)), [1, 2, 4, 8, 16, 32, 64, 128])
+__test("powers(3) первые 5", lambda: list(islice(powers(3), 5)), [1, 3, 9, 27, 81])
+__test("powers(10) первые 4", lambda: list(islice(powers(10), 4)), [1, 10, 100, 1000])`,
+        solution: `from itertools import islice
+
+def powers(base):
+    exp = 0
+    while True:
+        yield base ** exp
+        exp += 1`,
+      },
+      {
+        id: "py10t5",
+        title: "Чтение больших данных",
+        md: `Реализуйте генератор \`read_chunks(data, chunk_size)\`, который разбивает список на чанки заданного размера. \`list(read_chunks([1,2,3,4,5,6,7], 3))\` → \`[[1,2,3], [4,5,6], [7]]\`.`,
+        starter: `def read_chunks(data, chunk_size):
+    # ваш код
+    pass
+
+print(list(read_chunks([1,2,3,4,5,6,7], 3)))`,
+        tests: `
+__test("разбиение на чанки", lambda: list(read_chunks([1,2,3,4,5,6,7], 3)), [[1,2,3], [4,5,6], [7]])
+__test("точный размер", lambda: list(read_chunks([1,2,3,4], 2)), [[1,2], [3,4]])
+__test("один элемент", lambda: list(read_chunks([1], 3)), [[1]])
+__test("пустой список", lambda: list(read_chunks([], 3)), [])`,
+        solution: `def read_chunks(data, chunk_size):
+    for i in range(0, len(data), chunk_size):
+        yield data[i:i + chunk_size]`,
       },
     ],
   },
