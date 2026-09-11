@@ -13917,8 +13917,8 @@ class Rectangle:
     id: "py13",
     language: "python",
     title: "Модули, ввод/вывод и сериализация",
-    subtitle: "import, input(), файлы, JSON, CSV — работа с данными и пакетами",
-    minutes: 30,
+    subtitle: "import, input(), файлы, JSON, CSV, collections, itertools, functools — работа с данными и пакетами",
+    minutes: 90,
     blocks: [
       {
         kind: "text",
@@ -14325,6 +14325,627 @@ with open("data.pkl", "rb") as f:
 - **YAML/TOML** — конфигурационные файлы
 - **SQLite** — лёгкая база данных (встроена в Python)`,
       },
+      {
+        kind: "text",
+        md: `## Модуль collections: расширенные контейнеры
+
+\`collections\` предоставляет специализированные контейнеры:
+
+**Counter** — подсчёт элементов:
+\`\`\`python
+from collections import Counter
+
+words = ["apple", "banana", "apple", "orange", "banana", "apple"]
+counter = Counter(words)
+print(counter)  # Counter({'apple': 3, 'banana': 2, 'orange': 1})
+print(counter.most_common(2))  # [('apple', 3), ('banana', 2)]
+print(counter['apple'])  # 3
+\`\`\`
+
+**defaultdict** — словарь с значением по умолчанию:
+\`\`\`python
+from collections import defaultdict
+
+# Группировка данных
+groups = defaultdict(list)
+for item in items:
+    groups[item.category].append(item)
+
+# Подсчёт
+counts = defaultdict(int)
+for word in words:
+    counts[word] += 1
+\`\`\`
+
+**deque** — двусторонняя очередь (быстрее list для операций с начала/конца):
+\`\`\`python
+from collections import deque
+
+queue = deque([1, 2, 3])
+queue.append(4)        # в конец
+queue.appendleft(0)    # в начало
+queue.pop()            # с конца
+queue.popleft()        # с начала
+\`\`\`
+
+**namedtuple** — именованный кортеж:
+\`\`\`python
+from collections import namedtuple
+
+Point = namedtuple('Point', ['x', 'y'])
+p = Point(10, 20)
+print(p.x, p.y)  # 10 20
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Модуль itertools: итераторы и комбинации
+
+\`itertools\` предоставляет эффективные итераторы:
+
+**Бесконечные итераторы:**
+\`\`\`python
+import itertools
+
+# Счётчик
+for i in itertools.count(10, 2):  # 10, 12, 14, ...
+    if i > 20:
+        break
+    print(i)
+
+# Повторение
+for item in itertools.repeat("hello", 3):
+    print(item)  # hello, hello, hello
+\`\`\`
+
+**Комбинаторные итераторы:**
+\`\`\`python
+# Декартово произведение
+for pair in itertools.product([1, 2], ['a', 'b']):
+    print(pair)  # (1, 'a'), (1, 'b'), (2, 'a'), (2, 'b')
+
+# Перестановки
+for perm in itertools.permutations([1, 2, 3]):
+    print(perm)  # (1,2,3), (1,3,2), (2,1,3), ...
+
+# Комбинации
+for combo in itertools.combinations([1, 2, 3, 4], 2):
+    print(combo)  # (1,2), (1,3), (1,4), (2,3), (2,4), (3,4)
+\`\`\`
+
+**Итераторы для обработки:**
+\`\`\`python
+# Цепочка итераторов
+for item in itertools.chain([1, 2], [3, 4], [5]):
+    print(item)  # 1, 2, 3, 4, 5
+
+# Группировка
+data = [('a', 1), ('b', 2), ('a', 3)]
+for key, group in itertools.groupby(data, key=lambda x: x[0]):
+    print(key, list(group))  # a [(a,1), (a,3)], b [(b,2)]
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Модуль functools: функциональные утилиты
+
+\`functools\` предоставляет инструменты для функционального программирования:
+
+**reduce** — свёртка последовательности:
+\`\`\`python
+from functools import reduce
+
+# Сумма
+total = reduce(lambda x, y: x + y, [1, 2, 3, 4, 5])
+print(total)  # 15
+
+# Произведение
+product = reduce(lambda x, y: x * y, [1, 2, 3, 4, 5])
+print(product)  # 120
+\`\`\`
+
+**partial** — частичное применение функции:
+\`\`\`python
+from functools import partial
+
+def power(base, exp):
+    return base ** exp
+
+square = partial(power, exp=2)
+cube = partial(power, exp=3)
+
+print(square(5))  # 25
+print(cube(2))    # 8
+\`\`\`
+
+**lru_cache** — мемоизация (кэширование результатов):
+\`\`\`python
+from functools import lru_cache
+
+@lru_cache(maxsize=100)
+def fibonacci(n):
+    if n < 2:
+        return n
+    return fibonacci(n-1) + fibonacci(n-2)
+
+# Первый вызов вычисляет, последующие — из кэша
+print(fibonacci(100))  # Мгновенно после первого вызова
+\`\`\`
+
+**wraps** — сохранение метаданных декоратора:
+\`\`\`python
+from functools import wraps
+
+def my_decorator(func):
+    @wraps(func)  # Сохраняет имя и docstring
+    def wrapper(*args, **kwargs):
+        print("Before")
+        result = func(*args, **kwargs)
+        print("After")
+        return result
+    return wrapper
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Модуль datetime: работа с датой и временем
+
+**Основные классы:**
+- \`date\` — дата (год, месяц, день)
+- \`time\` — время (часы, минуты, секунды)
+- \`datetime\` — дата и время
+- \`timedelta\` — разница между датами
+
+**Создание объектов:**
+\`\`\`python
+from datetime import datetime, date, time, timedelta
+
+# Текущая дата и время
+now = datetime.now()
+today = date.today()
+
+# Создание конкретной даты
+birthday = datetime(1990, 5, 15, 14, 30)
+date_only = date(2024, 1, 1)
+time_only = time(14, 30, 0)
+
+# Разница между датами
+tomorrow = today + timedelta(days=1)
+next_week = today + timedelta(weeks=1)
+diff = datetime(2024, 12, 31) - today
+print(f"Дней до конца года: {diff.days}")
+\`\`\`
+
+**Форматирование:**
+\`\`\`python
+now = datetime.now()
+
+# datetime → строка
+print(now.strftime("%Y-%m-%d %H:%M:%S"))  # 2024-01-15 14:30:00
+print(now.strftime("%d.%m.%Y"))           # 15.01.2024
+
+# строка → datetime
+date_str = "2024-01-15 14:30:00"
+dt = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
+\`\`\`
+
+**Часовые зоны:**
+\`\`\`python
+from datetime import datetime, timezone, timedelta
+
+# UTC
+utc_now = datetime.now(timezone.utc)
+
+# Часовая зона Москва (UTC+3)
+moscow_tz = timezone(timedelta(hours=3))
+moscow_now = datetime.now(moscow_tz)
+
+# Конвертация
+utc_dt = datetime.now(timezone.utc)
+moscow_dt = utc_dt.astimezone(moscow_tz)
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Модуль random: генерация случайных чисел
+
+**Основные функции:**
+\`\`\`python
+import random
+
+# Случайное целое число
+random.randint(1, 10)      # от 1 до 10 включительно
+random.randrange(0, 10, 2) # чётные числа от 0 до 8
+
+# Случайное число с плавающей точкой
+random.random()            # от 0.0 до 1.0
+random.uniform(1.5, 5.5)   # от 1.5 до 5.5
+
+# Случайный элемент из последовательности
+random.choice([1, 2, 3, 4, 5])
+random.choice("hello")
+
+# Перемешивание списка
+items = [1, 2, 3, 4, 5]
+random.shuffle(items)      # перемешивает на месте
+
+# Выборка без повторений
+random.sample([1, 2, 3, 4, 5], 3)  # 3 случайных элемента
+\`\`\`
+
+**Генерация с фиксированным seed (для воспроизводимости):**
+\`\`\`python
+random.seed(42)  # Фиксируем seed
+print(random.randint(1, 100))  # Всегда одно и то же число
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Модуль math: математические функции
+
+**Основные функции:**
+\`\`\`python
+import math
+
+# Округление
+math.ceil(3.2)    # 4 (вверх)
+math.floor(3.8)   # 3 (вниз)
+math.trunc(3.8)   # 3 (отбросить дробную часть)
+round(3.5)        # 4 (банковское округление)
+
+# Степени и корни
+math.sqrt(16)     # 4.0 (квадратный корень)
+math.pow(2, 3)    # 8.0 (2 в степени 3)
+math.exp(1)       # e^1 ≈ 2.718
+
+# Тригонометрия
+math.sin(math.pi / 2)    # 1.0
+math.cos(0)              # 1.0
+math.degrees(math.pi)    # 180.0 (радианы → градусы)
+math.radians(180)        # 3.14159... (градусы → радианы)
+
+# Логарифмы
+math.log(10)             # натуральный логарифм
+math.log10(100)          # 2.0 (десятичный)
+math.log2(8)             # 3.0 (двоичный)
+
+# Константы
+math.pi                  # 3.14159...
+math.e                   # 2.71828...
+math.inf                 # бесконечность
+math.nan                 # Not a Number
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Модуль re: регулярные выражения
+
+**Основные функции:**
+\`\`\`python
+import re
+
+text = "Цена: 100 руб, скидка 20%"
+
+# Поиск первого совпадения
+match = re.search(r'\\d+', text)
+print(match.group())  # "100"
+
+# Поиск всех совпадений
+matches = re.findall(r'\\d+', text)
+print(matches)  # ['100', '20']
+
+# Замена
+result = re.sub(r'\\d+', 'NUM', text)
+print(result)  # "Цена: NUM руб, скидка NUM%"
+
+# Проверка соответствия
+pattern = r'^[\\w\\.-]+@[\\w\\.-]+\\.\\w+$'
+if re.match(pattern, "user@example.com"):
+    print("Валидный email")
+\`\`\`
+
+**Метасимволы:**
+- \`\\d\` — цифра, \`\\D\` — не цифра
+- \`\\w\` — буква/цифра/\`, \`\\W\` — не \\w
+- \`\\s\` — пробел, \`\\S\` — не пробел
+- \`.\` — любой символ (кроме \\n)
+- \`^\` — начало строки, \`$\` — конец строки
+
+**Квантификаторы:**
+- \`*\` — 0 или более
+- \`+\` — 1 или более
+- \`?\` — 0 или 1
+- \`{n}\` — ровно n раз
+- \`{n,m}\` — от n до m раз
+
+**Группы:**
+\`\`\`python
+# Извлечение групп
+match = re.search(r'(\\d{4})-(\\d{2})-(\\d{2})', "Дата: 2024-01-15")
+year, month, day = match.groups()
+print(year, month, day)  # 2024 01 15
+
+# Именованные группы
+match = re.search(r'(?P<year>\\d{4})-(?P<month>\\d{2})', "2024-01")
+print(match.group('year'))   # 2024
+print(match.group('month'))  # 01
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Модуль logging: логирование
+
+**Уровни логирования:**
+- \`DEBUG\` — отладочная информация
+- \`INFO\` — общая информация
+- \`WARNING\` — предупреждения
+- \`ERROR\` — ошибки
+- \`CRITICAL\` — критические ошибки
+
+**Базовое использование:**
+\`\`\`python
+import logging
+
+# Базовая настройка
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    filename='app.log'
+)
+
+logging.debug("Отладочное сообщение")
+logging.info("Информационное сообщение")
+logging.warning("Предупреждение")
+logging.error("Ошибка")
+logging.critical("Критическая ошибка")
+\`\`\`
+
+**Продвинутая настройка:**
+\`\`\`python
+import logging
+
+# Создание логгера
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+# Обработчик для файла
+file_handler = logging.FileHandler('app.log')
+file_handler.setLevel(logging.DEBUG)
+file_handler.setFormatter(logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+))
+
+# Обработчик для консоли
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
+
+logger.debug("Это попадёт только в файл")
+logger.info("Это попадёт и в файл, и в консоль")
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Модуль argparse: аргументы командной строки
+
+\`\`\`python
+import argparse
+
+parser = argparse.ArgumentParser(description="Моя программа")
+parser.add_argument("filename", help="Имя файла")
+parser.add_argument("-v", "--verbose", action="store_true", help="Подробный вывод")
+parser.add_argument("-n", "--count", type=int, default=1, help="Количество")
+
+args = parser.parse_args()
+
+print(f"Файл: {args.filename}")
+print(f"Подробный режим: {args.verbose}")
+print(f"Количество: {args.count}")
+\`\`\`
+
+**Запуск:**
+\`\`\`bash
+python script.py myfile.txt -v -n 5
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Модуль subprocess: запуск внешних процессов
+
+\`\`\`python
+import subprocess
+
+# Запуск команды
+result = subprocess.run(['ls', '-l'], capture_output=True, text=True)
+print(result.stdout)
+
+# С проверкой кода возврата
+result = subprocess.run(['python', 'script.py'], check=True)
+
+# С перенаправлением ввода/вывода
+result = subprocess.run(
+    ['grep', 'pattern'],
+    input='some text\\nmore text',
+    capture_output=True,
+    text=True
+)
+\`\`\`
+
+**Рабочая директория и окружение:**
+\`\`\`python
+result = subprocess.run(
+    ['python', 'script.py'],
+    cwd='/path/to/dir',
+    env={'MY_VAR': 'value'},
+    capture_output=True,
+    text=True
+)
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Модуль sqlite3: базы данных
+
+\`\`\`python
+import sqlite3
+
+# Подключение к базе данных
+conn = sqlite3.connect('database.db')
+cursor = conn.cursor()
+
+# Создание таблицы
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT UNIQUE
+    )
+''')
+
+# Вставка данных
+cursor.execute("INSERT INTO users (name, email) VALUES (?, ?)", 
+               ("Ада", "ada@example.com"))
+
+# Выборка данных
+cursor.execute("SELECT * FROM users")
+users = cursor.fetchall()
+for user in users:
+    print(user)
+
+# Сохранение изменений
+conn.commit()
+
+# Закрытие соединения
+conn.close()
+\`\`\`
+
+**Контекстный менеджер:**
+\`\`\`python
+with sqlite3.connect('database.db') as conn:
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users")
+    users = cursor.fetchall()
+# Автоматический commit или rollback
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Модуль hashlib: хеширование
+
+\`\`\`python
+import hashlib
+
+# MD5 (небезопасен для паролей!)
+md5_hash = hashlib.md5(b"password").hexdigest()
+print(md5_hash)
+
+# SHA-256 (рекомендуется)
+sha256_hash = hashlib.sha256(b"password").hexdigest()
+print(sha256_hash)
+
+# Хеширование с солью
+salt = b"random_salt"
+password = b"password"
+hashed = hashlib.sha256(salt + password).hexdigest()
+
+# Хеширование файла
+with open("file.txt", "rb") as f:
+    file_hash = hashlib.sha256(f.read()).hexdigest()
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Модуль zipfile: работа с архивами
+
+\`\`\`python
+import zipfile
+
+# Создание архива
+with zipfile.ZipFile('archive.zip', 'w') as zipf:
+    zipf.write('file1.txt')
+    zipf.write('file2.txt')
+
+# Извлечение архива
+with zipfile.ZipFile('archive.zip', 'r') as zipf:
+    zipf.extractall('extracted_folder')
+    
+    # Извлечение одного файла
+    zipf.extract('file1.txt', 'output_dir')
+
+# Чтение содержимого архива
+with zipfile.ZipFile('archive.zip', 'r') as zipf:
+    print(zipf.namelist())  # Список файлов
+    with zipf.open('file1.txt') as f:
+        content = f.read()
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Модуль tempfile: временные файлы
+
+\`\`\`python
+import tempfile
+
+# Временный файл
+with tempfile.NamedTemporaryFile(mode='w+', delete=False) as f:
+    f.write("Временные данные")
+    temp_filename = f.name
+
+print(f"Временный файл: {temp_filename}")
+
+# Временная директория
+with tempfile.TemporaryDirectory() as temp_dir:
+    print(f"Временная директория: {temp_dir}")
+    # Файлы в этой директории будут удалены автоматически
+
+# Временный файл в памяти
+with tempfile.SpooledTemporaryFile(max_size=1000) as f:
+    f.write(b"Данные")
+    f.seek(0)
+    print(f.read())
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Модуль os.path: работа с путями (старый стиль)
+
+\`\`\`python
+import os
+
+# Базовые операции
+path = "/path/to/file.txt"
+os.path.basename(path)      # "file.txt"
+os.path.dirname(path)       # "/path/to"
+os.path.splitext(path)      # ("/path/to/file", ".txt")
+os.path.exists(path)        # True/False
+os.path.isfile(path)        # True если файл
+os.path.isdir(path)         # True если директория
+
+# Объединение путей
+full_path = os.path.join("/path", "to", "file.txt")
+
+# Абсолютный путь
+abs_path = os.path.abspath("relative/path")
+
+# Размер файла
+size = os.path.getsize("file.txt")
+\`\`\`
+
+**Современная альтернатива — pathlib:**
+\`\`\`python
+from pathlib import Path
+
+path = Path("/path/to/file.txt")
+path.name                 # "file.txt"
+path.parent               # Path("/path/to")
+path.suffix               # ".txt"
+path.exists()             # True/False
+path.is_file()            # True если файл
+path.is_dir()             # True если директория
+\`\`\``,
+      },
     ],
     quiz: [
       {
@@ -14366,6 +14987,83 @@ with open("data.pkl", "rb") as f:
         ],
         answer: 1,
         explain: "glob() возвращает итератор всех файлов, соответствующих паттерну. '*.py' означает все файлы с расширением .py.",
+      },
+      {
+        q: "Что делает Counter в модуле collections?",
+        options: [
+          "Создаёт счётчик для циклов",
+          "Подсчитывает количество элементов в последовательности",
+          "Считает сумму чисел",
+          "Подсчитывает количество символов в строке",
+        ],
+        answer: 1,
+        explain: "Counter подсчитывает количество вхождений каждого элемента в последовательности и возвращает словарь с подсчётами.",
+      },
+      {
+        q: "Что делает itertools.product()?",
+        options: [
+          "Умножает числа",
+          "Создаёт декартово произведение последовательностей",
+          "Перемешивает элементы",
+          "Сортирует элементы",
+        ],
+        answer: 1,
+        explain: "product() создаёт все возможные комбинации элементов из нескольких последовательностей (декартово произведение).",
+      },
+      {
+        q: "Что делает @lru_cache в functools?",
+        options: [
+          "Ограничивает размер функции",
+          "Кэширует результаты вызовов функции",
+          "Ограничивает количество аргументов",
+          "Создаёт локальную переменную",
+        ],
+        answer: 1,
+        explain: "@lru_cache кэширует результаты вызовов функции, чтобы при повторных вызовах с теми же аргументами возвращать кэшированный результат.",
+      },
+      {
+        q: "Что делает datetime.timedelta?",
+        options: [
+          "Создаёт дату",
+          "Представляет разницу между двумя датами",
+          "Форматирует дату",
+          "Парсит строку в дату",
+        ],
+        answer: 1,
+        explain: "timedelta представляет разницу между двумя датами или временными метками и позволяет выполнять арифметические операции с датами.",
+      },
+      {
+        q: "Что делает re.match()?",
+        options: [
+          "Ищет все совпадения в строке",
+          "Проверяет соответствие шаблону в начале строки",
+          "Заменяет все совпадения",
+          "Разделяет строку по шаблону",
+        ],
+        answer: 1,
+        explain: "match() проверяет, соответствует ли начало строки заданному шаблону. Для поиска всех совпадений используйте findall().",
+      },
+      {
+        q: "Что делает hashlib.sha256()?",
+        options: [
+          "Шифрует данные",
+          "Создаёт хеш SHA-256 из данных",
+          "Дешифрует данные",
+          "Создаёт случайные числа",
+        ],
+        answer: 1,
+        explain: "sha256() создаёт хеш SHA-256 из данных. Хеш — это односторонняя функция, которую нельзя обратить для получения исходных данных.",
+      },
+      {
+        q: "Что делает logging.basicConfig()?",
+        options: [
+          "Создаёт новый логгер",
+          "Настраивает базовую конфигурацию логирования",
+          "Удаляет все логи",
+          "Экспортирует логи в файл",
+        ],
+        answer: 1,
+        explain: "basicConfig() настраивает базовую конфигурацию системы логирования, включая уровень логирования, формат и обработчики.",
       },
     ],
     tasks: [
@@ -14489,6 +15187,188 @@ def csv_stats(csv_text, column):
         "avg": sum(values) / len(values),
         "sum": sum(values)
     }`,
+      },
+      {
+        id: "py13t5",
+        title: "Группировка с defaultdict",
+        md: `Реализуйте \`group_by_category(items)\` — принимает список словарей с ключом \`category\`, возвращает словарь, где ключи — категории, значения — списки элементов этой категории. Используйте \`defaultdict\`.`,
+        starter: `from collections import defaultdict
+
+def group_by_category(items):
+    # ваш код
+    pass
+
+items = [
+    {"name": "Яблоко", "category": "Фрукты"},
+    {"name": "Морковь", "category": "Овощи"},
+    {"name": "Банан", "category": "Фрукты"},
+]
+print(group_by_category(items))`,
+        tests: `
+from collections import defaultdict
+
+items = [
+    {"name": "Яблоко", "category": "Фрукты"},
+    {"name": "Морковь", "category": "Овощи"},
+    {"name": "Банан", "category": "Фрукты"},
+]
+
+result = group_by_category(items)
+__test("группировка по Фрукты", lambda: len(result["Фрукты"]), 2)
+__test("группировка по Овощи", lambda: len(result["Овощи"]), 1)
+__test("правильные элементы", lambda: [item["name"] for item in result["Фрукты"]], ["Яблоко", "Банан"])`,
+        solution: `from collections import defaultdict
+
+def group_by_category(items):
+    groups = defaultdict(list)
+    for item in items:
+        groups[item["category"]].append(item)
+    return dict(groups)`,
+      },
+      {
+        id: "py13t6",
+        title: "Фибоначчи с мемоизацией",
+        md: `Реализуйте \`fibonacci(n)\` с использованием \`@lru_cache\` для мемоизации. Функция должна быстро вычислять числа Фибоначчи даже для больших n.`,
+        starter: `from functools import lru_cache
+
+@lru_cache(maxsize=None)
+def fibonacci(n):
+    # ваш код
+    pass
+
+print(fibonacci(10))
+print(fibonacci(50))`,
+        tests: `
+from functools import lru_cache
+
+@lru_cache(maxsize=None)
+def fibonacci(n):
+    if n < 2:
+        return n
+    return fibonacci(n-1) + fibonacci(n-2)
+
+__test("fibonacci(0)", lambda: fibonacci(0), 0)
+__test("fibonacci(1)", lambda: fibonacci(1), 1)
+__test("fibonacci(10)", lambda: fibonacci(10), 55)
+__test("fibonacci(20)", lambda: fibonacci(20), 6765)`,
+        solution: `from functools import lru_cache
+
+@lru_cache(maxsize=None)
+def fibonacci(n):
+    if n < 2:
+        return n
+    return fibonacci(n-1) + fibonacci(n-2)`,
+      },
+      {
+        id: "py13t7",
+        title: "Валидация email с regex",
+        md: `Реализуйте \`validate_email(email)\` — проверяет, является ли строка валидным email адресом, используя регулярные выражения. Возвращает \`True\` или \`False\`.`,
+        starter: `import re
+
+def validate_email(email):
+    # ваш код
+    pass
+
+print(validate_email("user@example.com"))
+print(validate_email("invalid-email"))`,
+        tests: `
+import re
+
+def validate_email(email):
+    pattern = r'^[\\w\\.-]+@[\\w\\.-]+\\.\\w+$'
+    return bool(re.match(pattern, email))
+
+__test("валидный email", lambda: validate_email("user@example.com"), True)
+__test("валидный с поддоменом", lambda: validate_email("user@sub.example.com"), True)
+__test("невалидный без @", lambda: validate_email("invalid-email"), False)
+__test("невалидный без домена", lambda: validate_email("user@"), False)`,
+        solution: `import re
+
+def validate_email(email):
+    pattern = r'^[\\w\\.-]+@[\\w\\.-]+\\.\\w+$'
+    return bool(re.match(pattern, email))`,
+      },
+      {
+        id: "py13t8",
+        title: "Комбинации с itertools",
+        md: `Реализуйте \`all_pairs(items)\` — возвращает все возможные пары элементов из списка, используя \`itertools.combinations\`.`,
+        starter: `import itertools
+
+def all_pairs(items):
+    # ваш код
+    pass
+
+print(list(all_pairs([1, 2, 3, 4])))`,
+        tests: `
+import itertools
+
+def all_pairs(items):
+    return list(itertools.combinations(items, 2))
+
+result = list(all_pairs([1, 2, 3]))
+__test("количество пар", lambda: len(result), 3)
+__test("содержит (1, 2)", lambda: (1, 2) in result, True)
+__test("содержит (1, 3)", lambda: (1, 3) in result, True)
+__test("содержит (2, 3)", lambda: (2, 3) in result, True)`,
+        solution: `import itertools
+
+def all_pairs(items):
+    return list(itertools.combinations(items, 2))`,
+      },
+      {
+        id: "py13t9",
+        title: "Разница между датами",
+        md: `Реализуйте \`days_between(date1, date2)\` — принимает две даты в формате "YYYY-MM-DD", возвращает количество дней между ними. Используйте модуль \`datetime\`.`,
+        starter: `from datetime import datetime
+
+def days_between(date1, date2):
+    # ваш код
+    pass
+
+print(days_between("2024-01-01", "2024-01-31"))`,
+        tests: `
+from datetime import datetime
+
+def days_between(date1, date2):
+    d1 = datetime.strptime(date1, "%Y-%m-%d")
+    d2 = datetime.strptime(date2, "%Y-%m-%d")
+    return abs((d2 - d1).days)
+
+__test("30 дней", lambda: days_between("2024-01-01", "2024-01-31"), 30)
+__test("365 дней", lambda: days_between("2024-01-01", "2025-01-01"), 366)
+__test("обратный порядок", lambda: days_between("2024-12-31", "2024-01-01"), 365)`,
+        solution: `from datetime import datetime
+
+def days_between(date1, date2):
+    d1 = datetime.strptime(date1, "%Y-%m-%d")
+    d2 = datetime.strptime(date2, "%Y-%m-%d")
+    return abs((d2 - d1).days)`,
+      },
+      {
+        id: "py13t10",
+        title: "Хеширование пароля",
+        md: `Реализуйте \`hash_password(password, salt)\` — хеширует пароль с солью, используя SHA-256. Возвращает хеш в виде hex-строки.`,
+        starter: `import hashlib
+
+def hash_password(password, salt):
+    # ваш код
+    pass
+
+print(hash_password("password", "salt123"))`,
+        tests: `
+import hashlib
+
+def hash_password(password, salt):
+    return hashlib.sha256((salt + password).encode()).hexdigest()
+
+result = hash_password("password", "salt123")
+__test("возвращает строку", lambda: isinstance(result, str), True)
+__test("длина 64 символа", lambda: len(result), 64)
+__test("детерминированный", lambda: hash_password("password", "salt123") == hash_password("password", "salt123"), True)`,
+        solution: `import hashlib
+
+def hash_password(password, salt):
+    return hashlib.sha256((salt + password).encode()).hexdigest()`,
       },
     ],
   },
