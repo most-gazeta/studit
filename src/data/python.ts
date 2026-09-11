@@ -20802,6 +20802,351 @@ print(sorted_data)  # [(3, 1), (1, 2), (2, 3)]`,
         title: "Когда что использовать",
         md: `map/filter — когда логика простая и однострочная. Comprehensions — когда сложнее или с условиями. reduce — для свёрток (сумма, произведение, конкатенация). partial — когда нужно зафиксировать часть аргументов для переиспользования.`,
       },
+      {
+        kind: "text",
+        md: `## List comprehensions: подробный разбор
+
+**List comprehensions** — это компактный способ создания списков. Синтаксис:
+\`\`\`python
+[выражение for элемент in итератор if условие]
+\`\`\`
+
+**Преимущества:**
+- Более читаемый код
+- Быстрее, чем эквивалентный цикл for
+- Более компактный
+
+**Примеры:**
+\`\`\`python
+# Простой пример
+squares = [x ** 2 for x in range(10)]
+print(squares)  # [0, 1, 4, 9, 16, 25, 36, 49, 64, 81]
+
+# С условием
+evens = [x for x in range(20) if x % 2 == 0]
+print(evens)  # [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]
+
+# Вложенные comprehensions
+matrix = [[i * j for j in range(1, 4)] for i in range(1, 4)]
+print(matrix)  # [[1, 2, 3], [2, 4, 6], [3, 6, 9]]
+
+# Сложные условия
+result = [x for x in range(100) if x % 2 == 0 if x % 3 == 0]
+print(result)  # [0, 6, 12, 18, 24, ...]
+\`\`\``,
+      },
+      {
+        kind: "code",
+        title: "Dict и Set comprehensions",
+        code: `# Dict comprehension
+squares_dict = {x: x ** 2 for x in range(5)}
+print(squares_dict)  # {0: 0, 1: 1, 2: 4, 3: 9, 4: 16}
+
+# Set comprehension
+unique_lengths = {len(word) for word in ["apple", "banana", "pear"]}
+print(unique_lengths)  # {4, 5, 6}
+
+# С условием
+even_squares = {x: x ** 2 for x in range(10) if x % 2 == 0}
+print(even_squares)  # {0: 0, 2: 4, 4: 16, 6: 36, 8: 64}
+
+# Вложенные dict comprehensions
+matrix_dict = {
+    i: {j: i * j for j in range(1, 4)}
+    for i in range(1, 4)
+}
+print(matrix_dict)
+# {1: {1: 1, 2: 2, 3: 3}, 2: {1: 2, 2: 4, 3: 6}, 3: {1: 3, 2: 6, 3: 9}}`,
+      },
+      {
+        kind: "text",
+        md: `## Generator expressions
+
+**Генераторные выражения** похожи на list comprehensions, но используют круглые скобки и создают **генератор** вместо списка. Это экономит память, так как значения генерируются по одному.
+
+\`\`\`python
+# List comprehension (создаёт список в памяти)
+squares_list = [x ** 2 for x in range(1000000)]
+
+# Генераторное выражение (генерирует по одному)
+squares_gen = (x ** 2 for x in range(1000000))
+
+# Использование
+print(sum(squares_gen))  # Работает, не создавая список в памяти
+\`\`\`
+
+**Когда использовать генераторы:**
+- Когда работаете с большими объёмами данных
+- Когда нужно экономить память
+- Когда значения нужны только один раз`,
+      },
+      {
+        kind: "code",
+        title: "Генераторные выражения",
+        code: `# Генераторное выражение
+squares = (x ** 2 for x in range(10))
+print(type(squares))  # <class 'generator'>
+
+# Использование
+print(list(squares))  # [0, 1, 4, 9, 16, 25, 36, 49, 64, 81]
+
+# Генератор можно использовать только один раз
+squares = (x ** 2 for x in range(5))
+print(sum(squares))  # 30
+print(sum(squares))  # 0 — генератор уже исчерпан
+
+# Бесконечный генератор
+def infinite_squares():
+    n = 0
+    while True:
+        yield n * n
+        n += 1
+
+# Использование с itertools.islice
+from itertools import islice
+gen = infinite_squares()
+print(list(islice(gen, 5)))  # [0, 1, 4, 9, 16]`,
+      },
+      {
+        kind: "text",
+        md: `## functools: дополнительные инструменты
+
+Модуль \`functools\` предоставляет дополнительные функциональные инструменты:
+
+**lru_cache** — кэширование результатов функций:
+\`\`\`python
+from functools import lru_cache
+
+@lru_cache(maxsize=100)
+def fibonacci(n):
+    if n < 2:
+        return n
+    return fibonacci(n - 1) + fibonacci(n - 2)
+
+# Первый вызов вычисляет, последующие берут из кэша
+print(fibonacci(100))  # Мгновенно после первого вызова
+\`\`\`
+
+**wraps** — сохранение метаданных декоратора:
+\`\`\`python
+from functools import wraps
+
+def my_decorator(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        print("До вызова")
+        result = func(*args, **kwargs)
+        print("После вызова")
+        return result
+    return wrapper
+
+@my_decorator
+def greet(name):
+    \"\"\"Приветствует пользователя\"\"\"
+    print(f"Привет, {name}!")
+
+print(greet.__name__)  # greet (не wrapper)
+print(greet.__doc__)   # Приветствует пользователя
+\`\`\``,
+      },
+      {
+        kind: "code",
+        title: "lru_cache и wraps",
+        code: `from functools import lru_cache, wraps
+
+# lru_cache: кэширование результатов
+@lru_cache(maxsize=100)
+def expensive_function(n):
+    \"\"\"Дорогая функция\"\"\"
+    import time
+    time.sleep(1)  # Имитация дорогой операции
+    return n * 2
+
+# Первый вызов — медленно
+result1 = expensive_function(10)  # 1 секунда
+
+# Второй вызов — мгновенно (из кэша)
+result2 = expensive_function(10)  # Мгновенно
+
+# wraps: сохранение метаданных
+def my_decorator(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        \"\"\"Декоратор\"\"\"
+        return func(*args, **kwargs)
+    return wrapper
+
+@my_decorator
+def greet(name):
+    \"\"\"Приветствует пользователя\"\"\"
+    return f"Привет, {name}!"
+
+print(greet.__name__)  # greet (не wrapper)
+print(greet.__doc__)   # Приветствует пользователя`,
+      },
+      {
+        kind: "text",
+        md: `## functools: дополнительные декораторы
+
+**total_ordering** — автоматическая генерация методов сравнения:
+\`\`\`python
+from functools import total_ordering
+
+@total_ordering
+class Student:
+    def __init__(self, name, grade):
+        self.name = name
+        self.grade = grade
+    
+    def __eq__(self, other):
+        return self.grade == other.grade
+    
+    def __lt__(self, other):
+        return self.grade < other.grade
+
+# Автоматически генерируются: __le__, __gt__, __ge__
+students = [Student("А", 90), Student("Б", 85), Student("В", 95)]
+students.sort()
+\`\`\`
+
+**singledispatch** — перегрузка функций по типу:
+\`\`\`python
+from functools import singledispatch
+
+@singledispatch
+def process(arg):
+    print(f"Обработка: {arg}")
+
+@process.register(int)
+def _(int):
+    print(f"Обработка числа: {int}")
+
+@process.register(str)
+def _(str):
+    print(f"Обработка строки: {str}")
+
+process(10)      # Обработка числа: 10
+process("hello") # Обработка строки: hello
+\`\``,
+      },
+      {
+        kind: "code",
+        title: "Декораторы с параметрами",
+        code: `from functools import wraps
+
+# Декоратор с параметрами
+def repeat(times):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            for _ in range(times):
+                result = func(*args, **kwargs)
+            return result
+        return wrapper
+    return decorator
+
+@repeat(3)
+def greet(name):
+    print(f"Привет, {name}!")
+
+greet("Ада")  # Привет, Ада! (3 раза)
+
+# Декоратор с несколькими параметрами
+def retry(max_attempts, delay=1):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            for attempt in range(max_attempts):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    if attempt == max_attempts - 1:
+                        raise
+                    import time
+                    time.sleep(delay)
+            return None
+        return wrapper
+    return decorator
+
+@retry(max_attempts=3, delay=1)
+def unstable_function():
+    import random
+    if random.random() < 0.5:
+        raise Exception("Ошибка")
+    return "Успех"`,
+      },
+      {
+        kind: "text",
+        md: `## Lambda функции: подробный разбор
+
+**Lambda функции** — это анонимные функции, которые создаются с помощью ключевого слова \`lambda\`.
+
+**Синтаксис:**
+\`\`\`python
+lambda аргументы: выражение
+\`\`\`
+
+**Ограничения:**
+- Только одно выражение
+- Нет операторов (if, for, while и т.д.)
+- Нет аннотаций типов
+
+**Когда использовать:**
+- Когда функция очень простая
+- Когда функция нужна только один раз
+- Когда функция передаётся как аргумент`,
+      },
+      {
+        kind: "code",
+        title: "Lambda функции",
+        code: `# Простая lambda
+square = lambda x: x ** 2
+print(square(5))  # 25
+
+# Lambda с несколькими аргументами
+add = lambda x, y: x + y
+print(add(2, 3))  # 5
+
+# Lambda с условием (через тернарный оператор)
+abs_value = lambda x: x if x >= 0 else -x
+print(abs_value(-5))  # 5
+
+# Lambda в map/filter
+nums = [1, 2, 3, 4, 5]
+squares = list(map(lambda x: x ** 2, nums))
+evens = list(filter(lambda x: x % 2 == 0, nums))
+
+print(squares)  # [1, 4, 9, 16, 25]
+print(evens)    # [2, 4]
+
+# Lambda в sorted
+words = ["apple", "banana", "pear"]
+sorted_by_length = sorted(words, key=lambda x: len(x))
+print(sorted_by_length)  # ['pear', 'apple', 'banana']`,
+      },
+      {
+        kind: "text",
+        md: `## Сравнение lambda и def
+
+| Характеристика | lambda | def |
+|----------------|--------|-----|
+| Анонимная | ✅ Да | ❌ Нет |
+| Одно выражение | ✅ Да | ❌ Нет |
+| Аннотации типов | ❌ Нет | ✅ Да |
+| Docstring | ❌ Нет | ✅ Да |
+| Сложная логика | ❌ Нет | ✅ Да |
+
+**Когда использовать lambda:**
+- Когда функция очень простая (одно выражение)
+- Когда функция нужна только один раз
+- Когда функция передаётся как аргумент (map, filter, sorted)
+
+**Когда использовать def:**
+- Когда функция сложная (несколько выражений)
+- Когда нужна документация
+- Когда нужны аннотации типов
+- Когда функция используется многократно`,
+      },
     ],
     quiz: [
       {
