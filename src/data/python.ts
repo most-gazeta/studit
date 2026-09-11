@@ -12923,11 +12923,18 @@ __test("использует основной сервис", test_primary_servic
         kind: "text",
         md: `## Аннотации типов
 
-Подсказки типов **не проверяются** интерпретатором — они документация для людей и пища для статического анализатора \`mypy\`. Современный синтаксис: \`list[int]\`, \`dict[str, int]\`, \`str | None\`.`,
+Подсказки типов **не проверяются** интерпретатором — они документация для людей и пища для статического анализатора \`mypy\`. Современный синтаксис: \`list[int]\`, \`dict[str, int]\`, \`str | None\`.
+
+**Преимущества типизации:**
+- Раннее обнаружение ошибок
+- Улучшенная автодокументация кода
+- Лучшая поддержка IDE (автодополнение, рефакторинг)
+- Облегчает рефакторинг в больших проектах
+- Улучшает читаемость кода`,
       },
       {
         kind: "code",
-        title: "Аннотации",
+        title: "Базовые аннотации",
         code: `def greet(name: str, times: int = 1) -> str:
     return ("Привет, " + name + "! ") * times
 
@@ -12946,13 +12953,180 @@ print(find_first([1, 3], lambda x: x > 10))            # None`,
       },
       {
         kind: "text",
-        md: `## dataclass — классы без бойлерплейта
+        md: `## Продвинутая типизация
 
-Декоратор \`@dataclass\` генерирует \`__init__\`, \`__repr__\` и \`__eq__\` по полям. Класс на 30 строк сжимается до четырёх — и остаётся полноценным классом с методами.`,
+Python предоставляет мощные инструменты для типизации сложных структур:
+
+- **Generic** — параметризованные типы
+- **TypeVar** — переменные типов для обобщённых функций
+- **Protocol** — структурная типизация (duck typing)
+- **TypedDict** — типизация словарей
+- **Literal** — литеральные типы
+- **Union** — объединение типов
+- **TypeAlias** — алиасы типов`,
       },
       {
         kind: "code",
-        title: "dataclass в деле",
+        title: "Generic типы",
+        code: `from typing import TypeVar, Generic
+
+T = TypeVar('T')
+
+class Stack(Generic[T]):
+    """Обобщённый стек."""
+    def __init__(self):
+        self._items: list[T] = []
+    
+    def push(self, item: T) -> None:
+        self._items.append(item)
+    
+    def pop(self) -> T:
+        return self._items.pop()
+    
+    def peek(self) -> T:
+        return self._items[-1]
+
+# Использование с разными типами
+int_stack: Stack[int] = Stack()
+int_stack.push(42)
+value: int = int_stack.pop()
+
+str_stack: Stack[str] = Stack()
+str_stack.push("hello")
+text: str = str_stack.pop()`,
+      },
+      {
+        kind: "code",
+        title: "Protocol и duck typing",
+        code: `from typing import Protocol
+
+class Drawable(Protocol):
+    """Протокол для рисуемых объектов."""
+    def draw(self) -> None:
+        ...
+
+class Circle:
+    def __init__(self, radius: float):
+        self.radius = radius
+    
+    def draw(self) -> None:
+        print(f"Рисуем круг радиусом {self.radius}")
+
+class Square:
+    def __init__(self, side: float):
+        self.side = side
+    
+    def draw(self) -> None:
+        print(f"Рисуем квадрат со стороной {self.side}")
+
+# Функция принимает любой объект с методом draw()
+def render(shape: Drawable) -> None:
+    shape.draw()
+
+render(Circle(5.0))  # Работает!
+render(Square(3.0))  # Работает!`,
+      },
+      {
+        kind: "code",
+        title: "TypedDict",
+        code: `from typing import TypedDict
+
+class User(TypedDict):
+    """Типизированный словарь для пользователя."""
+    id: int
+    name: str
+    email: str
+    age: int
+
+def create_user(id: int, name: str, email: str, age: int) -> User:
+    return {
+        "id": id,
+        "name": name,
+        "email": email,
+        "age": age
+    }
+
+user: User = create_user(1, "Ада", "ada@example.com", 36)
+print(user["name"])  # IDE подсказывает ключи
+
+# Optional поля
+from typing import TypedDict
+
+class Config(TypedDict, total=False):
+    """Конфигурация с необязательными полями."""
+    host: str
+    port: int
+    debug: bool
+
+config: Config = {"host": "localhost"}  # port и debug опциональны`,
+      },
+      {
+        kind: "text",
+        md: `## Union и Literal типы
+
+**Union** — объединение нескольких типов:
+\`\`\`python
+from typing import Union
+
+def process(value: Union[int, str]) -> None:
+    if isinstance(value, int):
+        print(f"Число: {value}")
+    else:
+        print(f"Строка: {value}")
+\`\`\`
+
+**Literal** — литеральные типы (конкретные значения):
+\`\`\`python
+from typing import Literal
+
+def set_mode(mode: Literal["read", "write", "append"]) -> None:
+    print(f"Режим: {mode}")
+
+set_mode("read")   # OK
+set_mode("write")  # OK
+set_mode("delete") # Ошибка!
+\`\`\``,
+      },
+      {
+        kind: "code",
+        title: "TypeAlias для сложных типов",
+        code: `from typing import TypeAlias, Union
+
+# Сложный тип данных
+JsonType: TypeAlias = Union[dict, list, str, int, float, bool, None]
+Matrix: TypeAlias = list[list[float]]
+Callback: TypeAlias = Callable[[int, str], bool]
+
+def process_json(data: JsonType) -> None:
+    if isinstance(data, dict):
+        print("Словарь")
+    elif isinstance(data, list):
+        print("Список")
+    else:
+        print("Примитив")
+
+def multiply_matrix(matrix: Matrix, scalar: float) -> Matrix:
+    return [[cell * scalar for cell in row] for row in matrix]
+
+matrix: Matrix = [[1.0, 2.0], [3.0, 4.0]]
+result = multiply_matrix(matrix, 2.0)`,
+      },
+      {
+        kind: "text",
+        md: `## dataclass — классы без бойлерплейта
+
+Декоратор \`@dataclass\` генерирует \`__init__\`, \`__repr__\` и \`__eq__\` по полям. Класс на 30 строк сжимается до четырёх — и остаётся полноценным классом с методами.
+
+**Параметры dataclass:**
+- \`frozen=True\` — неизменяемый класс (как tuple)
+- \`slots=True\` — экономия памяти (Python 3.10+)
+- \`eq=True/False\` — генерировать \`__eq__\`
+- \`order=True\` — генерировать методы сравнения (\`<\`, \`>\`, \`<=\`, \`>=\`)
+- \`unsafe_hash=True\` — сделать хэшируемым`,
+      },
+      {
+        kind: "code",
+        title: "Базовый dataclass",
         code: `from dataclasses import dataclass
 
 @dataclass
@@ -12966,13 +13140,474 @@ print(p == Point(1.5, 2.5))    # True — __eq__ из коробки
 print(p.x + p.y)               # 4.0 — методы работают как обычно`,
       },
       {
-        kind: "text",
-        md: `## Экосистема
+        kind: "code",
+        title: "Frozen dataclass (неизменяемый)",
+        code: `from dataclasses import dataclass
 
-- **PEP 8**: snake_case, 4 пробела, осмысленные имена
-- **ruff** / **black** — линтер и форматтер: код всегда в одном стиле
-- **venv + pip** — изолированные окружения и пакеты
-- **pytest** — стандарт тестирования; наш песочный \`__test\` — его крошечный родственник`,
+@dataclass(frozen=True)
+class ImmutablePoint:
+    x: float
+    y: float
+
+p = ImmutablePoint(1.0, 2.0)
+print(p)  # ImmutablePoint(x=1.0, y=2.0)
+
+# Попытка изменения вызовет ошибку
+try:
+    p.x = 3.0  # FrozenInstanceError!
+except Exception as e:
+    print(f"Ошибка: {e}")
+
+# Можно использовать как ключ словаря (хэшируемый)
+locations = {p: "точка А"}
+print(locations[p])  # точка А`,
+      },
+      {
+        kind: "code",
+        title: "Dataclass с order и slots",
+        code: `from dataclasses import dataclass
+
+@dataclass(order=True, slots=True)
+class Product:
+    name: str
+    price: float
+    quantity: int
+
+products = [
+    Product("Яблоко", 1.5, 10),
+    Product("Банан", 0.8, 20),
+    Product("Апельсин", 2.0, 5)
+]
+
+# Сортировка по полям (по порядку объявления)
+sorted_products = sorted(products)
+for p in sorted_products:
+    print(f"{p.name}: {p.price} x {p.quantity}")
+
+# Экономия памяти с slots
+import sys
+print(f"Размер с slots: {sys.getsizeof(Product('test', 1.0, 1))} байт")`,
+      },
+      {
+        kind: "text",
+        md: `## Field для сложных полей
+
+\`field()\` позволяет настроить отдельные поля:
+- \`default\` — значение по умолчанию
+- \`default_factory\` — функция для создания значения
+- \`repr=True/False\` — включать в \`__repr__\`
+- \`compare=True/False\` — включать в сравнение
+- \`init=True/False\` — включать в \`__init__\``,
+      },
+      {
+        kind: "code",
+        title: "Field с default_factory",
+        code: `from dataclasses import dataclass, field
+from datetime import datetime
+
+@dataclass
+class User:
+    name: str
+    email: str
+    created_at: datetime = field(default_factory=datetime.now)
+    tags: list[str] = field(default_factory=list)
+    metadata: dict = field(default_factory=dict, repr=False)
+
+user1 = User("Ада", "ada@example.com")
+user2 = User("Боб", "bob@example.com")
+
+print(user1.created_at)  # Автоматическая дата создания
+print(user1.tags)        # Пустой список
+print(user1)             # metadata не показывается
+
+# Каждый экземпляр имеет свой список
+user1.tags.append("python")
+print(user2.tags)  # Пустой список (не общий!)`,
+      },
+      {
+        kind: "text",
+        md: `## Post-init обработка
+
+\`__post_init__\` вызывается после \`__init__\` для дополнительной инициализации или валидации.`,
+      },
+      {
+        kind: "code",
+        title: "Post-init валидация",
+        code: `from dataclasses import dataclass
+
+@dataclass
+class Rectangle:
+    width: float
+    height: float
+    
+    def __post_init__(self):
+        if self.width <= 0 or self.height <= 0:
+            raise ValueError("Размеры должны быть положительными")
+    
+    @property
+    def area(self) -> float:
+        return self.width * self.height
+    
+    @property
+    def perimeter(self) -> float:
+        return 2 * (self.width + self.height)
+
+rect = Rectangle(5.0, 3.0)
+print(f"Площадь: {rect.area}")      # 15.0
+print(f"Периметр: {rect.perimeter}") # 16.0
+
+try:
+    bad_rect = Rectangle(-1.0, 3.0)  # ValueError!
+except ValueError as e:
+    print(f"Ошибка: {e}")`,
+      },
+      {
+        kind: "text",
+        md: `## Наследование dataclass
+
+Dataclass поддерживает наследование. Дочерний класс наследует все поля родителя и может добавлять свои.`,
+      },
+      {
+        kind: "code",
+        title: "Наследование dataclass",
+        code: `from dataclasses import dataclass
+
+@dataclass
+class Animal:
+    name: str
+    age: int
+
+@dataclass
+class Dog(Animal):
+    breed: str
+    tricks: list[str]
+
+dog = Dog("Рекс", 5, "Сидеть", ["Сидеть", "Лежать", "Голос"])
+print(dog)
+# Dog(name='Рекс', age=5, breed='Немецкая овчарка', tricks=['Сидеть', 'Лежать', 'Голос'])
+
+# Переопределение полей
+@dataclass
+class Cat(Animal):
+    age: int = 0  # Переопределяем с значением по умолчанию
+    indoor: bool = True
+
+cat = Cat("Мурка")
+print(cat)  # Cat(name='Мурка', age=0, indoor=True)`,
+      },
+      {
+        kind: "text",
+        md: `## Экосистема Python
+
+Python имеет богатую экосистему инструментов для разработки:
+
+### Линтеры и форматтеры
+- **ruff** — быстрый линтер и форматтер (замена flake8 + isort + black)
+- **black** — автоматический форматтер кода
+- **isort** — сортировка импортов
+- **mypy** — статическая проверка типов
+- **pylint** — комплексный линтер
+
+### Управление зависимостями
+- **pip** — стандартный менеджер пакетов
+- **venv** — виртуальные окружения
+- **poetry** — современный менеджер зависимостей
+- **pipenv** — альтернатива poetry
+- **uv** — сверхбыстрый менеджер (Rust-based)
+
+### Тестирование
+- **pytest** — стандарт де-факто для тестирования
+- **unittest** — встроенный фреймворк
+- **hypothesis** — property-based тестирование
+- **coverage** — измерение покрытия кода тестами
+
+### IDE и редакторы
+- **PyCharm** — специализированная IDE для Python
+- **VS Code** — универсальный редактор с отличной поддержкой Python
+- **Jupyter** — интерактивные ноутбуки для анализа данных`,
+      },
+      {
+        kind: "text",
+        md: `## PEP 8 — руководство по стилю
+
+PEP 8 — официальное руководство по стилю кода в Python.
+
+**Основные правила:**
+
+### Отступы
+- Используйте 4 пробела на уровень отступа
+- Никогда не смешивайте табы и пробелы
+
+### Длина строки
+- Максимум 79 символов для кода
+- Максимум 72 символа для комментариев и docstrings
+
+### Импорты
+- Импорты в начале файла
+- Группируйте импорты: стандартная библиотека, сторонние пакеты, локальные
+- Один импорт на строку
+- Используйте абсолютные импорты
+
+### Именование
+- **Модули**: snake_case (\`my_module.py\`)
+- **Классы**: PascalCase (\`MyClass\`)
+- **Функции и переменные**: snake_case (\`my_function\`)
+- **Константы**: UPPER_SNAKE_CASE (\`MAX_SIZE\`)
+- **Приватные**: начинаются с \`_\` (\`_private_var\`)`,
+      },
+      {
+        kind: "code",
+        title: "Пример правильного стиля",
+        code: `# Правильные импорты
+import os
+import sys
+from typing import Optional, List
+
+import requests
+from flask import Flask
+
+from myapp.models import User
+from myapp.utils import helper
+
+# Константы
+MAX_RETRIES = 3
+DEFAULT_TIMEOUT = 30
+
+# Классы
+class UserService:
+    """Сервис для работы с пользователями."""
+    
+    def __init__(self, db_connection):
+        self.db = db_connection
+    
+    def get_user(self, user_id: int) -> Optional[User]:
+        """Получить пользователя по ID."""
+        return self.db.query(User).get(user_id)
+    
+    def create_user(self, name: str, email: str) -> User:
+        """Создать нового пользователя."""
+        user = User(name=name, email=email)
+        self.db.add(user)
+        return user
+
+# Функции
+def process_data(data: List[dict]) -> None:
+    """Обработать данные."""
+    for item in 
+        process_item(item)
+
+def _private_helper():
+    """Приватная вспомогательная функция."""
+    pass`,
+      },
+      {
+        kind: "text",
+        md: `## Mypy — статическая проверка типов
+
+Mypy проверяет типы в коде без его запуска. Это помогает найти ошибки до запуска программы.
+
+**Установка и использование:**
+\`\`\`bash
+pip install mypy
+mypy my_script.py
+\`\`\`
+
+**Конфигурация:**
+Создайте файл \`mypy.ini\` или \`pyproject.toml\` для настройки mypy.`,
+      },
+      {
+        kind: "code",
+        title: "Пример проверки mypy",
+        code: `# example.py
+def greet(name: str) -> str:
+    return f"Привет, {name}!"
+
+# Правильное использование
+message: str = greet("Ада")
+print(message)
+
+# Ошибки, которые найдёт mypy
+wrong: int = greet("Боб")  # Ошибка: incompatible types
+greet(123)  # Ошибка: argument has incompatible type "int"
+
+# Проверка:
+# mypy example.py
+# Success: no issues found`,
+      },
+      {
+        kind: "text",
+        md: `## Виртуальные окружения
+
+Виртуальные окружения изолируют зависимости проекта. Каждый проект имеет свой набор пакетов.
+
+**Создание и использование:**
+\`\`\`bash
+# Создание виртуального окружения
+python -m venv venv
+
+# Активация (Linux/macOS)
+source venv/bin/activate
+
+# Активация (Windows)
+venv\\Scripts\\activate
+
+# Установка пакетов
+pip install requests flask
+
+# Деактивация
+deactivate
+\`\`\`
+
+**requirements.txt:**
+\`\`\`bash
+# Сохранение зависимостей
+pip freeze > requirements.txt
+
+# Установка зависимостей
+pip install -r requirements.txt
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Poetry — современный менеджер зависимостей
+
+Poetry объединяет управление зависимостями, виртуальные окружения и упаковку пакетов.
+
+**Основные команды:**
+\`\`\`bash
+# Инициализация проекта
+poetry init
+
+# Добавление зависимости
+poetry add requests
+
+# Добавление dev-зависимости
+poetry add --dev pytest
+
+# Установка всех зависимостей
+poetry install
+
+# Запуск в виртуальном окружении
+poetry run python script.py
+\`\`\`
+
+**pyproject.toml:**
+\`\`\`toml
+[tool.poetry]
+name = "my-project"
+version = "0.1.0"
+description = "My awesome project"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+requests = "^2.28.0"
+
+[tool.poetry.dev-dependencies]
+pytest = "^7.0.0"
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Pytest — тестирование
+
+Pytest — стандарт де-факто для тестирования в Python.
+
+**Основные возможности:**
+- Простой синтаксис тестов
+- Автоматическое обнаружение тестов
+- Фикстуры для подготовки данных
+- Параметризация тестов
+- Плагины для расширения функциональности`,
+      },
+      {
+        kind: "code",
+        title: "Примеры тестов с pytest",
+        code: `# test_calculator.py
+import pytest
+from calculator import add, divide
+
+def test_add():
+    """Тест сложения."""
+    assert add(2, 3) == 5
+    assert add(-1, 1) == 0
+    assert add(0, 0) == 0
+
+def test_divide():
+    """Тест деления."""
+    assert divide(10, 2) == 5.0
+    assert divide(7, 2) == 3.5
+
+def test_divide_by_zero():
+    """Тест деления на ноль."""
+    with pytest.raises(ZeroDivisionError):
+        divide(10, 0)
+
+# Параметризация тестов
+@pytest.mark.parametrize("a,b,expected", [
+    (1, 2, 3),
+    (0, 0, 0),
+    (-1, 1, 0),
+    (100, 200, 300),
+])
+def test_add_parametrized(a, b, expected):
+    assert add(a, b) == expected
+
+# Фикстуры
+@pytest.fixture
+def sample_data():
+    """Фикстура с тестовыми данными."""
+    return [1, 2, 3, 4, 5]
+
+def test_with_fixture(sample_data):
+    assert len(sample_data) == 5
+    assert sum(sample_data) == 15
+
+# Запуск тестов:
+# pytest test_calculator.py
+# pytest -v (подробный вывод)
+# pytest --cov=calculator (с покрытием)`,
+      },
+      {
+        kind: "text",
+        md: `## Инструменты разработки
+
+### IDE и редакторы
+- **PyCharm** — мощная IDE с полной поддержкой Python
+- **VS Code** — лёгкий редактор с отличными расширениями
+- **Jupyter Notebook** — интерактивная среда для анализа данных
+- **JupyterLab** — улучшенная версия Jupyter
+
+### Отладка
+- **pdb** — встроенный отладчик Python
+- **ipdb** — улучшенный pdb с подсветкой синтаксиса
+- **IDE отладчики** — визуальные отладчики в IDE
+
+### Профилирование
+- **cProfile** — встроенный профилировщик
+- **line_profiler** — профилирование по строкам
+- **memory_profiler** — профилирование памяти`,
+      },
+      {
+        kind: "code",
+        title: "Использование pdb",
+        code: `# Отладка с pdb
+import pdb
+
+def buggy_function(x, y):
+    # Устанавливаем точку останова
+    pdb.set_trace()
+    
+    result = x + y
+    return result
+
+# Запуск с отладкой:
+# python script.py
+# (pdb) n  # следующая строка
+# (pdb) p x  # напечатать переменную x
+# (pdb) c  # продолжить
+
+# Или запуск сразу с отладчиком:
+# python -m pdb script.py`,
       },
       {
         kind: "tip",
@@ -13002,6 +13637,50 @@ print(p.x + p.y)               # 4.0 — методы работают как о
         ],
         answer: 1,
         explain: "dataclass создаёт конструктор, читаемый repr и сравнение по значениям полей — главный бойлерплейт.",
+      },
+      {
+        q: "Что делает параметр frozen=True в dataclass?",
+        options: [
+          "Делает класс хэшируемым",
+          "Делает класс неизменяемым",
+          "Добавляет методы сравнения",
+          "Добавляет слоты",
+        ],
+        answer: 1,
+        explain: "frozen=True делает класс неизменяемым — после создания нельзя изменять атрибуты.",
+      },
+      {
+        q: "Что такое Protocol в типизации?",
+        options: [
+          "Интерфейс для наследования",
+          "Структурная типизация (duck typing)",
+          "Протокол передачи данных",
+          "Абстрактный класс",
+        ],
+        answer: 1,
+        explain: "Protocol позволяет проверять наличие методов без явного наследования — duck typing с проверкой типов.",
+      },
+      {
+        q: "Для чего нужен field(default_factory=...)?",
+        options: [
+          "Для создания фабрики классов",
+          "Для создания изменяемых значений по умолчанию",
+          "Для валидации полей",
+          "Для скрытия полей",
+        ],
+        answer: 1,
+        explain: "default_factory вызывает функцию для каждого экземпляра, создавая новые списки/словари вместо общих.",
+      },
+      {
+        q: "Что делает pytest.fixture?",
+        options: [
+          "Создаёт тест",
+          "Подготавливает данные для тестов",
+          "Запускает тесты",
+          "Проверяет результаты",
+        ],
+        answer: 1,
+        explain: "Фикстуры подготавливают данные или состояние перед тестами и могут использоваться повторно.",
       },
     ],
     tasks: [
@@ -13049,6 +13728,187 @@ __test("лимит 0", lambda: top_scores({"x": 7}, 0), [])`,
         solution: `def top_scores(scores: dict[str, int], limit: int):
     ordered = sorted(scores.items(), key=lambda pair: pair[1], reverse=True)
     return ordered[:limit]`,
+      },
+      {
+        id: "py12t3",
+        title: "Frozen dataclass",
+        md: `Создайте \`@dataclass(frozen=True) Color\` с полями \`r\`, \`g\`, \`b\` (все int от 0 до 255). Добавьте метод \`to_hex()\`, возвращающий строку вида \`"#RRGGBB"\`. Класс должен быть неизменяемым и хэшируемым.`,
+        starter: `from dataclasses import dataclass
+
+@dataclass(frozen=True)
+class Color:
+    r: int
+    g: int
+    b: int
+    
+    def to_hex(self) -> str:
+        # ваш код
+        pass
+
+red = Color(255, 0, 0)
+print(red.to_hex())  # #FF0000
+print(hash(red))     # Хэшируемый!`,
+        tests: `
+def test_to_hex():
+    red = Color(255, 0, 0)
+    return red.to_hex() == "#FF0000"
+__test("to_hex для красного", test_to_hex, True)
+def test_frozen():
+    red = Color(255, 0, 0)
+    try:
+        red.r = 0
+        return False
+    except:
+        return True
+__test("класс неизменяемый", test_frozen, True)
+def test_hashable():
+    red = Color(255, 0, 0)
+    colors = {red: "красный"}
+    return colors[red] == "красный"
+__test("класс хэшируемый", test_hashable, True)`,
+        solution: `from dataclasses import dataclass
+
+@dataclass(frozen=True)
+class Color:
+    r: int
+    g: int
+    b: int
+    
+    def to_hex(self) -> str:
+        return f"#{self.r:02X}{self.g:02X}{self.b:02X}"`,
+      },
+      {
+        id: "py12t4",
+        title: "Protocol для drawable",
+        md: `Создайте \`Protocol Drawable\` с методом \`draw() -> None\`. Создайте классы \`Circle\` и \`Square\`, реализующие этот протокол. Создайте функцию \`render(shape: Drawable)\`, которая принимает любой объект с методом \`draw()\`.`,
+        starter: `from typing import Protocol
+
+class Drawable(Protocol):
+    def draw(self) -> None:
+        ...
+
+class Circle:
+    def __init__(self, radius: float):
+        self.radius = radius
+    
+    def draw(self) -> None:
+        print(f"Рисуем круг радиусом {self.radius}")
+
+class Square:
+    def __init__(self, side: float):
+        self.side = side
+    
+    def draw(self) -> None:
+        print(f"Рисуем квадрат со стороной {self.side}")
+
+def render(shape: Drawable) -> None:
+    # ваш код
+    pass
+
+render(Circle(5.0))
+render(Square(3.0))`,
+        tests: `
+def test_circle():
+    class TestCircle:
+        def __init__(self, radius):
+            self.radius = radius
+        def draw(self):
+            pass
+    circle = TestCircle(5.0)
+    render(circle)
+    return True
+__test("Circle реализует Drawable", test_circle, True)
+def test_square():
+    class TestSquare:
+        def __init__(self, side):
+            self.side = side
+        def draw(self):
+            pass
+    square = TestSquare(3.0)
+    render(square)
+    return True
+__test("Square реализует Drawable", test_square, True)`,
+        solution: `from typing import Protocol
+
+class Drawable(Protocol):
+    def draw(self) -> None:
+        ...
+
+class Circle:
+    def __init__(self, radius: float):
+        self.radius = radius
+    
+    def draw(self) -> None:
+        print(f"Рисуем круг радиусом {self.radius}")
+
+class Square:
+    def __init__(self, side: float):
+        self.side = side
+    
+    def draw(self) -> None:
+        print(f"Рисуем квадрат со стороной {self.side}")
+
+def render(shape: Drawable) -> None:
+    shape.draw()`,
+      },
+      {
+        id: "py12t5",
+        title: "Dataclass с post_init",
+        md: `Создайте \`@dataclass Rectangle\` с полями \`width\` и \`height\`. В \`__post_init__\` проверяйте, что оба значения положительные (иначе \`ValueError\`). Добавьте свойства \`area\` и \`perimeter\`.`,
+        starter: `from dataclasses import dataclass
+
+@dataclass
+class Rectangle:
+    width: float
+    height: float
+    
+    def __post_init__(self):
+        # ваш код
+        pass
+    
+    @property
+    def area(self) -> float:
+        # ваш код
+        pass
+    
+    @property
+    def perimeter(self) -> float:
+        # ваш код
+        pass
+
+rect = Rectangle(5.0, 3.0)
+print(f"Площадь: {rect.area}")
+print(f"Периметр: {rect.perimeter}")`,
+        tests: `
+def test_valid():
+    rect = Rectangle(5.0, 3.0)
+    return rect.area == 15.0 and rect.perimeter == 16.0
+__test("валидный прямоугольник", test_valid, True)
+def test_invalid():
+    try:
+        Rectangle(-1.0, 3.0)
+        return False
+    except ValueError:
+        return True
+__test("невалидные размеры", test_invalid, True)`,
+        solution: `from dataclasses import dataclass
+
+@dataclass
+class Rectangle:
+    width: float
+    height: float
+    
+    def __post_init__(self):
+        if self.width <= 0 or self.height <= 0:
+            raise ValueError("Размеры должны быть положительными")
+    
+    @property
+    def area(self) -> float:
+        return self.width * self.height
+    
+    @property
+    def perimeter(self) -> float:
+        return 2 * (self.width + self.height)`,
       },
     ],
   },
