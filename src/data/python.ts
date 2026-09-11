@@ -15377,14 +15377,102 @@ def hash_password(password, salt):
     id: "py14",
     language: "python",
     title: "Регулярные выражения",
-    subtitle: "re-модуль, паттерны, группы, поиск и замена",
-    minutes: 30,
+    subtitle: "re-модуль, паттерны, группы, поиск и замена — полное руководство",
+    minutes: 60,
     blocks: [
       {
         kind: "text",
-        md: `## re-модуль
+        md: `## Что такое регулярные выражения?
 
-\`re.search(pattern, text)\` — первый матч, \`re.findall\` — все, \`re.sub\` — замена. Паттерны: \`\\d\` (цифра), \`\\w\` (слово), \`\\s\` (пробел), \`+\` (один или более), \`*\` (ноль или более), \`?\` (ноль или один).`,
+Регулярные выражения (regex) — это мощный инструмент для поиска и обработки текста с помощью шаблонов. Они используются для:
+- Валидации данных (email, телефон, пароль)
+- Поиска и извлечения информации из текста
+- Замены текста по шаблону
+- Парсинга логов и данных
+
+**Модуль re** предоставляет функции для работы с регулярными выражениями в Python.`,
+      },
+      {
+        kind: "text",
+        md: `## Основные функции модуля re
+
+**re.search(pattern, string)** — ищет первое совпадение:
+\`\`\`python
+import re
+
+text = "Цена: 100 руб"
+match = re.search(r'\\d+', text)
+if match:
+    print(match.group())  # "100"
+\`\`\`
+
+**re.match(pattern, string)** — проверяет соответствие в начале строки:
+\`\`\`python
+if re.match(r'^\\d+', "123abc"):
+    print("Начинается с числа")
+\`\`\`
+
+**re.findall(pattern, string)** — находит все совпадения:
+\`\`\`python
+numbers = re.findall(r'\\d+', "Цена: 100, скидка: 20")
+print(numbers)  # ['100', '20']
+\`\`\`
+
+**re.sub(pattern, replacement, string)** — заменяет все совпадения:
+\`\`\`python
+result = re.sub(r'\\d+', 'NUM', "Цена: 100, скидка: 20")
+print(result)  # "Цена: NUM, скидка: NUM"
+\`\`\`
+
+**re.split(pattern, string)** — разделяет строку по шаблону:
+\`\`\`python
+parts = re.split(r'[,;\\s]+', "apple, banana; orange grape")
+print(parts)  # ['apple', 'banana', 'orange', 'grape']
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Символьные классы
+
+**Специальные классы:**
+- \`\\d\` — цифра [0-9]
+- \`\\D\` — не цифра [^0-9]
+- \`\\w\` — слово [a-zA-Z0-9_]
+- \`\\W\` — не слово
+- \`\\s\` — пробел [ \\t\\n\\r\\f\\v]
+- \`\\S\` — не пробел
+- \`.\` — любой символ (кроме \\n)
+
+**Пользовательские классы:**
+- \`[abc]\` — a, b или c
+- \`[a-z]\` — диапазон a-z
+- \`[^abc]\` — всё кроме a, b, c
+- \`[a-zA-Z]\` — буквы`,
+      },
+      {
+        kind: "code",
+        title: "Примеры символьных классов",
+        code: `import re
+
+text = "Цена: 100 руб, скидка 20%"
+
+# Цифры
+print(re.findall(r'\\d+', text))  # ['100', '20']
+
+# Не цифры
+print(re.findall(r'\\D+', text))  # ['Цена: ', ' руб, скидка ', '%']
+
+# Слова
+print(re.findall(r'\\w+', text))  # ['Цена', '100', 'руб', 'скидка', '20']
+
+# Любой символ
+print(re.findall(r'.+', text))  # Вся строка
+
+# Пользовательский класс
+print(re.findall(r'[а-я]+', "Цена: 100 руб"))  # ['цена', 'руб']
+
+# Диапазон
+print(re.findall(r'[0-5]+', "123456789"))  # ['12345']`,
       },
       {
         kind: "code",
@@ -15407,32 +15495,254 @@ print(re.findall(r"\\w+", text))  # ['Заказ', '123', 'сумма', '456', '
       },
       {
         kind: "text",
-        md: `## Группы и замена
+        md: `## Квантификаторы
 
-Круглые скобки \`(...)\` — группы. \`\\1\` — ссылка на первую группу в шаблоне замены. \`re.sub\` заменяет все вхождения.`,
+Квантификаторы определяют, сколько раз должен встречаться предыдущий элемент:
+
+- \`*\` — 0 или более раз
+- \`+\` — 1 или более раз
+- \`?\` — 0 или 1 раз
+- \`{n}\` — ровно n раз
+- \`{n,}\` — n или более раз
+- \`{n,m}\` — от n до m раз
+
+**Жадные и ленивые квантификаторы:**
+- Жадные: \`*\`, \`+\`, \`?\`, \`{n,m}\` — захватывают максимум
+- Ленивые: \`*?\`, \`+?\`, \`??\`, \`{n,m}?\` — захватывают минимум`,
       },
       {
         kind: "code",
-        title: "Группы и sub",
+        title: "Примеры квантификаторов",
         code: `import re
 
-# Извлечь домен из email
-email = "user@example.com"
-match = re.search(r"@(\\w+\\.\\w+)", email)
-print(match.group(1))  # example.com
+text = "aaabbbccc"
 
-# Заменить все пробелы на дефис
-text = "hello world python"
-print(re.sub(r"\\s+", "-", text))  # hello-world-python
+# Жадный квантификатор
+print(re.search(r'a.+c', text).group())  # "aaabbbccc"
 
-# Ссылка на группу в замене
+# Ленивый квантификатор
+print(re.search(r'a.+?c', text).group())  # "aaabbbccc"
+
+# Точное количество
+print(re.findall(r'a{3}', "aaabbb"))  # ['aaa']
+
+# Диапазон
+print(re.findall(r'a{2,4}', "aaaaaa"))  # ['aaaa', 'aa']
+
+# Один или более
+print(re.findall(r'a+', "baaab"))  # ['aaa']
+
+# Ноль или один
+print(re.findall(r'colou?r', "color colour"))  # ['color', 'colour']`,
+      },
+      {
+        kind: "text",
+        md: `## Группы
+
+Круглые скобки \`(...)\` создают группы для:
+1. Группировки элементов
+2. Извлечения подстрок
+3. Обратных ссылок
+
+**Типы групп:**
+- \`(...)\` — захватывающая группа
+- \`(?:...)\` — незахватывающая группа (только группировка)
+- \`(?P<name>...)\` — именованная группа
+- \`(?P=name)\` — ссылка на именованную группу`,
+      },
+      {
+        kind: "code",
+        title: "Работа с группами",
+        code: `import re
+
 text = "2026-02-14"
-print(re.sub(r"(\\d{4})-(\\d{2})-(\\d{2})", r"\\3.\\2.\\1", text))  # 14.02.2026`,
+
+# Захватывающие группы
+match = re.match(r'(\\d{4})-(\\d{2})-(\\d{2})', text)
+print(match.groups())  # ('2026', '02', '14')
+print(match.group(1))  # '2026'
+print(match.group(2))  # '02'
+
+# Именованные группы
+match = re.match(r'(?P<year>\\d{4})-(?P<month>\\d{2})-(?P<day>\\d{2})', text)
+print(match.group('year'))   # '2026'
+print(match.group('month'))  # '02'
+print(match.group('day'))    # '14'
+
+# Незахватывающая группа
+print(re.findall(r'(?:\\d{4})-(\\d{2})', "2026-02 2025-03"))  # ['02', '03']
+
+# Обратная ссылка
+text = "test test"
+print(re.search(r'(\\w+) \\1', text).group())  # "test test"`,
+      },
+      {
+        kind: "text",
+        md: `## Якоря (anchors)
+
+Якоря не захватывают символы, а указывают позицию:
+
+- \`^\` — начало строки
+- \`$\` — конец строки
+- \`\\b\` — граница слова
+- \`\\B\` — не граница слова
+- \`\\A\` — начало текста
+- \`\\Z\` — конец текста`,
+      },
+      {
+        kind: "code",
+        title: "Примеры якорей",
+        code: `import re
+
+# Начало и конец строки
+print(re.search(r'^\\d+', "123abc"))  # Match: "123"
+print(re.search(r'\\d+$', "abc123"))  # Match: "123"
+
+# Граница слова
+print(re.findall(r'\\bcat\\b', "cat cats catfish"))  # ['cat']
+print(re.findall(r'\\Bcat', "cat cats catfish"))    # ['cat', 'cat']
+
+# Начало и конец текста
+text = "first line\\nsecond line"
+print(re.search(r'^first', text, re.MULTILINE))  # Match
+print(re.search(r'line$', text, re.MULTILINE))   # Match`,
+      },
+      {
+        kind: "text",
+        md: `## Lookahead и Lookbehind
+
+**Lookahead (опережающая проверка):**
+- \`(?=...)\` — позитивный lookahead (должно следовать)
+- \`(?!=...)\` — негативный lookahead (не должно следовать)
+
+**Lookbehind (ретроспективная проверка):**
+- \`(?<=...)\` — позитивный lookbehind (должно предшествовать)
+- \`(?<!...)\` — негативный lookbehind (не должно предшествовать)`,
+      },
+      {
+        kind: "code",
+        title: "Lookahead и Lookbehind",
+        code: `import re
+
+text = "100 руб, 200 руб, 300 eur"
+
+# Позитивный lookahead: число перед "руб"
+print(re.findall(r'\\d+(?= руб)', text))  # ['100', '200']
+
+# Негативный lookahead: число не перед "eur"
+print(re.findall(r'\\d+(?! eur)', text))  # ['100', '200']
+
+# Позитивный lookbehind: число после "цена: "
+text2 = "цена: 100, скидка: 20"
+print(re.findall(r'(?<=цена: )\\d+', text2))  # ['100']
+
+# Негативный lookbehind: число не после "скидка: "
+print(re.findall(r'(?<!скидка: )\\d+', text2))  # ['100']`,
+      },
+      {
+        kind: "text",
+        md: `## Флаги (flags)
+
+Флаги изменяют поведение регулярного выражения:
+
+- \`re.IGNORECASE\` или \`re.I\` — игнорировать регистр
+- \`re.MULTILINE\` или \`re.M\` — многострочный режим
+- \`re.DOTALL\` или \`re.S\` — точка включает \\n
+- \`re.VERBOSE\` или \`re.X\` — разрешает комментарии и пробелы
+- \`re.UNICODE\` или \`re.U\` — Unicode-совместимость`,
+      },
+      {
+        kind: "code",
+        title: "Примеры флагов",
+        code: `import re
+
+text = "Hello\\nWorld"
+
+# Игнорировать регистр
+print(re.search(r'hello', text, re.IGNORECASE))  # Match
+
+# Многострочный режим
+print(re.search(r'^World', text, re.MULTILINE))  # Match
+
+# Точка включает \\n
+print(re.search(r'Hello.World', text, re.DOTALL))  # Match
+
+# Verbose режим с комментариями
+pattern = r"""
+    \\d{4}  # год
+    -       # дефис
+    \\d{2}  # месяц
+    -       # дефис
+    \\d{2}  # день
+"""
+print(re.search(pattern, "2026-02-14", re.VERBOSE))  # Match`,
+      },
+      {
+        kind: "text",
+        md: `## Практические примеры
+
+**Валидация email:**
+\`\`\`python
+pattern = r'^[\\w\\.-]+@[\\w\\.-]+\\.\\w+$'
+\`\`\`
+
+**Извлечение телефонных номеров:**
+\`\`\`python
+pattern = r'\\+?\\d{1,3}[-.\\s]?\\(?\\d{3}\\)?[-.\\s]?\\d{3}[-.\\s]?\\d{4}'
+\`\`\`
+
+**Валидация пароля (минимум 8 символов, буква, цифра, спецсимвол):**
+\`\`\`python
+pattern = r'^(?=.*[A-Za-z])(?=.*\\d)(?=.*[@$!%*#?&])[A-Za-z\\d@$!%*#?&]{8,}$'
+\`\`\``,
+      },
+      {
+        kind: "code",
+        title: "Парсинг логов",
+        code: `import re
+
+log = """
+2026-02-14 10:30:45 INFO User logged in: user123
+2026-02-14 10:31:12 ERROR Failed to connect: timeout
+2026-02-14 10:32:00 INFO Request processed: 200 OK
+"""
+
+# Извлечение всех записей
+pattern = r'(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}) (\\w+) (.+)'
+matches = re.findall(pattern, log)
+
+for timestamp, level, message in matches:
+    print(f"[{level}] {timestamp}: {message}")
+
+# Извлечение только ошибок
+errors = re.findall(r'ERROR (.+)', log)
+print(f"Ошибки: {errors}")`,
       },
       {
         kind: "warn",
-        title: "Raw-строки для паттернов",
-        md: `Всегда используйте \`r"..." \` (raw-строки) для регулярных выражений: \`r"\\d+"\` вместо \`"\\\\d+"\`. Иначе придётся экранировать обратные слеши дважды.`,
+        title: "Производительность регулярных выражений",
+        md: `Регулярные выражения могут быть медленными, особенно:
+- Сложные паттерны с множеством квантификаторов
+- Вложенные группы
+- Жадные квантификаторы на длинных строках
+
+**Советы:**
+- Используйте сырые строки \`r"pattern"\`
+- Компилируйте паттерны: \`pattern = re.compile(r'...')\`
+- Избегайте вложенных квантификаторов
+- Используйте специфичные классы вместо \`.\``,
+      },
+      {
+        kind: "tip",
+        title: "Инструменты для работы с regex",
+        md: `**Онлайн-инструменты:**
+- regex101.com — тестирование и объяснение паттернов
+- regexr.com — интерактивный редактор
+- regex101.com — библиотека паттернов
+
+**В Python:**
+- \`re.compile()\` — компиляция паттерна для повторного использования
+- \`pattern.match()\`, \`pattern.search()\`, \`pattern.findall()\` — методы скомпилированного паттерна`,
       },
     ],
     quiz: [
@@ -15452,6 +15762,72 @@ print(re.sub(r"(\\d{4})-(\\d{2})-(\\d{2})", r"\\3.\\2.\\1", text))  # 14.02.2026
         ],
         answer: 0,
         explain: "Скобки создают группу: её можно извлечь через group(1), group(2) и использовать в замене.",
+      },
+      {
+        q: "Что означает квантификатор '+'?",
+        options: [
+          "Ноль или более раз",
+          "Один или более раз",
+          "Ровно один раз",
+          "Ноль или один раз",
+        ],
+        answer: 1,
+        explain: "Квантификатор '+' означает 'один или более раз'. Для 'ноль или более' используется '*', для 'ноль или один' — '?'.",
+      },
+      {
+        q: "Что делает флаг re.IGNORECASE?",
+        options: [
+          "Игнорирует пробелы",
+          "Игнорирует регистр букв",
+          "Делает точку многострочной",
+          "Разрешает комментарии",
+        ],
+        answer: 1,
+        explain: "Флаг re.IGNORECASE (или re.I) делает регулярное выражение нечувствительным к регистру букв.",
+      },
+      {
+        q: "Что такое lookahead (?=...)?",
+        options: [
+          "Проверяет, что должно предшествовать",
+          "Проверяет, что должно следовать после",
+          "Захватывает группу",
+          "Создаёт альтернативу",
+        ],
+        answer: 1,
+        explain: "Lookahead (?=...) проверяет, что после текущей позиции следует указанный шаблон, но не захватывает его.",
+      },
+      {
+        q: "Что означает \\b в регулярном выражении?",
+        options: [
+          "Любая цифра",
+          "Граница слова",
+          "Пробел",
+          "Начало строки",
+        ],
+        answer: 1,
+        explain: "\\b означает границу слова — позицию между символом слова и не-символом слова.",
+      },
+      {
+        q: "Что возвращает re.match()?",
+        options: [
+          "Все совпадения в строке",
+          "Первое совпадение в начале строки",
+          "Первое совпадение в любом месте",
+          "Список всех групп",
+        ],
+        answer: 1,
+        explain: "re.match() проверяет соответствие паттерну только в начале строки. Для поиска в любом месте используйте re.search().",
+      },
+      {
+        q: "Что делает флаг re.DOTALL?",
+        options: [
+          "Игнорирует регистр",
+          "Делает точку многострочной (включает \\n)",
+          "Разрешает комментарии",
+          "Делает квантификаторы ленивыми",
+        ],
+        answer: 1,
+        explain: "Флаг re.DOTALL (или re.S) заставляет точку (.) соответствовать любому символу, включая символ новой строки \\n.",
       },
     ],
     tasks: [
@@ -15494,6 +15870,95 @@ __test("несколько дат", lambda: reformat_date("2026-01-01 и 2026-12
 
 def reformat_date(text):
     return re.sub(r"(\\d{4})-(\\d{2})-(\\d{2})", r"\\3.\\2.\\1", text)`,
+      },
+      {
+        id: "py14t3",
+        title: "Валидация email",
+        md: `Реализуйте \`validate_email(email)\` — возвращает \`True\`, если email валидный, иначе \`False\`. Email должен содержать \`@\` и домен с точкой.`,
+        starter: `import re
+
+def validate_email(email):
+    # ваш код
+    pass
+
+print(validate_email("user@example.com"))
+print(validate_email("invalid-email"))`,
+        tests: `
+__test("валидный email", lambda: validate_email("user@example.com"), True)
+__test("валидный с поддоменом", lambda: validate_email("user@sub.example.com"), True)
+__test("без @", lambda: validate_email("invalid-email"), False)
+__test("без домена", lambda: validate_email("user@"), False)
+__test("без имени", lambda: validate_email("@example.com"), False)`,
+        solution: `import re
+
+def validate_email(email):
+    pattern = r'^[\\w\\.-]+@[\\w\\.-]+\\.\\w+$'
+    return bool(re.match(pattern, email))`,
+      },
+      {
+        id: "py14t4",
+        title: "Извлечение хэштегов",
+        md: `Реализуйте \`extract_hashtags(text)\` — список всех хэштегов из текста. Хэштег начинается с \`#\` и содержит буквы/цифры/подчёркивания.`,
+        starter: `import re
+
+def extract_hashtags(text):
+    # ваш код
+    pass
+
+print(extract_hashtags("Привет #python #world!"))`,
+        tests: `
+__test("простой случай", lambda: extract_hashtags("#python #world"), ["python", "world"])
+__test("в тексте", lambda: extract_hashtags("Привет #python #world!"), ["python", "world"])
+__test("с цифрами", lambda: extract_hashtags("#python3 #2024"), ["python3", "2024"])
+__test("без хэштегов", lambda: extract_hashtags("нет хэштегов"), [])`,
+        solution: `import re
+
+def extract_hashtags(text):
+    return re.findall(r'#(\\w+)', text)`,
+      },
+      {
+        id: "py14t5",
+        title: "Подсчёт слов",
+        md: `Реализуйте \`count_words(text)\` — словарь с количеством вхождений каждого слова (без учёта регистра).`,
+        starter: `import re
+
+def count_words(text):
+    # ваш код
+    pass
+
+print(count_words("Привет мир привет"))`,
+        tests: `
+__test("простой случай", lambda: count_words("привет мир привет"), {"привет": 2, "мир": 1})
+__test("с разными регистрами", lambda: count_words("Привет ПРИВЕТ привет"), {"привет": 3})
+__test("с пунктуацией", lambda: count_words("привет, мир! привет."), {"привет": 2, "мир": 1})`,
+        solution: `import re
+
+def count_words(text):
+    words = re.findall(r'\\w+', text.lower())
+    return dict((word, words.count(word)) for word in set(words))`,
+      },
+      {
+        id: "py14t6",
+        title: "Валидация телефона",
+        md: `Реализуйте \`validate_phone(phone)\` — возвращает \`True\`, если телефон в формате \`+7(XXX)XXX-XX-XX\` или \`+7XXXXXXXXXX\`.`,
+        starter: `import re
+
+def validate_phone(phone):
+    # ваш код
+    pass
+
+print(validate_phone("+7(999)123-45-67"))
+print(validate_phone("+79991234567"))`,
+        tests: `
+__test("с скобками и дефисами", lambda: validate_phone("+7(999)123-45-67"), True)
+__test("без форматирования", lambda: validate_phone("+79991234567"), True)
+__test("неверный формат", lambda: validate_phone("89991234567"), False)
+__test("слишком короткий", lambda: validate_phone("+7999123456"), False)`,
+        solution: `import re
+
+def validate_phone(phone):
+    pattern = r'^\\+7(\\(\\d{3}\\)|\\d{3})\\d{3}-?\\d{2}-?\\d{2}$'
+    return bool(re.match(pattern, phone.replace("-", "").replace("(", "").replace(")", "")))`,
       },
     ],
   },
