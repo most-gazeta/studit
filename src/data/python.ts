@@ -20253,79 +20253,549 @@ def validate_phone(phone):
         kind: "text",
         md: `## map, filter, reduce
 
-\`map(fn, iterable)\` — применяет функцию к каждому элементу. \`filter(fn, iterable)\` — оставляет только те, для которых \`fn\` вернула \`True\`. \`reduce(fn, iterable)\` — сворачивает в одно значение (из \`functools\`).`,
+\`map(fn, iterable)\` — применяет функцию к каждому элементу. \`filter(fn, iterable)\` — оставляет только те, для которых \`fn\` вернула \`True\`. \`reduce(fn, iterable)\` — сворачивает в одно значение (из \`functools\`).
+
+Эти функции пришли из функционального программирования и позволяют писать код в декларативном стиле: описываем **что** нужно сделать, а не **как**.`,
       },
       {
         kind: "code",
-        title: "Функциональная троица",
+        title: "map: преобразование элементов",
+        code: `nums = [1, 2, 3, 4, 5]
+
+# map применяет функцию к каждому элементу
+squares = list(map(lambda x: x ** 2, nums))
+print(squares)  # [1, 4, 9, 16, 25]
+
+# map с несколькими последовательностями
+list1 = [1, 2, 3]
+list2 = [10, 20, 30]
+sums = list(map(lambda x, y: x + y, list1, list2))
+print(sums)  # [11, 22, 33]
+
+# map с обычной функцией
+def to_upper(s):
+    return s.upper()
+
+words = ["привет", "мир"]
+upper_words = list(map(to_upper, words))
+print(upper_words)  # ['ПРИВЕТ', 'МИР']
+
+# map возвращает итератор, не список
+result = map(lambda x: x * 2, [1, 2, 3])
+print(type(result))  # <class 'map'>
+print(list(result))  # [2, 4, 6]`,
+      },
+      {
+        kind: "code",
+        title: "filter: фильтрация элементов",
+        code: `nums = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+# filter оставляет только те элементы, для которых функция вернула True
+evens = list(filter(lambda x: x % 2 == 0, nums))
+print(evens)  # [2, 4, 6, 8, 10]
+
+# filter с обычной функцией
+def is_positive(x):
+    return x > 0
+
+numbers = [-5, -2, 0, 3, 7, -1]
+positives = list(filter(is_positive, numbers))
+print(positives)  # [3, 7]
+
+# filter с None (удаляет falsy значения)
+values = [0, 1, False, 2, "", 3, None, 4]
+filtered = list(filter(None, values))
+print(filtered)  # [1, 2, 3, 4]
+
+# filter возвращает итератор
+result = filter(lambda x: x > 5, [1, 2, 3, 6, 7, 8])
+print(list(result))  # [6, 7, 8]`,
+      },
+      {
+        kind: "code",
+        title: "reduce: свёртка в одно значение",
         code: `from functools import reduce
 
 nums = [1, 2, 3, 4, 5]
 
-# map: удвоить каждое
-print(list(map(lambda x: x * 2, nums)))  # [2, 4, 6, 8, 10]
-
-# filter: только чётные
-print(list(filter(lambda x: x % 2 == 0, nums)))  # [2, 4]
-
-# reduce: сумма
-print(reduce(lambda a, b: a + b, nums))  # 15
+# reduce сворачивает список в одно значение
+# lambda принимает два аргумента: аккумулятор и текущий элемент
+total = reduce(lambda acc, x: acc + x, nums)
+print(total)  # 15 (1+2+3+4+5)
 
 # reduce с начальным значением
-print(reduce(lambda a, b: a + b, nums, 100))  # 115`,
+total_with_start = reduce(lambda acc, x: acc + x, nums, 100)
+print(total_with_start)  # 115 (100+1+2+3+4+5)
+
+# Произведение всех элементов
+product = reduce(lambda acc, x: acc * x, nums)
+print(product)  # 120 (1*2*3*4*5)
+
+# Максимальный элемент
+max_val = reduce(lambda acc, x: acc if acc > x else x, nums)
+print(max_val)  # 5
+
+# Объединение строк
+words = ["Привет", "мир", "!"]
+sentence = reduce(lambda acc, word: acc + " " + word, words)
+print(sentence)  # " Привет мир !"`,
       },
       {
         kind: "text",
-        md: `## Частичные функции
+        md: `## Комбинация map, filter, reduce
 
-\`functools.partial(fn, *args)\` — фиксирует часть аргументов, возвращает новую функцию. Удобно для создания специализаций.`,
+Эти функции можно комбинировать для сложных преобразований:`,
       },
       {
         kind: "code",
-        title: "partial в деле",
+        title: "Комбинация функциональных функций",
+        code: `from functools import reduce
+
+nums = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+# Сумма квадратов чётных чисел
+result = reduce(
+    lambda acc, x: acc + x,
+    map(lambda x: x ** 2, filter(lambda x: x % 2 == 0, nums))
+)
+print(result)  # 4+16+36+64+100 = 220
+
+# Произведение квадратов нечётных чисел
+result = reduce(
+    lambda acc, x: acc * x,
+    map(lambda x: x ** 2, filter(lambda x: x % 2 != 0, nums)),
+    1
+)
+print(result)  # 1*9*25*49*81 = 85725`,
+      },
+      {
+        kind: "text",
+        md: `## functools.partial: частичное применение
+
+\`functools.partial(fn, *args, **kwargs)\` — фиксирует часть аргументов, возвращает новую функцию. Удобно для создания специализаций и повторного использования.`,
+      },
+      {
+        kind: "code",
+        title: "partial с именованными аргументами",
         code: `from functools import partial
 
 def power(base, exp):
     return base ** exp
 
+# Создаём специализации с фиксированным exp
 square = partial(power, exp=2)
 cube = partial(power, exp=3)
 
-print(square(5))   # 25
-print(cube(5))     # 125
+print(square(5))   # 25 (5^2)
+print(cube(5))     # 125 (5^3)
 
 # partial с позиционными аргументами
 def greet(greeting, name):
     return f"{greeting}, {name}!"
 
 hello = partial(greet, "Привет")
-print(hello("Ада"))  # Привет, Ада!`,
-      },
-      {
-        kind: "text",
-        md: `## Анализ кода
+print(hello("Ада"))  # Привет, Ада!
 
-**mypy** — статическая проверка типов. Запуск: \`mypy script.py\`. Проверяет аннотации типов, находит несоответствия.
+# partial с несколькими аргументами
+def multiply(a, b, c):
+    return a * b * c
 
-**ruff** / **black** — линтер и форматтер. \`ruff check .\` — найти проблемы стиля, \`ruff format .\` — отформатировать. \`black\` — альтернатива форматтеру.`,
+double_triple = partial(multiply, 2, 3)
+print(double_triple(5))  # 30 (2*3*5)`,
       },
       {
         kind: "code",
-        title: "Пример для mypy (демонстрация)",
-        code: `# Код с аннотациями типов:
+        title: "partial в реальных задачах",
+        code: `from functools import partial
+
+# Создание специализированных функций
+def log(level, message):
+    print(f"[{level}] {message}")
+
+info = partial(log, "INFO")
+error = partial(log, "ERROR")
+
+info("Приложение запущено")   # [INFO] Приложение запущено
+error("Ошибка подключения")  # [ERROR] Ошибка подключения
+
+# partial с map
+def multiply(x, factor):
+    return x * factor
+
+double = partial(multiply, factor=2)
+triple = partial(multiply, factor=3)
+
+nums = [1, 2, 3, 4, 5]
+doubled = list(map(double, nums))
+tripled = list(map(triple, nums))
+
+print(doubled)  # [2, 4, 6, 8, 10]
+print(tripled)  # [3, 6, 9, 12, 15]`,
+      },
+      {
+        kind: "text",
+        md: `## mypy: статическая проверка типов
+
+**mypy** — инструмент для статической проверки типов в Python. Проверяет аннотации типов и находит несоответствия до запуска кода.
+
+**Установка:** \`pip install mypy\`
+**Запуск:** \`mypy script.py\` или \`mypy .\` для всего проекта
+
+**Преимущества mypy:**
+- Находит ошибки типов до запуска кода
+- Улучшает автодополнение в IDE
+- Улучшает документацию кода
+- Помогает находить ошибки рефакторинга`,
+      },
+      {
+        kind: "code",
+        title: "Примеры аннотаций типов",
+        code: `# Простые типы
 def greet(name: str, times: int = 1) -> str:
     return ("Привет, " + name + "! ") * times
 
-# mypy проверит:
-# - name должен быть str
-# - times должен быть int
-# - возвращаемое значение — str
+# mypy проверит типы аргументов и возвращаемого значения
+# greet(123)  # Ошибка: int, не str
+# result: int = greet("Ада")  # Ошибка: str, не int
 
-# Ошибка, которую поймает mypy:
-# result: int = greet("Ада")  # TypeError: str, не int
+# Сложные типы из typing
+from typing import List, Dict, Optional, Union, Tuple
+
+def process_items(items: List[str]) -> Dict[str, int]:
+    """Возвращает словарь {элемент: длина}"""
+    return {item: len(item) for item in items}
+
+def get_user(user_id: int) -> Optional[dict]:
+    """Может вернуть dict или None"""
+    return {"id": user_id} if user_id > 0 else None
+
+def process_value(value: Union[str, int]) -> str:
+    """Принимает str или int, возвращает str"""
+    return str(value)
+
+# Кортежи с типами
+def get_coordinates() -> Tuple[float, float]:
+    return (10.5, 20.5)
+
+# List comprehension с типами
+def get_lengths(items: List[str]) -> List[int]:
+    return [len(item) for item in items]
 
 print("mypy проверяет типы статически")
-print("ruff/black форматируют код")`,
+print("Запуск: mypy script.py")`,
+      },
+      {
+        kind: "code",
+        title: "Продвинутые аннотации типов",
+        code: `from typing import List, Dict, Optional, Union, Tuple, Callable, Any
+
+# Callable: тип функции
+def apply(func: Callable[[int], int], value: int) -> int:
+    return func(value)
+
+# Any: любой тип (использовать осторожно)
+def process_any(value: Any) -> str:
+    return str(value)
+
+# Optional: может быть None или указанный тип
+def get_user(user_id: int) -> Optional[dict]:
+    if user_id > 0:
+        return {"id": user_id, "name": "User"}
+    return None
+
+# Union: один из нескольких типов
+def process(value: Union[str, int, float]) -> str:
+    return str(value)
+
+# Generic типы
+from typing import TypeVar, Generic
+
+T = TypeVar('T')
+
+class Stack(Generic[T]):
+    def __init__(self) -> None:
+        self.items: List[T] = []
+    
+    def push(self, item: T) -> None:
+        self.items.append(item)
+    
+    def pop(self) -> T:
+        return self.items.pop()
+
+# Использование
+int_stack: Stack[int] = Stack()
+int_stack.push(1)
+int_stack.push(2)
+value: int = int_stack.pop()
+
+print("Продвинутые аннотации типов")`,
+      },
+      {
+        kind: "text",
+        md: `## Конфигурация mypy
+
+Создайте файл \`mypy.ini\` или \`pyproject.toml\` для настройки mypy:`,
+      },
+      {
+        kind: "code",
+        title: "Конфигурация mypy.ini",
+        code: `# mypy.ini
+[mypy]
+python_version = 3.11
+warn_return_any = True
+warn_unused_configs = True
+disallow_untyped_defs = True
+disallow_incomplete_defs = True
+check_untyped_defs = True
+disallow_untyped_decorators = True
+no_implicit_optional = True
+warn_redundant_casts = True
+warn_unused_ignores = True
+
+# Игнорировать определённые модули
+[mypy.plugins.*]
+ignore_errors = True
+
+# Игнорировать определённые библиотеки
+[mypy.numpy.*]
+ignore_missing_imports = True
+
+[mypy.pandas.*]
+ignore_missing_imports = True`,
+      },
+      {
+        kind: "text",
+        md: `## ruff: быстрый линтер и форматтер
+
+**ruff** — очень быстрый линтер и форматтер для Python (написан на Rust). Заменяет flake8, isort, black и другие инструменты.
+
+**Установка:** \`pip install ruff\`
+
+**Основные команды:**
+- \`ruff check .\` — проверить код на ошибки стиля
+- \`ruff check --fix .\` — автоматически исправить ошибки
+- \`ruff format .\` — отформатировать код
+- \`ruff check --select E501 .\` — проверить только определённые правила
+
+**Преимущества ruff:**
+- Очень быстрый (в 10-100 раз быстрее flake8)
+- Заменяет несколько инструментов (flake8, isort, black)
+- Автоматическое исправление многих ошибок
+- Совместим с black и isort`,
+      },
+      {
+        kind: "code",
+        title: "Примеры использования ruff",
+        code: `# Код с проблемами стиля:
+def bad_function( x,y ):
+    z=x+y
+    return z
+
+# ruff check найдёт проблемы:
+# - E251: unexpected spaces around keyword parameter
+# - E225: missing whitespace around operator
+# - E231: missing whitespace after ','
+
+# ruff check --fix автоматически исправит:
+def good_function(x, y):
+    z = x + y
+    return z
+
+# ruff format отформатирует код:
+# - Правильные отступы (4 пробела)
+# - Правильные пробелы вокруг операторов
+# - Правильные пробелы после запятых
+# - Максимальная длина строки 88 символов
+
+# Команды:
+# ruff check .              # проверить весь проект
+# ruff check --fix .        # исправить автоматически
+# ruff format .             # форматировать код
+# ruff check --select E501  # проверить только длину строк
+
+print("ruff — быстрый линтер и форматтер")`,
+      },
+      {
+        kind: "text",
+        md: `## Конфигурация ruff
+
+Создайте файл \`ruff.toml\` или \`pyproject.toml\` для настройки ruff:`,
+      },
+      {
+        kind: "code",
+        title: "Конфигурация ruff.toml",
+        code: `# ruff.toml
+# Линтер
+line-length = 88
+target-version = "py311"
+
+# Включить определённые правила
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+]
+
+# Игнорировать определённые правила
+ignore = [
+    "E501",  # игнорировать длину строки
+    "E505",  # игнорировать длинные строки
+]
+
+# Форматтер
+[format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
+# isort конфигурация
+[isort]
+known-first-party = ["myproject"]`,
+      },
+      {
+        kind: "text",
+        md: `## black: альтернативный форматтер
+
+**black** — ещё один популярный форматтер для Python. В отличие от ruff, black только форматирует код, но не проверяет стиль.
+
+**Установка:** \`pip install black\`
+**Запуск:** \`black script.py\` или \`black .\`
+
+**Особенности black:**
+- Применяет единый стиль кода
+- Не настраивается (единообразие)
+- Автоматически форматирует весь код
+- Совместим с большинством проектов
+
+**Преимущества black:**
+- Единый стиль для всех проектов
+- Не требует настройки
+- Автоматическое форматирование
+- Интеграция с IDE`,
+      },
+      {
+        kind: "code",
+        title: "Примеры использования black",
+        code: `# До форматирования:
+def bad_function( x,y ):
+    z=x+y
+    return z
+
+# После black:
+def bad_function(x, y):
+    z = x + y
+    return z
+
+# black применяет единый стиль:
+# - 4 пробела для отступов
+# - Пробелы вокруг операторов
+# - Пробелы после запятых
+# - Максимальная длина строки 88 символов
+
+# Команды:
+# black script.py           # форматировать файл
+# black .          # форматировать всю папку
+# black --check .           # проверить без форматирования
+# black --diff .            # показать различия
+
+# Конфигурация pyproject.toml:
+# [tool.black]
+# line-length = 88
+# target-version = ['py311']
+
+print("black — единый стиль для всех")`,
+      },
+      {
+        kind: "text",
+        md: `## Сравнение ruff и black
+
+| Функция | ruff | black |
+|---------|------|-------|
+  Линтер | ✅ Да | Да |
+  Форматтер | ✅ Да | ✅ Да |
+  Скорость | ✅ Очень быстрая | Средняя |
+  Настройка | ✅ Да | Да |
+  Автофикс | ✅ Да | ✅ Да |
+
+**ruff** — универсальный инструмент (линтер + форматтер)
+**ruff** — только форматтер (но очень быстрый)
+
+**Рекомендация:** Используйте ruff для всего (линтер + форматтер)`,
+      },
+      {
+        kind: "text",
+        md: `## itertools: инструменты для итераторов
+
+Модуль \`itertools\` предоставляет эффективные инструменты для работы с итераторами:`,
+      },
+      {
+        kind: "code",
+        title: "Полезные функции itertools",
+        code: `import itertools
+
+# chain: объединение итераторов
+list1 = [1, 2, 3]
+list2 = [4, 5, 6]
+combined = list(itertools.chain(list1, list2))
+print(combined)  # [1, 2, 3, 4, 5, 6]
+
+# product: декартово произведение
+colors = ["красный", "синий"]
+sizes = ["S", "M", "L"]
+combinations = list(itertools.product(colors, sizes))
+print(combinations)  # [('красный', 'S'), ('красный', 'M'), ...]
+
+# permutations: все перестановки
+perms = list(itertools.permutations([1, 2, 3]))
+print(perms)  # [(1,2,3), (1,3,2), (2,1,3), ...]
+
+# combinations: все комбинации
+combs = list(itertools.combinations([1, 2, 3, 4], 2))
+print(combs)  # [(1,2), (1,3), (1,4), (2,3), (2,4), (3,4)]
+
+# count: бесконечный счётчик
+counter = itertools.count(10, 2)  # 10, 12, 14, 16, ...
+print([next(counter) for _ in range(5)])  # [10, 12, 14, 16, 18]
+
+# cycle: бесконечный цикл
+cycle = itertools.cycle(["A", "B", "C"])
+print([next(cycle) for _ in range(7)])  # ['A', 'B', 'C', 'A', 'B', 'C', 'A']`,
+      },
+      {
+        kind: "text",
+        md: `## operator: функциональные операторы
+
+Модуль \`operator\` предоставляет функциональные версии операторов:`,
+      },
+      {
+        kind: "code",
+        title: "Функциональные операторы",
+        code: `import operator
+
+# Арифметические операторы
+print(operator.add(2, 3))      # 5
+print(operator.mul(2, 3))      # 6
+print(operator.pow(2, 3))      # 8
+
+# Операторы сравнения
+print(operator.eq(2, 2))       # True
+print(operator.gt(5, 3))       # True
+print(operator.lt(3, 5))       # True
+
+# Использование с map/filter
+nums = [1, 2, 3, 4, 5]
+doubled = list(map(operator.mul, nums, [2, 2, 2, 2, 2]))
+print(doubled)  # [2, 4, 6, 8, 10]
+
+# itemgetter: получение элементов
+from operator import itemgetter
+data = [(1, 2), (3, 1), (2, 3)]
+sorted_data = sorted(data, key=itemgetter(1))
+print(sorted_data)  # [(3, 1), (1, 2), (2, 3)]`,
       },
       {
         kind: "tip",
@@ -20350,6 +20820,94 @@ print("ruff/black форматируют код")`,
         ],
         answer: 0,
         explain: "partial возвращает новую функцию с зафиксированными аргументами — специализацию оригинала.",
+      },
+      {
+        q: "Что делает map()?",
+        options: [
+          "Фильтрует элементы",
+          "Применяет функцию к каждому элементу",
+          "Сворачивает список в одно значение",
+          "Сортирует элементы",
+        ],
+        answer: 1,
+        explain: "map применяет функцию к каждому элементу итератора и возвращает новый итератор с результата.",
+      },
+      {
+        q: "Что делает filter()?",
+        options: [
+          "Применяет функцию к каждому элементу",
+          "Оставляет только те элементы, для которых функция вернула True",
+          "Сворачивает список в одно значение",
+          "Сортирует элементы",
+        ],
+        answer: 1,
+        explain: "filter оставляет только те элементы, для которых функция вернула True.",
+      },
+      {
+        q: "Что делает itertools.chain()?",
+        options: [
+          "Создаёт цепочку функций",
+          "Объединяет несколько итераторов в один",
+          "Создаёт бесконечный счётчик",
+          "Создаёт все перестановки",
+        ],
+        answer: 1,
+        explain: "itertools.chain объединяет несколько итераторов в один последовательный итератор.",
+      },
+      {
+        q: "Что делает mypy?",
+        options: [
+          "Форматирует код",
+          "Проверяет типы статически",
+          "Линтит код",
+          "Форматирует и линтит",
+        ],
+        answer: 1,
+        explain: "mypy — инструмент для статической проверки типов в Python.",
+      },
+      {
+        q: "Что делает ruff?",
+        options: [
+          "Только форматирует код",
+          "Только линтит код",
+          "И линтит, и форматирует код",
+          "Проверяет типы",
+        ],
+        answer: 2,
+        explain: "ruff — это и линтер, и форматтер для Python.",
+      },
+      {
+        q: "Что делает black?",
+        options: [
+          "И линтит, и форматирует код",
+          "Только форматирует код",
+          "Только линтит код",
+          "Проверяет типы",
+        ],
+        answer: 1,
+        explain: "black — это только форматтер для Python.",
+      },
+      {
+        q: "Что делает itertools.product()?",
+        options: [
+          "Умножает числа",
+          "Создаёт декартово произведение итераторов",
+          "Создаёт все перестановки",
+          "Создаёт все комбинации",
+        ],
+        answer: 1,
+        explain: "itertools.product создаёт декартово произведение нескольких итераторов.",
+      },
+      {
+        q: "Что делает itertools.combinations()?",
+        options: [
+          "Создаёт декартово произведение",
+          "Создаёт все перестановки",
+          "Создаёт все комбинации заданной длины",
+          "Объединяет итераторы",
+        ],
+        answer: 2,
+        explain: "itertools.combinations создаёт все возможные комбинации заданной длины из итератора.",
       },
     ],
     tasks: [
@@ -20400,6 +20958,70 @@ def multiply(a, b):
 
 def make_multiplier(factor):
     return partial(multiply, b=factor)`,
+      },
+      {
+        id: "py15t3",
+        title: "Сумма квадратов чётных",
+        md: `Реализуйте \\`sum_even_squares(nums)\\` — сумму квадратов чётных чисел, используя \\`map\\`, \\`filter\\` и \\`reduce\\`. \\`sum_even_squares([1, 2, 3, 4])\\` → \\`20\\` (4+16).`,
+        starter: `from functools import reduce
+
+def sum_even_squares(nums):
+    # map + filter + reduce
+    pass
+
+print(sum_even_squares([1, 2, 3, 4]))`,
+        tests: `
+__test("[1,2,3,4] → 20", () => sum_even_squares([1, 2, 3, 4]), 20)
+__test("[1,3,5] → 0", () => sum_even_squares([1, 3, 5]), 0)
+__test("[2,4,6] → 56", () => sum_even_squares([2, 4, 6]), 56)
+__test("[] → 0", () => sum_even_squares([]), 0)`,
+        solution: `from functools import reduce
+
+def sum_even_squares(nums):
+    squares = map(lambda x: x ** 2, filter(lambda x: x % 2 == 0, nums))
+    return reduce(lambda acc, x: acc + x, squares, 0)`,
+      },
+      {
+        id: "py15t4",
+        title: "Декартово произведение",
+        md: `Реализуйте \\`cartesian_product(list1, list2)\\` — декартово произведение двух списков, используя \\`itertools.product\\`. \\`cartesian_product([1,2], ['a','b'])\\` → \\`[(1,'a'), (1,'b'), (2,'a'), (2,'b')]\\`.`,
+        starter: `import itertools
+
+def cartesian_product(list1, list2):
+    # itertools.product
+    pass
+
+print(cartesian_product([1, 2], ['a', 'b']))`,
+        tests: `
+__test("простой случай", lambda: cartesian_product([1, 2], ['a', 'b']), [(1, 'a'), (1, 'b'), (2, 'a'), (2, 'b')])
+__test("один элемент", lambda: cartesian_product([1], ['a']), [(1, 'a')])
+__test("пустой список", lambda: cartesian_product([], ['a']), [])`,
+        solution: `import itertools
+
+def cartesian_product(list1, list2):
+    return list(itertools.product(list1, list2))`,
+      },
+      {
+        id: "py15t6",
+        title: "Бесконечный счётчик",
+        md: `Реализуйте \\`infinite_counter(start, step)\\` — возвращает итератор бесконечного счётчика, используя \\`itertools.count\\`. \\`list(islice(infinite_counter(10, 2), 5))\\` → \\`[10, 12, 14, 16, 18]\\`.`,
+        starter: `import itertools
+from itertools import islice
+
+def infinite_counter(start, step):
+    # itertools.count
+    pass
+
+print(list(islice(infinite_counter(10, 2), 5)))`,
+        tests: `
+from itertools import islice
+__test("счётчик с шагом 2", lambda: list(islice(infinite_counter(10, 2), 5)), [10, 12, 14, 16, 18])
+__test("счётчик с шагом 1", lambda: list(islice(infinite_counter(0, 1), 5)), [0, 1, 2, 3, 4])
+__test("счётчик с шагом 5", lambda: list(islice(infinite_counter(0, 5), 5)), [0, 5, 10, 15, 20])`,
+        solution: `import itertools
+
+def infinite_counter(start, step):
+    return itertools.count(start, step)`,
       },
     ],
   },
