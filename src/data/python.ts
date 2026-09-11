@@ -13924,76 +13924,406 @@ class Rectangle:
         kind: "text",
         md: `## Модули и пакеты
 
-\`import math\` — подключаем модуль целиком. \`from os import path\` — только конкретное имя. \`import numpy as np\` — псевдоним. Пакет — директория с \`__init__.py\` и модулями внутри.
+**Модуль** — это Python-файл с кодом. **Пакет** — директория с модулями и файлом \`__init__.py\`.
 
-Стандартная библиотека огромна: \`os\`, \`sys\`, \`json\`, \`csv\`, \`datetime\`, \`random\`, \`math\`, \`re\`, \`collections\` — и это только начало.`,
+**Способы импорта:**
+
+\`\`\`python
+# 1. Импорт всего модуля
+import math
+print(math.pi)
+
+# 2. Импорт конкретных имён
+from os import path, getcwd
+print(path.exists("/tmp"))
+
+# 3. Импорт с псевдонимом
+import numpy as np
+arr = np.array([1, 2, 3])
+
+# 4. Импорт из пакета
+from collections import Counter, defaultdict
+
+# 5. Относительный импорт (в пакетах)
+from . import utils
+from .. import config
+\`\`\`
+
+**Стандартная библиотека** содержит сотни модулей:
+- \`os\`, \`sys\` — работа с ОС
+- \`pathlib\` — работа с путями (современная альтернатива os.path)
+- \`json\`, \`csv\` — сериализация данных
+- \`datetime\`, \`time\` — работа с датой и временем
+- \`random\` — генерация случайных чисел
+- \`math\`, \`cmath\` — математические функции
+- \`re\` — регулярные выражения
+- \`collections\` — расширенные контейнеры
+- \`itertools\` — итераторы и комбинации
+- \`functools\` — функциональные утилиты`,
       },
       {
         kind: "code",
-        title: "Импорт в действии",
+        title: "Примеры импорта",
         code: `import math
-print(math.pi, math.sqrt(16))
+print(f"π = {math.pi:.4f}")
+print(f"√16 = {math.sqrt(16)}")
+print(f"sin(90°) = {math.sin(math.radians(90))}")
 
-from datetime import datetime
-print(datetime.now().strftime("%Y-%m-%d"))
+from datetime import datetime, timedelta
+now = datetime.now()
+tomorrow = now + timedelta(days=1)
+print(f"Сегодня: {now.strftime('%Y-%m-%d')}")
+print(f"Завтра: {tomorrow.strftime('%Y-%m-%d')}")
 
-from collections import Counter
-words = ["кот", "пёс", "кот", "кот", "пёс"]
-print(Counter(words))  # Counter({'кот': 3, 'пёс': 2})`,
+from collections import Counter, defaultdict
+words = ["кот", "пёс", "кот", "кот", "пёс", "кот"]
+counter = Counter(words)
+print(f"Счётчик: {counter}")
+print(f"Топ-2: {counter.most_common(2)}")
+
+# defaultdict с фабрикой
+dd = defaultdict(list)
+dd["фрукты"].append("яблоко")
+dd["фрукты"].append("банан")
+print(dd["фрукты"])  # ['яблоко', 'банан']`,
       },
       {
         kind: "text",
-        md: `## Ввод и вывод
+        md: `## Создание собственных модулей
 
-\`input()\` читает строку с клавиатуры (в песочнице недоступно — там только print). Файлы — через \`open()\` с \`with\`: \`with open(path, "r") as f: content = f.read()\`. Режимы: \`"r"\` (чтение), \`"w"\` (перезапись), \`"a"\` (дописывание).`,
-      },
-      {
-        kind: "code",
-        title: "Файлы (демонстрация)",
-        code: `# В песочнице файлы недоступны, но синтаксис такой:
-# with open("data.txt", "w") as f:
-#     f.write("привет\\n")
-#     f.write("мир\\n")
+Создайте файл \`mymodule.py\`:
 
-# with open("data.txt", "r") as f:
-#     lines = f.readlines()
-#     print(lines)
+\`\`\`python
+# mymodule.py
+def greet(name):
+    return f"Привет, {name}!"
 
-print("Файлы: open() + with + read/write")
-print("Режимы: r, w, a, rb, wb")`,
+PI = 3.14159
+
+class Calculator:
+    def add(self, a, b):
+        return a + b
+\`\`\`
+
+Используйте в другом файле:
+
+\`\`\`python
+# main.py
+from mymodule import greet, PI, Calculator
+
+print(greet("Ада"))
+print(f"π ≈ {PI}")
+
+calc = Calculator()
+print(calc.add(2, 3))
+\`\`\``,
       },
       {
         kind: "text",
-        md: `## JSON и CSV
+        md: `## Ввод и вывод (I/O)
 
-\`json.dumps(obj)\` — сериализация в строку, \`json.loads(str)\` — обратно. \`json.dump(obj, file)\` — запись в файл, \`json.load(file)\` — чтение.
+**Ввод с клавиатуры:**
 
-\`csv.reader\` / \`csv.writer\` — работа с CSV. \`csv.DictReader\` — строки как словари.`,
+\`\`\`python
+name = input("Введите ваше имя: ")
+age = int(input("Введите возраст: "))
+print(f"Привет, {name}! Вам {age} лет.")
+\`\`\`
+
+**Вывод:**
+
+\`\`\`python
+print("Обычный вывод")
+print("С переносом", end="\\n")
+print("Без переноса", end=" ")
+print("Продолжение")
+
+# Вывод в файл
+with open("output.txt", "w") as f:
+    print("Текст в файл", file=f)
+
+# Форматированный вывод
+name = "Ада"
+age = 36
+print(f"Имя: {name}, возраст: {age}")
+print("Имя: {}, возраст: {}".format(name, age))
+print("Имя: %s, возраст: %d" % (name, age))
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Работа с файлами
+
+**Режимы открытия файлов:**
+- \`"r"\` — чтение (по умолчанию)
+- \`"w"\` — запись (перезаписывает файл)
+- \`"a"\` — добавление в конец
+- \`"x"\` — создание (ошибка, если файл существует)
+- \`"b"\` — бинарный режим
+- \`"t"\` — текстовый режим (по умолчанию)
+- \`"+"\` — чтение и запись
+
+**Методы файловых объектов:**
+- \`read()\` — прочитать весь файл
+- \`readline()\` — прочитать одну строку
+- \`readlines()\` — прочитать все строки в список
+- \`write(text)\` — записать текст
+- \`writelines(lines)\` — записать список строк
+- \`close()\` — закрыть файл (автоматически с \`with\`)`,
       },
       {
         kind: "code",
-        title: "JSON и CSV",
+        title: "Примеры работы с файлами",
+        code: `# Запись в файл
+with open("example.txt", "w", encoding="utf-8") as f:
+    f.write("Первая строка\\n")
+    f.write("Вторая строка\\n")
+    f.writelines(["Третья строка\\n", "Четвёртая строка\\n"])
+
+# Чтение всего файла
+with open("example.txt", "r", encoding="utf-8") as f:
+    content = f.read()
+    print(content)
+
+# Построчное чтение
+with open("example.txt", "r", encoding="utf-8") as f:
+    for line in f:
+        print(line.strip())
+
+# Чтение в список
+with open("example.txt", "r", encoding="utf-8") as f:
+    lines = f.readlines()
+    print(f"Строк: {len(lines)}")
+
+# Добавление в конец
+with open("example.txt", "a", encoding="utf-8") as f:
+    f.write("Пятая строка\\n")`,
+      },
+      {
+        kind: "text",
+        md: `## Бинарные файлы
+
+Для работы с бинарными файлами используйте режим \`"b"\`:
+
+\`\`\`python
+# Запись бинарных данных
+with open("data.bin", "wb") as f:
+    f.write(b"\\x00\\x01\\x02\\x03")
+
+# Чтение бинарных данных
+with open("data.bin", "rb") as f:
+    data = f.read()
+    print(data)  # b'\\x00\\x01\\x02\\x03'
+\`\`\`
+
+**Полезные модули для бинарных данных:**
+- \`struct\` — упаковка/распаковка бинарных данных
+- \`io.BytesIO\` — работа с байтами как с файлом
+- \`pickle\` — сериализация Python-объектов (небезопасно!)`,
+      },
+      {
+        kind: "text",
+        md: `## JSON (JavaScript Object Notation)
+
+JSON — стандартный формат обмена данными. Поддерживает:
+- Объекты (словари)
+- Массивы (списки)
+- Строки, числа, булевы значения, null
+
+**Функции модуля json:**
+- \`json.dumps(obj)\` — объект → строка
+- \`json.loads(str)\` — строка → объект
+- \`json.dump(obj, file)\` — запись в файл
+- \`json.load(file)\` — чтение из файла
+
+**Параметры dumps/dump:**
+- \`indent\` — отступы для читаемости
+- \`ensure_ascii\` — экранировать не-ASCII (по умолчанию True)
+- \`sort_keys\` — сортировать ключи
+- \`default\` — функция для нестандартных типов`,
+      },
+      {
+        kind: "code",
+        title: "JSON с параметрами",
         code: `import json
-import csv
-from io import StringIO  # для демонстрации без файлов
 
-data = {"name": "Ада", "age": 36, "langs": ["python", "js"]}
+data = {
+    "name": "Ада",
+    "age": 36,
+    "languages": ["Python", "JavaScript"],
+    "active": True
+}
+
+# Красивый вывод
 json_str = json.dumps(data, ensure_ascii=False, indent=2)
 print(json_str)
 
-parsed = json.loads(json_str)
-print(parsed["name"], parsed["langs"])
+# Сортировка ключей
+sorted_json = json.dumps(data, sort_keys=True, indent=2)
+print(sorted_json)
 
-# CSV (демонстрация через StringIO)
-csv_data = "name,age\\nАда,36\\nГвидо,67"
+# Обработка нестандартных типов
+from datetime import datetime
+
+def custom_serializer(obj):
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    raise TypeError(f"Type {type(obj)} not serializable")
+
+data_with_date = {"name": "Ада", "created": datetime.now()}
+json_str = json.dumps(
+    data_with_date,
+    ensure_ascii=False,
+    default=custom_serializer,
+    indent=2
+)
+print(json_str)
+
+# Чтение JSON
+parsed = json.loads(json_str)
+print(parsed["name"], parsed["languages"])`,
+      },
+      {
+        kind: "text",
+        md: `## CSV (Comma-Separated Values)
+
+CSV — простой формат для табличных данных. Каждая строка — запись, поля разделены запятыми (или другим разделителем).
+
+**Классы модуля csv:**
+- \`csv.reader\` — чтение CSV в списки
+- \`csv.writer\` — запись списков в CSV
+- \`csv.DictReader\` — чтение в словари (первая строка — заголовки)
+- \`csv.DictWriter\` — запись словарей
+
+**Параметры:**
+- \`delimiter\` — разделитель (по умолчанию ',')
+- \`quotechar\` — символ кавычек (по умолчанию '"')
+- \`quoting\` — режим кавычек`,
+      },
+      {
+        kind: "code",
+        title: "CSV с DictReader и DictWriter",
+        code: `import csv
+from io import StringIO
+
+# Чтение CSV в словари
+csv_data = """name,age,city
+Ада,36,Москва
+Гвидо,67,Амстердам
+Линус,54,Хельсинки"""
+
 reader = csv.DictReader(StringIO(csv_data))
 for row in reader:
-    print(row)`,
+    print(f"{row['name']}: {row['age']} лет, {row['city']}")
+
+# Запись словарей в CSV
+data = [
+    {"name": "Ада", "age": 36, "city": "Москва"},
+    {"name": "Гвидо", "age": 67, "city": "Амстердам"},
+]
+
+output = StringIO()
+writer = csv.DictWriter(output, fieldnames=["name", "age", "city"])
+writer.writeheader()
+writer.writerows(data)
+print(output.getvalue())`,
+      },
+      {
+        kind: "text",
+        md: `## Дополнительные полезные модули
+
+**pathlib** — современная работа с путями:
+
+\`\`\`python
+from pathlib import Path
+
+path = Path("data/file.txt")
+print(path.exists())
+print(path.suffix)  # .txt
+print(path.stem)    # file
+print(path.parent)  # data
+
+# Обход директории
+for file in Path(".").glob("*.py"):
+    print(file.name)
+\`\`\`
+
+**os и sys** — системные функции:
+
+\`\`\`python
+import os
+import sys
+
+print(os.getcwd())  # текущая директория
+print(os.listdir("."))  # список файлов
+print(sys.argv)  # аргументы командной строки
+print(sys.version)  # версия Python
+\`\`\``,
+      },
+      {
+        kind: "code",
+        title: "pathlib в действии",
+        code: `from pathlib import Path
+
+# Создание пути
+path = Path("data/subdir/file.txt")
+print(f"Путь: {path}")
+print(f"Родитель: {path.parent}")
+print(f"Имя файла: {path.name}")
+print(f"Расширение: {path.suffix}")
+
+# Проверка существования
+print(f"Существует: {path.exists()}")
+
+# Обход директории
+print("\\nPython файлы:")
+for file in Path(".").glob("*.py"):
+    print(f"  {file.name}")
+
+# Создание директорий
+Path("temp/subdir").mkdir(parents=True, exist_ok=True)
+
+# Чтение/запись
+Path("temp/test.txt").write_text("Привет!", encoding="utf-8")
+content = Path("temp/test.txt").read_text(encoding="utf-8")
+print(f"\\nСодержимое: {content}")`,
+      },
+      {
+        kind: "text",
+        md: `## Сериализация: pickle и alternatives
+
+**pickle** — сериализация Python-объектов:
+
+\`\`\`python
+import pickle
+
+data = {"name": "Ада", "numbers": [1, 2, 3]}
+
+# Сериализация
+with open("data.pkl", "wb") as f:
+    pickle.dump(data, f)
+
+# Десериализация
+with open("data.pkl", "rb") as f:
+    loaded = pickle.load(f)
+\`\`\`
+
+**⚠️ Внимание:** pickle небезопасен для ненадёжных данных! Используйте JSON для обмена данными.
+
+**Альтернативы:**
+- **JSON** — текстовый, безопасный, универсальный
+- **YAML** — читаемый, для конфигов
+- **TOML** — современный формат для конфигов
+- **MessagePack** — бинарный, компактный`,
       },
       {
         kind: "tip",
         title: "Когда что использовать",
-        md: `Конфигурация — JSON или YAML. Табличные данные — CSV или pandas. Бинарные — pickle (но осторожно: небезопасно для чужих данных). Для баз — SQLite (\`sqlite3\` в стандартной библиотеке).`,
+        md: `- **JSON** — обмен данными, API, конфиги (универсальный выбор)
+- **CSV** — табличные данные, экспорт в Excel
+- **Pickle** — только для внутренних Python-данных (небезопасно!)
+- **YAML/TOML** — конфигурационные файлы
+- **SQLite** — лёгкая база данных (встроена в Python)`,
       },
     ],
     quiz: [
@@ -14008,6 +14338,34 @@ for row in reader:
         options: ["r", "w", "a", "x"],
         answer: 1,
         explain: "w — write, перезаписывает. a — append, дописывает. r — read (по умолчанию). x — эксклюзивное создание.",
+      },
+      {
+        q: "Что делает параметр indent в json.dumps()?",
+        options: [
+          "Сортирует ключи",
+          "Добавляет отступы для читаемости",
+          "Экранирует символы",
+          "Устанавливает кодировку",
+        ],
+        answer: 1,
+        explain: "indent добавляет отступы в JSON для удобочитаемости. indent=2 означает 2 пробела на уровень вложенности.",
+      },
+      {
+        q: "Какой класс csv модуля читает CSV в словари?",
+        options: ["csv.reader", "csv.writer", "csv.DictReader", "csv.DictWriter"],
+        answer: 2,
+        explain: "csv.DictReader читает CSV и создаёт словари, где ключи — заголовки из первой строки.",
+      },
+      {
+        q: "Что делает pathlib.Path.glob('*.py')?",
+        options: [
+          "Создаёт файлы .py",
+          "Возвращает все Python файлы в директории",
+          "Удаляет файлы .py",
+          "Переименовывает файлы",
+        ],
+        answer: 1,
+        explain: "glob() возвращает итератор всех файлов, соответствующих паттерну. '*.py' означает все файлы с расширением .py.",
       },
     ],
     tasks: [
@@ -14053,6 +14411,84 @@ from io import StringIO
 def parse_csv(text):
     reader = csv.DictReader(StringIO(text))
     return list(reader)`,
+      },
+      {
+        id: "py13t3",
+        title: "Объединение JSON файлов",
+        md: `Реализуйте \`merge_json(json1, json2)\` — объединяет два JSON-объекта. При конфликте ключей значения из \`json2\` имеют приоритет. Вложенные словари объединяются рекурсивно.`,
+        starter: `import json
+
+def merge_json(json1, json2):
+    # ваш код
+    pass
+
+json1 = '{"a": 1, "b": {"x": 1}}'
+json2 = '{"b": {"y": 2}, "c": 3}'
+print(merge_json(json1, json2))`,
+        tests: `
+import json
+__test("простое объединение", lambda: json.loads(merge_json('{"a": 1}', '{"b": 2}')), {"a": 1, "b": 2})
+__test("приоритет json2", lambda: json.loads(merge_json('{"a": 1}', '{"a": 2}')), {"a": 2})
+__test("рекурсивное объединение", lambda: json.loads(merge_json('{"a": {"x": 1}}', '{"a": {"y": 2}}')), {"a": {"x": 1, "y": 2}})`,
+        solution: `import json
+
+def merge_json(json1, json2):
+    def merge(d1, d2):
+        result = d1.copy()
+        for key, value in d2.items():
+            if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+                result[key] = merge(result[key], value)
+            else:
+                result[key] = value
+        return result
+    
+    d1 = json.loads(json1)
+    d2 = json.loads(json2)
+    merged = merge(d1, d2)
+    return json.dumps(merged, ensure_ascii=False)`,
+      },
+      {
+        id: "py13t4",
+        title: "Статистика CSV",
+        md: `Реализуйте \`csv_stats(csv_text, column)\` — принимает CSV-строку и имя числовой колонки, возвращает словарь со статистикой: \`{"min": ..., "max": ..., "avg": ..., "sum": ...}\`.`,
+        starter: `import csv
+from io import StringIO
+
+def csv_stats(csv_text, column):
+    # ваш код
+    pass
+
+csv_data = """name,age,score
+Alice,25,85
+Bob,30,90
+Charlie,35,95"""
+print(csv_stats(csv_data, "age"))`,
+        tests: `
+import csv
+from io import StringIO
+
+csv_data = """name,age,score
+Alice,25,85
+Bob,30,90
+Charlie,35,95"""
+
+stats = csv_stats(csv_data, "age")
+__test("min", lambda: stats["min"], 25)
+__test("max", lambda: stats["max"], 35)
+__test("avg", lambda: stats["avg"], 30.0)
+__test("sum", lambda: stats["sum"], 90)`,
+        solution: `import csv
+from io import StringIO
+
+def csv_stats(csv_text, column):
+    reader = csv.DictReader(StringIO(csv_text))
+    values = [float(row[column]) for row in reader]
+    return {
+        "min": min(values),
+        "max": max(values),
+        "avg": sum(values) / len(values),
+        "sum": sum(values)
+    }`,
       },
     ],
   },
