@@ -11876,6 +11876,1043 @@ __test("логирует исключение", test_exception_logging, True)`,
   },
 
   {
+    id: "py13",
+    language: "python",
+    title: "Продвинутые темы исключений",
+    subtitle: "Исключения в генераторах, дескрипторах, метаклассах и декораторах",
+    minutes: 40,
+    blocks: [
+      {
+        kind: "text",
+        md: `## Исключения в генераторах
+
+Генераторы могут бросать и перехватывать исключения. Когда исключение возникает внутри генератора, оно распространяется к вызывающему коду. Можно также отправить исключение в генератор через метод \`throw()\`.
+
+**Важно:** Если генератор завершается с исключением, он не может быть использован снова.`,
+      },
+      {
+        kind: "code",
+        title: "Исключения в генераторах",
+        code: `def number_generator():
+    """Генератор, который может бросить исключение."""
+    for i in range(1, 6):
+        if i == 3:
+            raise ValueError("Не люблю тройки!")
+        yield i
+
+# Исключение распространяется к вызывающему коду
+try:
+    for num in number_generator():
+        print(num)
+except ValueError as e:
+    print(f"Поймано: {e}")
+
+# Отправка исключения в генератор
+def controlled_generator():
+    try:
+        value = yield
+        print(f"Получено: {value}")
+    except ValueError as e:
+        print(f"Поймано в генераторе: {e}")
+    yield "продолжаем"
+
+gen = controlled_generator()
+next(gen)  # Запускаем генератор
+gen.throw(ValueError, "ошибка от вызывающего кода"))`,
+      },
+      {
+        kind: "text",
+        md: `## Исключения в дескрипторах
+
+Дескрипторы — классы, реализующие протокол \`__get__\`, \`__set__\`, \`__delete__\`. Исключения в дескрипторах позволяют валидировать данные при доступе к атрибутам.
+
+**Паттерны:**
+- Валидация при установке значения
+- Вычисляемые свойства с обработкой ошибок
+- Логирование доступа к атрибутам`,
+      },
+      {
+        kind: "code",
+        title: "Валидирующий дескриптор",
+        code: `class ValidatedAttribute:
+    """Дескриптор для валидации атрибута."""
+    def __init__(self, name, validator):
+        self.name = name
+        self.validator = validator
+    
+    def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self
+        return obj.__dict__.get(self.name)
+    
+    def __set__(self, obj, value):
+        try:
+            self.validator(value)
+            obj.__dict__[self.name] = value
+        except ValueError as e:
+            raise ValueError(f"Ошибка валидации {self.name}: {e}")
+
+# Валидаторы
+def validate_positive(value):
+    if value <= 0:
+        raise ValueError("должно быть положительным")
+
+def validate_range(min_val, max_val):
+    def validator(value):
+        if not (min_val <= value <= max_val):
+            raise ValueError(f"должно быть между {min_val} и {max_val}")
+    return validator
+
+class Product:
+    price = ValidatedAttribute("price", validate_positive)
+    rating = ValidatedAttribute("rating", validate_range(0, 5))
+
+product = Product()
+product.price = 100  # OK
+product.rating = 4.5  # OK
+
+try:
+    product.price = -10  # Ошибка!
+except ValueError as e:
+    print(e)`,
+      },
+      {
+        kind: "text",
+        md: `## Исключения в метаклассах
+
+Метаклассы — классы для классов. Исключения в метаклассах возникают при создании класса (не экземпляра). Это позволяет валидировать структуру класса.
+
+**Использование:**
+- Проверка наличия обязательных методов
+- Валидация сигнатур методов
+- Автоматическая регистрация классов`,
+      },
+      {
+        kind: "code",
+        title: "Метакласс с валидацией",
+        code: `class MethodValidator(type):
+    """Метакласс, проверяющий наличие обязательных методов."""
+    def __new__(mcs, name, bases, namespace):
+        # Проверяем наличие обязательных методов
+        required_methods = ['validate', 'process']
+        for method in required_methods:
+            if method not in namespace:
+                raise TypeError(
+                    f"Класс {name} должен содержать метод {method}"
+                )
+        return super().__new__(mcs, name, bases, namespace)
+
+class Processor(metaclass=MethodValidator):
+    def validate(self):
+        pass
+    
+    def process(self):
+        pass
+
+# Это вызовет ошибку при создании класса
+try:
+    class BadProcessor(metaclass=MethodValidator):
+        def validate(self):
+            pass
+        # Отсутствует метод process!
+except TypeError as e:
+    print(e)`,
+      },
+      {
+        kind: "text",
+        md: `## Исключения в декораторах
+
+Декораторы могут перехватывать исключения из декорируемых функций и обрабатывать их. Это полезно для логирования, повторных попыток, преобразования исключений.
+
+**Паттерны:**
+- Retry декоратор — повторные попытки при ошибках
+- Transform декоратор — преобразование исключений
+- Log декоратор — логирование ошибок
+- Suppress декоратор — подавление определённых исключений`,
+      },
+      {
+        kind: "code",
+        title: "Декоратор повторных попыток",
+        code: `import time
+from functools import wraps
+
+def retry(max_attempts=3, delay=1, exceptions=(Exception,)):
+    """Декоратор для повторных попыток."""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            last_exception = None
+            for attempt in range(max_attempts):
+                try:
+                    return func(*args, **kwargs)
+                except exceptions as e:
+                    last_exception = e
+                    if attempt < max_attempts - 1:
+                        print(f"Попытка {attempt + 1} не удалась: {e}. Повтор через {delay}с...")
+                        time.sleep(delay)
+            raise last_exception
+        return wrapper
+    return decorator
+
+@retry(max_attempts=3, delay=0.5, exceptions=(ValueError, ConnectionError))
+def unstable_operation():
+    import random
+    if random.random() < 0.7:
+        raise ConnectionError("Соединение нестабильно")
+    return "Успех!"
+
+try:
+    result = unstable_operation()
+    print(result)
+except Exception as e:
+    print(f"Все попытки не удались: {e}")`,
+      },
+      {
+        kind: "code",
+        title: "Декоратор преобразования исключений",
+        code: `from functools import wraps
+
+def transform_exception(from_exc, to_exc, message=""):
+    """Преобразует один тип исключения в другой."""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except from_exc as e:
+                raise to_exc(f"{message}: {e}") from e
+        return wrapper
+    return decorator
+
+class DatabaseError(Exception):
+    pass
+
+class UserError(Exception):
+    pass
+
+@transform_exception(DatabaseError, UserError, "Ошибка базы данных")
+def get_user(user_id):
+    if user_id < 0:
+        raise DatabaseError("Неверный ID")
+    return {"id": user_id, "name": "User"}
+
+try:
+    user = get_user(-1)
+except UserError as e:
+    print(e)  # Ошибка базы данных: Неверный ID`,
+      },
+      {
+        kind: "text",
+        md: `## Обработка исключений в декораторах
+
+Декораторы могут обрабатывать исключения разными способами:
+
+1. **Полный перехват** — перехватывает все исключения
+2. **Выборочный перехват** — перехватывает только определённые типы
+3. **Преобразование** — преобразует одно исключение в другое
+4. **Подавление** — подавляет определённые исключения
+5. **Логирование** — логирует исключения и пробрасывает дальше`,
+      },
+      {
+        kind: "code",
+        title: "Декоратор подавления исключений",
+        code: `from functools import wraps
+
+def suppress(*exceptions):
+    """Подавляет указанные исключения."""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except exceptions:
+                return None
+        return wrapper
+    return decorator
+
+@suppress(ValueError, TypeError)
+def risky_operation(value):
+    if value < 0:
+        raise ValueError("Отрицательное значение")
+    if not isinstance(value, (int, float)):
+        raise TypeError("Неверный тип")
+    return value * 2
+
+print(risky_operation(5))      # 10
+print(risky_operation(-1))     # None (ValueError подавлен)
+print(risky_operation("abc"))  # None (TypeError подавлен)`,
+      },
+      {
+        kind: "text",
+        md: `## Комбинирование декораторов
+
+Декораторы можно комбинировать. Порядок применения важен — декораторы применяются снизу вверх.
+
+**Правила:**
+- Декораторы применяются снизу вверх
+- Каждый декоратор оборачивает результат предыдущего
+- Используйте \`@wraps\` для сохранения метаданных`,
+      },
+      {
+        kind: "code",
+        title: "Комбинирование декораторов",
+        code: `import time
+from functools import wraps
+
+def log_calls(func):
+    """Логирует вызовы функции."""
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        print(f"Вызов {func.__name__}")
+        return func(*args, **kwargs)
+    return wrapper
+
+def measure_time(func):
+    """Измеряет время выполнения."""
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        start = time.time()
+        result = func(*args, **kwargs)
+        elapsed = time.time() - start
+        print(f"{func.__name__} выполнилась за {elapsed:.4f}с")
+        return result
+    return wrapper
+
+def retry_on_error(max_attempts=3):
+    """Повторяет при ошибках."""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            for attempt in range(max_attempts):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    if attempt == max_attempts - 1:
+                        raise
+                    print(f"Попытка {attempt + 1} не удалась")
+        return wrapper
+    return decorator
+
+# Комбинирование декораторов
+@log_calls
+@measure_time
+@retry_on_error(max_attempts=2)
+def process_data(data):
+    import random
+    if random.random() < 0.5:
+        raise ValueError("Случайная ошибка")
+    return sum(data)
+
+result = process_data([1, 2, 3, 4, 5])
+print(f"Результат: {result}")`,
+      },
+      {
+        kind: "text",
+        md: `## Best practices для продвинутых исключений
+
+1. **Используйте контекстные менеджеры** для управления ресурсами
+2. **Применяйте декораторы** для повторяемой логики обработки ошибок
+3. **Создавайте иерархию исключений** для вашего домена
+4. **Используйте метаклассы** для валидации структуры классов
+5. **Комбинируйте подходы** для сложных сценариев`,
+      },
+    ],
+    quiz: [
+      {
+        q: "Что происходит, когда исключение возникает в генераторе?",
+        options: [
+          "Генератор продолжает работу",
+          "Исключение распространяется к вызывающему коду",
+          "Генератор игнорирует исключение",
+          "Генератор перезапускается",
+        ],
+        answer: 1,
+        explain: "Исключение в генераторе распространяется к вызывающему коду. Генератор не может быть использован снова после исключения.",
+      },
+      {
+        q: "Когда возникают исключения в метаклассах?",
+        options: [
+          "При создании экземпляра класса",
+          "При создании самого класса",
+          "При вызове метода класса",
+          "При импорте модуля",
+        ],
+        answer: 1,
+        explain: "Метаклассы выполняются при создании класса, поэтому исключения возникают на этапе определения класса.",
+      },
+      {
+        q: "В каком порядке применяются декораторы?",
+        options: [
+          "Сверху вниз",
+          "Снизу вверх",
+          "В случайном порядке",
+          "Одновременно",
+        ],
+        answer: 1,
+        explain: "Декораторы применяются снизу вверх. Каждый декоратор оборачивает результат предыдущего.",
+      },
+    ],
+    tasks: [
+      {
+        id: "py13t1",
+        title: "Валидирующий дескриптор",
+        md: `Создайте дескриптор \`ValidatedAttribute\`, который валидирует значение при установке. Дескриптор должен принимать функцию-валидатор в конструкторе и бросать \`ValueError\`, если валидация не пройдена.`,
+        starter: `class ValidatedAttribute:
+    def __init__(self, name, validator):
+        # ваш код
+        pass
+    
+    def __get__(self, obj, objtype=None):
+        # ваш код
+        pass
+    
+    def __set__(self, obj, value):
+        # ваш код
+        pass
+
+def validate_positive(value):
+    if value <= 0:
+        raise ValueError("должно быть положительным")
+
+class Product:
+    price = ValidatedAttribute("price", validate_positive)
+
+product = Product()
+product.price = 100  # OK
+try:
+    product.price = -10  # Ошибка!
+except ValueError as e:
+    print(e)`,
+        tests: `
+def test_valid():
+    class Product:
+        price = ValidatedAttribute("price", lambda v: None if v > 0 else (_ for _ in ()).throw(ValueError("error")))
+    p = Product()
+    p.price = 100
+    return p.price == 100
+__test("валидное значение", test_valid, True)
+def test_invalid():
+    class Product:
+        price = ValidatedAttribute("price", lambda v: None if v > 0 else (_ for _ in ()).throw(ValueError("error")))
+    p = Product()
+    try:
+        p.price = -10
+        return False
+    except ValueError:
+        return True
+__test("невалидное значение", test_invalid, True)`,
+        solution: `class ValidatedAttribute:
+    def __init__(self, name, validator):
+        self.name = name
+        self.validator = validator
+    
+    def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self
+        return obj.__dict__.get(self.name)
+    
+    def __set__(self, obj, value):
+        try:
+            self.validator(value)
+            obj.__dict__[self.name] = value
+        except Exception as e:
+            raise ValueError(f"Ошибка валидации {self.name}: {e}")`,
+      },
+      {
+        id: "py13t2",
+        title: "Декоратор повторных попыток",
+        md: `Создайте декоратор \`retry\`, который повторяет вызов функции при возникновении исключения. Декоратор должен принимать параметры \`max_attempts\` и \`delay\`.`,
+        starter: `import time
+
+def retry(max_attempts=3, delay=1):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            # ваш код
+            pass
+        return wrapper
+    return decorator
+
+@retry(max_attempts=3, delay=0.1)
+def unstable_function():
+    import random
+    if random.random() < 0.7:
+        raise ValueError("Случайная ошибка")
+    return "Успех!"
+
+result = unstable_function()
+print(result)`,
+        tests: `
+def test_success():
+    @retry(max_attempts=3, delay=0.01)
+    def always_ok():
+        return "OK"
+    return always_ok() == "OK"
+__test("успех с первой попытки", test_success, True)
+def test_retry():
+    attempts = [0]
+    @retry(max_attempts=3, delay=0.01)
+    def sometimes_fail():
+        attempts[0] += 1
+        if attempts[0] < 3:
+            raise ValueError("Ошибка")
+        return "OK"
+    return sometimes_fail() == "OK"
+__test("успех после повторных попыток", test_retry, True)`,
+        solution: `import time
+
+def retry(max_attempts=3, delay=1):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            last_exception = None
+            for attempt in range(max_attempts):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    last_exception = e
+                    if attempt < max_attempts - 1:
+                        time.sleep(delay)
+            raise last_exception
+        return wrapper
+    return decorator`,
+      },
+    ],
+  },
+
+  {
+    id: "py14",
+    language: "python",
+    title: "Паттерны проектирования с исключениями",
+    subtitle: "Паттерны обработки ошибок в реальных приложениях",
+    minutes: 35,
+    blocks: [
+      {
+        kind: "text",
+        md: `## Паттерны обработки ошибок
+
+В реальных приложениях используются различные паттерны обработки ошибок. Выбор паттерна зависит от контекста, требований и архитектуры системы.
+
+**Основные паттерны:**
+1. **Fail-Fast** — немедленное падение при ошибке
+2. **Graceful Degradation** — постепенная деградация
+3. **Retry** — повторные попытки
+4. **Circuit Breaker** — автоматическое отключение при множественных ошибках
+5. **Fallback** — использование альтернативного пути`,
+      },
+      {
+        kind: "text",
+        md: `## Fail-Fast паттерн
+
+Fail-Fast — немедленное падение при обнаружении ошибки. Используется для критических ошибок, которые нельзя игнорировать.
+
+**Когда использовать:**
+- Нарушение инвариантов
+- Некорректные входные данные
+- Критические системные ошибки
+
+**Преимущества:**
+- Раннее обнаружение ошибок
+- Простота отладки
+- Предотвращение каскадных сбоев`,
+      },
+      {
+        kind: "code",
+        title: "Fail-Fast валидация",
+        code: `class UserService:
+    def __init__(self, db):
+        if db is None:
+            raise ValueError("Database connection required")
+        self.db = db
+    
+    def create_user(self, data):
+        # Fail-Fast валидация
+        if not isinstance(data, dict):
+            raise TypeError("data must be a dict")
+        
+        if 'email' not in data:
+            raise ValueError("email is required")
+        
+        if not self._is_valid_email(data['email']):
+            raise ValueError(f"Invalid email: {data['email']}")
+        
+        # Создание пользователя
+        return self.db.insert('users', data)
+    
+    def _is_valid_email(self, email):
+        return '@' in email and '.' in email.split('@')[1]
+
+# Использование
+service = UserService(db_connection)
+try:
+    user = service.create_user({'email': 'invalid'})
+except ValueError as e:
+    print(f"Validation error: {e}")`,
+      },
+      {
+        kind: "text",
+        md: `## Graceful Degradation паттерн
+
+Graceful Degradation — система продолжает работать с ограниченной функциональностью при возникновении ошибок.
+
+**Когда использовать:**
+- Необязательные функции
+- Внешние сервисы
+- Кэширование
+- Резервные системы`,
+      },
+      {
+        kind: "code",
+        title: "Graceful Degradation",
+        code: `class RecommendationService:
+    def __init__(self, ml_service, cache):
+        self.ml_service = ml_service
+        self.cache = cache
+    
+    def get_recommendations(self, user_id):
+        # Пробуем ML сервис
+        try:
+            recommendations = self.ml_service.get_recommendations(user_id)
+            self.cache.set(user_id, recommendations)
+            return recommendations
+        except Exception as e:
+            print(f"ML service failed: {e}")
+            
+            # Graceful degradation: используем кэш
+            try:
+                cached = self.cache.get(user_id)
+                if cached:
+                    print("Using cached recommendations")
+                    return cached
+            except Exception as e:
+                print(f"Cache failed: {e}")
+            
+            # Fallback: базовые рекомендации
+            return self._get_basic_recommendations(user_id)
+    
+    def _get_basic_recommendations(self, user_id):
+        return ["Popular item 1", "Popular item 2"]`,
+      },
+      {
+        kind: "text",
+        md: `## Circuit Breaker паттерн
+
+Circuit Breaker — автоматическое отключение сервиса при множественных ошибках. Предотвращает каскадные сбои и даёт время на восстановление.
+
+**Состояния:**
+- **Closed** — нормальная работа
+- **Open** — сервис отключён
+- **Half-Open** — проверка восстановления`,
+      },
+      {
+        kind: "code",
+        title: "Circuit Breaker реализация",
+        code: `import time
+from enum import Enum
+
+class CircuitState(Enum):
+    CLOSED = "closed"
+    OPEN = "open"
+    HALF_OPEN = "half_open"
+
+class CircuitBreaker:
+    def __init__(self, failure_threshold=5, recovery_timeout=60):
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout = recovery_timeout
+        self.failure_count = 0
+        self.last_failure_time = 0
+        self.state = CircuitState.CLOSED
+    
+    def call(self, func, *args, **kwargs):
+        if self.state == CircuitState.OPEN:
+            if self._should_attempt_reset():
+                self.state = CircuitState.HALF_OPEN
+            else:
+                raise CircuitBreakerOpen("Circuit breaker is open")
+        
+        try:
+            result = func(*args, **kwargs)
+            self._on_success()
+            return result
+        except Exception as e:
+            self._on_failure()
+            raise
+    
+    def _should_attempt_reset(self):
+        return time.time() - self.last_failure_time > self.recovery_timeout
+    
+    def _on_success(self):
+        self.failure_count = 0
+        self.state = CircuitState.CLOSED
+    
+    def _on_failure(self):
+        self.failure_count += 1
+        self.last_failure_time = time.time()
+        if self.failure_count >= self.failure_threshold:
+            self.state = CircuitState.OPEN
+
+class CircuitBreakerOpen(Exception):
+    pass
+
+# Использование
+breaker = CircuitBreaker(failure_threshold=3, recovery_timeout=10)
+
+def unstable_service():
+    import random
+    if random.random() < 0.7:
+        raise ConnectionError("Service unavailable")
+    return "Success"
+
+try:
+    result = breaker.call(unstable_service)
+except CircuitBreakerOpen:
+    print("Circuit breaker is open, using fallback")`,
+      },
+      {
+        kind: "text",
+        md: `## Fallback паттерн
+
+Fallback — использование альтернативного пути при ошибке основного пути.
+
+**Типы fallback:**
+- **Кэшированные данные** — использование кэша
+- **Упрощённая логика** — базовая функциональность
+- **Резервный сервис** — альтернативный сервис
+- **Значения по умолчанию** — дефолтные значения`,
+      },
+      {
+        kind: "code",
+        title: "Fallback с кэшем",
+        code: `class PaymentService:
+    def __init__(self, payment_gateway, cache):
+        self.payment_gateway = payment_gateway
+        self.cache = cache
+    
+    def process_payment(self, order_id, amount):
+        # Основной путь: платежный шлюз
+        try:
+            result = self.payment_gateway.charge(order_id, amount)
+            self.cache.set(f"payment:{order_id}", result)
+            return result
+        except PaymentGatewayError as e:
+            print(f"Payment gateway failed: {e}")
+            
+            # Fallback 1: кэш
+            try:
+                cached = self.cache.get(f"payment:{order_id}")
+                if cached:
+                    print("Using cached payment")
+                    return cached
+            except Exception as e:
+                print(f"Cache failed: {e}")
+            
+            # Fallback 2: резервный шлюз
+            try:
+                result = self.backup_gateway.charge(order_id, amount)
+                return result
+            except Exception as e:
+                print(f"Backup gateway failed: {e}")
+            
+            # Fallback 3: очередь на обработку
+            self.queue.enqueue({
+                'order_id': order_id,
+                'amount': amount,
+                'status': 'pending'
+            })
+            return {'status': 'queued', 'order_id': order_id}`,
+      },
+      {
+        kind: "text",
+        md: `## Комбинирование паттернов
+
+В реальных приложениях паттерны часто комбинируются для создания устойчивых систем.
+
+**Пример комбинации:**
+1. **Circuit Breaker** — защита от каскадных сбоев
+2. **Retry** — повторные попытки при временных ошибках
+3. **Fallback** — альтернативный путь при постоянных ошибках
+4. **Graceful Degradation** — постепенная деградация`,
+      },
+      {
+        kind: "code",
+        title: "Комбинирование паттернов",
+        code: `class ResilientService:
+    def __init__(self, primary_service, backup_service, cache):
+        self.primary = primary_service
+        self.backup = backup_service
+        self.cache = cache
+        self.circuit_breaker = CircuitBreaker(failure_threshold=3)
+    
+    def call(self, method, *args, **kwargs):
+        # Circuit Breaker + Retry + Fallback
+        try:
+            # Попытка через основной сервис с retry
+            return self._call_with_retry(
+                lambda: self.circuit_breaker.call(
+                    getattr(self.primary, method),
+                    *args, **kwargs
+                ),
+                max_attempts=3
+            )
+        except Exception as e:
+            print(f"Primary service failed: {e}")
+            
+            # Fallback: кэш
+            cache_key = f"{method}:{args}:{kwargs}"
+            try:
+                cached = self.cache.get(cache_key)
+                if cached:
+                    print("Using cache")
+                    return cached
+            except Exception:
+                pass
+            
+            # Fallback: резервный сервис
+            try:
+                return getattr(self.backup, method)(*args, **kwargs)
+            except Exception as e:
+                print(f"Backup service failed: {e}")
+                raise
+    
+    def _call_with_retry(self, func, max_attempts=3, delay=1):
+        for attempt in range(max_attempts):
+            try:
+                return func()
+            except Exception as e:
+                if attempt == max_attempts - 1:
+                    raise
+                print(f"Attempt {attempt + 1} failed, retrying...")
+                time.sleep(delay)`,
+      },
+      {
+        kind: "text",
+        md: `## Best practices для паттернов обработки ошибок
+
+1. **Выбирайте правильный паттерн** для вашего контекста
+2. **Комбинируйте паттерны** для сложных сценариев
+3. **Логируйте все ошибки** для отладки
+4. **Мониторьте частоту ошибок** для настройки порогов
+5. **Тестируйте fallback пути** регулярно
+6. **Документируйте поведение** при ошибках`,
+      },
+    ],
+    quiz: [
+      {
+        q: "Что делает Circuit Breaker паттерн?",
+        options: [
+          "Повторяет запросы при ошибках",
+          "Автоматически отключает сервис при множественных ошибках",
+          "Использует кэш при ошибках",
+          "Логирует все ошибки",
+        ],
+        answer: 1,
+        explain: "Circuit Breaker автоматически отключает сервис при достижении порога ошибок, предотвращая каскадные сбои.",
+      },
+      {
+        q: "Когда использовать Graceful Degradation?",
+        options: [
+          "Для критических ошибок",
+          "Для необязательных функций",
+          "Для валидации данных",
+          "Для логирования",
+        ],
+        answer: 1,
+        explain: "Graceful Degradation используется для необязательных функций, позволяя системе продолжать работать с ограниченной функциональностью.",
+      },
+      {
+        q: "Что такое Fallback паттерн?",
+        options: [
+          "Повторные попытки при ошибках",
+          "Использование альтернативного пути при ошибке",
+          "Автоматическое отключение сервиса",
+          "Логирование ошибок",
+        ],
+        answer: 1,
+        explain: "Fallback — использование альтернативного пути (кэш, резервный сервис, значения по умолчанию) при ошибке основного пути.",
+      },
+    ],
+    tasks: [
+      {
+        id: "py14t1",
+        title: "Circuit Breaker",
+        md: `Реализуйте класс \`CircuitBreaker\`, который отслеживает количество ошибок и открывает цепь при достижении порога. Класс должен иметь методы \`call(func)\`, \`_on_success()\`, \`_on_failure()\` и свойство \`state\`.`,
+        starter: `from enum import Enum
+import time
+
+class CircuitState(Enum):
+    CLOSED = "closed"
+    OPEN = "open"
+
+class CircuitBreaker:
+    def __init__(self, failure_threshold=5, recovery_timeout=60):
+        # ваш код
+        pass
+    
+    def call(self, func, *args, **kwargs):
+        # ваш код
+        pass
+    
+    def _on_success(self):
+        # ваш код
+        pass
+    
+    def _on_failure(self):
+        # ваш код
+        pass
+
+# Тест
+breaker = CircuitBreaker(failure_threshold=3)
+
+def failing_function():
+    raise ValueError("Ошибка")
+
+try:
+    for _ in range(4):
+        breaker.call(failing_function)
+except Exception as e:
+    print(f"После 3 ошибок: {breaker.state}")`,
+        tests: `
+def test_circuit_opens():
+    breaker = CircuitBreaker(failure_threshold=3)
+    def fail():
+        raise ValueError("error")
+    for _ in range(3):
+        try:
+            breaker.call(fail)
+        except:
+            pass
+    return breaker.state == CircuitState.OPEN
+__test("цепь открывается после 3 ошибок", test_circuit_opens, True)
+def test_circuit_closes_on_success():
+    breaker = CircuitBreaker(failure_threshold=3)
+    def fail():
+        raise ValueError("error")
+    for _ in range(3):
+        try:
+            breaker.call(fail)
+        except:
+            pass
+    def success():
+        return "ok"
+    result = breaker.call(success)
+    return breaker.state == CircuitState.CLOSED and result == "ok"
+__test("цепь закрывается при успехе", test_circuit_closes_on_success, True)`,
+        solution: `from enum import Enum
+import time
+
+class CircuitState(Enum):
+    CLOSED = "closed"
+    OPEN = "open"
+
+class CircuitBreaker:
+    def __init__(self, failure_threshold=5, recovery_timeout=60):
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout = recovery_timeout
+        self.failure_count = 0
+        self.last_failure_time = 0
+        self.state = CircuitState.CLOSED
+    
+    def call(self, func, *args, **kwargs):
+        if self.state == CircuitState.OPEN:
+            if time.time() - self.last_failure_time > self.recovery_timeout:
+                self.state = CircuitState.CLOSED
+                self.failure_count = 0
+            else:
+                raise Exception("Circuit breaker is open")
+        
+        try:
+            result = func(*args, **kwargs)
+            self._on_success()
+            return result
+        except Exception as e:
+            self._on_failure()
+            raise
+    
+    def _on_success(self):
+        self.failure_count = 0
+        self.state = CircuitState.CLOSED
+    
+    def _on_failure(self):
+        self.failure_count += 1
+        self.last_failure_time = time.time()
+        if self.failure_count >= self.failure_threshold:
+            self.state = CircuitState.OPEN`,
+      },
+      {
+        id: "py14t2",
+        title: "Fallback с кэшем",
+        md: `Реализуйте класс \`ResilientService\`, который вызывает основной сервис, а при ошибке использует кэш. Класс должен иметь методы \`call(method, *args)\` и \`_get_from_cache(key)\`.`,
+        starter: `class ResilientService:
+    def __init__(self, primary_service, cache):
+        # ваш код
+        pass
+    
+    def call(self, method, *args):
+        # ваш код
+        pass
+    
+    def _get_from_cache(self, key):
+        # ваш код
+        pass
+
+# Тест
+class MockService:
+    def get_data(self, key):
+        raise ConnectionError("Service unavailable")
+
+class MockCache:
+    def __init__(self):
+        self.data = {"test": "cached_value"}
+    
+    def get(self, key):
+        return self.data.get(key)
+
+service = ResilientService(MockService(), MockCache())
+result = service.call("get_data", "test")
+print(result)  # cached_value`,
+        tests: `
+def test_fallback_to_cache():
+    class MockService:
+        def get_data(self, key):
+            raise ConnectionError("error")
+    class MockCache:
+        def get(self, key):
+            return "cached"
+    service = ResilientService(MockService(), MockCache())
+    return service.call("get_data", "test") == "cached"
+__test("fallback на кэш", test_fallback_to_cache, True)
+def test_primary_service():
+    class MockService:
+        def get_data(self, key):
+            return "primary"
+    class MockCache:
+        def get(self, key):
+            return "cached"
+    service = ResilientService(MockService(), MockCache())
+    return service.call("get_data", "test") == "primary"
+__test("использует основной сервис", test_primary_service, True)`,
+        solution: `class ResilientService:
+    def __init__(self, primary_service, cache):
+        self.primary = primary_service
+        self.cache = cache
+    
+    def call(self, method, *args):
+        try:
+            return getattr(self.primary, method)(*args)
+        except Exception as e:
+            print(f"Primary service failed: {e}")
+            cache_key = f"{method}:{args}"
+            cached = self._get_from_cache(cache_key)
+            if cached:
+                print("Using cache")
+                return cached
+            raise
+    
+    def _get_from_cache(self, key):
+        return self.cache.get(key)`,
+      },
+    ],
+  },
+
+  {
     id: "py12",
     language: "python",
     title: "Типизация и стиль",
