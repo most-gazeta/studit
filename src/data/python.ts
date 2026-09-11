@@ -15679,6 +15679,4285 @@ print(re.search(pattern, "2026-02-14", re.VERBOSE))  # Match`,
       },
       {
         kind: "text",
+        md: `## Экранирование специальных символов
+
+Если вам нужно найти literal символы, которые имеют специальное значение в regex, их нужно экранировать обратным слэшем:
+
+**Специальные символы:** \`.\`, \`^\`, \`$\`, \`*\`, \`+\`, \`?\`, \`(\`, \`)\`, \`[\`, \`]\`, \`{\`, \`}\`, \`|\`, \`\\\`
+
+\`\`\`python
+import re
+
+# Поиск точки
+print(re.search(r'\\.', 'a.b'))  # Match: '.'
+
+# Поиск скобок
+print(re.search(r'\\(test\\)', '(test)'))  # Match: '(test)'
+
+# Поиск обратного слэша
+print(re.search(r'\\\\', 'path\\\\to\\\\file'))  # Match: '\\'
+\`\`\`
+
+**Функция re.escape()** автоматически экранирует все специальные символы:
+\`\`\`python
+pattern = re.escape('file.txt')  # 'file\\.txt'
+print(re.search(pattern, 'file.txt'))  # Match
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Альтернатива (OR)
+
+Оператор \`|\` позволяет выбрать одну из нескольких альтернатив:
+
+\`\`\`python
+import re
+
+# Поиск одного из слов
+print(re.findall(r'cat|dog', "I have a cat and a dog"))  # ['cat', 'dog']
+
+# Альтернатива в группе
+print(re.findall(r'colou?r|colour', "color and colour"))  # ['color', 'colour']
+
+# Альтернатива с группами
+print(re.findall(r'(?:Mon|Tue|Wed)', "Mon Tue Thu"))  # ['Mon', 'Tue']
+\`\`\`
+
+**Приоритет:** Альтернатива имеет низкий приоритет, поэтому используйте скобки для группировки:
+\`\`\`python
+# Неправильно: ищет 'gray' или 'grey'
+print(re.findall(r'gray|gray', "gray grey"))  # ['gray', 'grey']
+
+# Правильно с группами
+print(re.findall(r'gr(a|e)y', "gray grey"))  # ['gray', 'grey']
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Unicode и Unicode свойства
+
+С флагом \`re.UNICODE\` (или \`re.U\`) классы \`\\w\`, \`\\W\`, \`\\d\`, \`\\D\`, \`\\s\`, \`\\S\` работают с Unicode символами:
+
+\`\`\`python
+import re
+
+# Без UNICODE (только ASCII)
+print(re.findall(r'\\w+', 'Привет мир'))  # []
+
+# С UNICODE (Unicode)
+print(re.findall(r'\\w+', 'Привет мир', re.UNICODE))  # ['Привет', 'мир']
+\`\`\`
+
+**Unicode свойства** (с флагом \`re.UNICODE\`):
+- \`\\p{L}\` — любая буква
+- \`\\p{N}\` — любая цифра
+- \`\\p{P}\` — знак пунктуации
+- \`\\p{S}\` — символ
+- \`\\p{Z}\` — пробел
+
+\`\`\`python
+# Любая буква (включая Unicode)
+print(re.findall(r'\\p{L}+', 'Привет мир', re.UNICODE))  # ['Привет', 'мир']
+
+# Любая цифра (включая Unicode)
+print(re.findall(r'\\p{N}+', 'Цена: １２３', re.UNICODE))  # ['１２３']
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Комментарии в регулярных выражениях
+
+С флагом \`re.VERBOSE\` (или \`re.X\`) можно добавлять комментарии и форматировать регулярные выражения:
+
+\`\`\`python
+import re
+
+pattern = r"""
+    ^                   # Начало строки
+    (?P<year>\\d{4})    # Год (4 цифры)
+    -                   # Разделитель
+    (?P<month>\\d{2})   # Месяц (2 цифры)
+    -                   # Разделитель
+    (?P<day>\\d{2})     # День (2 цифры)
+    $                   # Конец строки
+"""
+
+match = re.match(pattern, "2026-02-14", re.VERBOSE)
+print(match.group('year'))  # '2026'
+\`\`\`
+
+**Важно:** В режиме VERBOSE пробелы игнорируются, поэтому для пробела используйте \`\\s\` или \`[ ]\`.`,
+      },
+      {
+        kind: "text",
+        md: `## Условные выражения
+
+Условные выражения позволяют применять разные паттерны в зависимости от условия:
+
+**Синтаксис:** \`(?(\d)yes_pattern|no_pattern)\`
+
+\`\`\`python
+import re
+
+# Если есть цифра, ищем 4 цифры, иначе 2 цифры
+pattern = r'(?(\\d)\\d{4}|\\d{2})'
+print(re.findall(pattern, "1234"))  # ['1234']
+print(re.findall(pattern, "12"))    # ['12']
+\`\`\`
+
+**Условие по группе:** \`(?(\(group\))yes_pattern|no_pattern)\`
+
+\`\`\`python
+# Если есть открывающая скобка, ищем закрывающую
+pattern = r'(\\()?\\d+(?(1)\\))'
+print(re.findall(pattern, "(123)"))  # ['(123)']
+print(re.findall(pattern, "123"))    # ['123']
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Рекурсивные регулярные выражения
+
+Python поддерживает рекурсивные регулярные выражения с помощью \`(?R)\` или \`(?P>name)\`:
+
+\`\`\`python
+import re
+
+# Поиск сбалансированных скобок
+pattern = r'\\((?:[^()]*|(?R))*\\)'
+text = "text (nested (brackets) here) end"
+print(re.findall(pattern, text))  # ['(nested (brackets) here)']
+\`\`\`
+
+**Важно:** Рекурсивные регулярные выражения могут быть медленными и сложными для понимания. Используйте их осторожно.`,
+      },
+      {
+        kind: "text",
+        md: `## Границы слов и не-слов
+
+**\\b** — граница слова (между \\w и \\W или началом/концом строки):
+\`\`\`python
+import re
+
+# Поиск слова "cat" как целое слово
+print(re.findall(r'\\bcat\\b', "cat cats catfish"))  # ['cat']
+
+# Поиск слов, начинающихся с "cat"
+print(re.findall(r'\\bcat', "cat cats catfish"))  # ['cat', 'cat', 'cat']
+\`\`\`
+
+**\\B** — не граница слова:
+\`\`\`python
+# Поиск "cat" не как целое слово
+print(re.findall(r'\\Bcat', "cat cats catfish"))  # ['cat', 'cat']
+\`\`\`
+
+**Важно:** \\b и \\B зависят от определения "слова" (\\w), которое включает буквы, цифры и подчёркивание.`,
+      },
+      {
+        kind: "text",
+        md: `## Начало и конец строки vs текста
+
+**^ и $** — начало и конец строки (с флагом MULTILINE) или текста (без флага):
+
+\`\`\`python
+import re
+
+text = "first line\\nsecond line\\nthird line"
+
+# Без MULTILINE: ^ и $ для всего текста
+print(re.findall(r'^\\w+', text))  # ['first']
+print(re.findall(r'\\w+$', text))  # ['line']
+
+# С MULTILINE: ^ и $ для каждой строки
+print(re.findall(r'^\\w+', text, re.MULTILINE))  # ['first', 'second', 'third']
+print(re.findall(r'\\w+$', text, re.MULTILINE))  # ['line', 'line', 'line']
+\`\`\`
+
+**\\A и \\Z** — всегда начало и конец текста (игнорируют MULTILINE):
+\`\`\`python
+print(re.findall(r'\\A\\w+', text, re.MULTILINE))  # ['first']
+print(re.findall(r'\\w+\\Z', text, re.MULTILINE))  # ['line']
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Модификаторы режима
+
+Модификаторы изменяют поведение регулярного выражения:
+
+**inline модификаторы** (внутри паттерна):
+- \`(?i)\` — игнорировать регистр
+- \`(?m)\` — многострочный режим
+- \`(?s)\` — точка включает \\n
+- \`(?x)\` — разрешает комментарии
+
+\`\`\`python
+import re
+
+# Inline модификаторы
+print(re.findall(r'(?i)hello', "HELLO hello"))  # ['HELLO', 'hello']
+print(re.findall(r'(?m)^\\w+', "line1\\nline2"))  # ['line1', 'line2']
+\`\`\`
+
+**Локальные модификаторы** (для части паттерна):
+\`\`\`python
+# Только первая часть без учёта регистра
+print(re.findall(r'(?i:hello) world', "HELLO world"))  # ['HELLO world']
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Оптимизация производительности
+
+Регулярные выражения могут быть медленными. Советы по оптимизации:
+
+1. **Используйте специфичные классы** вместо \`.\`:
+   - \`\\d\` вместо \`.\` для цифр
+   - \`\\w\` вместо \`.\` для слов
+
+2. **Избегайте вложенных квантификаторов**:
+   - Плохо: \`(a+)+\`
+   - Хорошо: \`a+\`
+
+3. **Используйте якоря** для ограничения поиска:
+   - \`^pattern\` — поиск только в начале
+   - \`pattern$\` — поиск только в конце
+
+4. **Компилируйте паттерны** для повторного использования:
+\`\`\`python
+pattern = re.compile(r'\\d+')
+result1 = pattern.findall(text1)
+result2 = pattern.findall(text2)
+\`\`\`
+
+5. **Используйте незахватывающие группы** \`(?:...)\` когда не нужно извлекать группу.`,
+      },
+      {
+        kind: "text",
+        md: `## Отладка регулярных выражений
+
+**Инструменты для отладки:**
+
+1. **re.DEBUG** — показывает внутреннее представление:
+\`\`\`python
+import re
+re.compile(r'\\d+', re.DEBUG)
+\`\`\`
+
+2. **Онлайн-инструменты:**
+   - regex101.com — тестирование и объяснение
+   - regexr.com — интерактивный редактор
+   - regex101.com — библиотека паттернов
+
+3. **Пошаговая отладка:**
+\`\`\`python
+import re
+
+pattern = r'(\\d+)-(\\d+)'
+text = "2026-02-14"
+
+for match in re.finditer(pattern, text):
+    print(f"Match: {match.group()}")
+    print(f"Group 1: {match.group(1)}")
+    print(f"Group 2: {match.group(2)}")
+    print(f"Span: {match.span()}")
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Распространённые ошибки
+
+1. **Забытое экранирование:**
+   - Плохо: \`file.txt\` (точка — любой символ)
+   - Хорошо: \`file\\.txt\`
+
+2. **Жадные квантификаторы:**
+   - Плохо: \`<.+>\` (захватит всё до последнего >)
+   - Хорошо: \`<.+?>\` (ленивый квантификатор)
+
+3. **Вложенные квантификаторы:**
+   - Плохо: \`(a+)+\` (катастрофический возврат)
+   - Хорошо: \`a+\`
+
+4. **Неправильное использование ^ и $:**
+   - Забудьте про MULTILINE, если нужно искать в каждой строке
+
+5. **Захватывающие группы вместо незахватывающих:**
+   - Используйте \`(?:...)\` когда не нужно извлекать группу`,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения в других языках
+
+Синтаксис регулярных выражений похож в разных языках, но есть различия:
+
+**JavaScript:**
+\`\`\`javascript
+const pattern = /\\d+/g;
+const result = "text".match(pattern);
+\`\`\`
+
+**Perl:**
+\`\`\`perl
+if ($text =~ /\\d+/) {
+    print "Found number";
+}
+\`\`\`
+
+**Java:**
+\`\`\`java
+Pattern pattern = Pattern.compile("\\d+");
+Matcher matcher = pattern.matcher(text);
+\`\`\`
+
+**Go:**
+\`\`\`go
+re := regexp.MustCompile("\\d+")
+matches := re.FindAllString(text, -1)
+\`\`\`
+
+**Основные различия:**
+- Поддержка Unicode
+- Lookbehind (не во всех языках)
+- Рекурсивные регулярные выражения
+- Модификаторы режима`,
+      },
+      {
+        kind: "text",
+        md: `## Символьные классы POSIX
+
+POSIX символьные классы (с флагом \`re.UNICODE\`):
+
+- \`[:alpha:]\` — буквы
+- \`[:digit:]\` — цифры
+- \`[:alnum:]\` — буквы и цифры
+- \`[:space:]\` — пробельные символы
+- \`[:punct:]\` — пунктуация
+- \`[:upper:]\` — заглавные буквы
+- \`[:lower:]\` — строчные буквы
+
+\`\`\`python
+import re
+
+# Использование POSIX классов
+print(re.findall(r'[[:alpha:]]+', 'Привет мир', re.UNICODE))  # ['Привет', 'мир']
+print(re.findall(r'[[:digit:]]+', 'Цена: 123'))  # ['123']
+\`\`\`
+
+**Важно:** POSIX классы работают только внутри квадратных скобок \`[[:alpha:]]\`.`,
+      },
+      {
+        kind: "text",
+        md: `## Расширенные возможности групп
+
+**Именованные группы с повторениями:**
+\`\`\`python
+import re
+
+# Повторяющаяся именованная группа
+pattern = r'(?P<word>\\w+)\\s+(?P=word)'
+text = "test test"
+match = re.search(pattern, text)
+print(match.group('word'))  # 'test'
+\`\`\`
+
+**Атомарные группы** (не возвращаются назад):
+\`\`\`python
+# Атомарная группа (не поддерживается в Python напрямую)
+# Используйте атомарные группы для оптимизации
+\`\`\`
+
+**Обратные ссылки в замене:**
+\`\`\`python
+# Использование \\1, \\2 в замене
+text = "2026-02-14"
+result = re.sub(r'(\\d{4})-(\\d{2})-(\\d{2})', r'\\3.\\2.\\1', text)
+print(result)  # '14.02.2026'
+
+# Именованные группы в замене
+result = re.sub(r'(?P<year>\\d{4})-(?P<month>\\d{2})-(?P<day>\\d{2})', 
+                r'\\g<day>.\\g<month>.\\g<year>', text)
+print(result)  # '14.02.2026'
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Продвинутые lookaround
+
+**Вложенные lookaround:**
+\`\`\`python
+import re
+
+# Lookahead внутри lookahead
+pattern = r'(?=(\\d+)(?=\\D|$))'
+text = "123 456 789"
+print(re.findall(pattern, text))  # ['123', '456', '789']
+\`\`\`
+
+**Lookbehind с переменной длиной** (Python 3.7+):
+\`\`\`python
+# Lookbehind с переменной длиной
+pattern = r'(?<=\\b\\w{3,5}\\b)\\s+\\w+'
+text = "cat dog bird"
+print(re.findall(pattern, text))  # [' dog', ' bird']
+\`\`\`
+
+**Комбинация lookahead и lookbehind:**
+\`\`\`python
+# Слово между цифрами
+pattern = r'(?<=\\d)\\s+\\w+\\s+(?=\\d)'
+text = "123 cat 456"
+print(re.findall(pattern, text))  # [' cat ']
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Оптимизация производительности (детально)
+
+**1. Избегайте катастрофического возврата:**
+\`\`\`python
+# Плохо: (a+)+b на строке "aaa...a" без 'b'
+# Хорошо: a+b или a*b
+
+# Плохо: (a|a)+ 
+# Хорошо: a+
+\`\`\`
+
+**2. Используйте атомарные группы** (через possessive квантификаторы):
+\`\`\`python
+# Python не поддерживает атомарные группы напрямую
+# Используйте possessive квантификаторы (Python 3.11+):
+# a++ вместо a+ (не возвращается назад)
+\`\`\`
+
+**3. Оптимизация якорями:**
+\`\`\`python
+# Плохо: поиск во всём тексте
+pattern = r'\\d+'
+
+# Хорошо: ограничение поиска
+pattern = r'^\\d+$'  # только если вся строка - число
+\`\`\`
+
+**4. Компиляция паттернов:**
+\`\`\`python
+import re
+
+# Компилируйте для повторного использования
+pattern = re.compile(r'\\d+', re.IGNORECASE)
+result1 = pattern.findall(text1)
+result2 = pattern.findall(text2)
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и безопасность
+
+**Важные моменты безопасности:**
+
+1. **ReDoS (Regular Expression Denial of Service):**
+   - Злоумышленники могут использовать сложные регулярные выражения для DoS-атак
+   - Всегда тестируйте регулярные выражения на длинных строках
+   - Избегайте вложенных квантификаторов
+
+2. **Валидация пользовательского ввода:**
+   - Всегда используйте якоря \`^\` и \`$\` для валидации
+   - Проверяйте всю строку, а не часть
+
+3. **Экранирование пользовательских данных:**
+\`\`\`python
+import re
+
+# Экранирование пользовательского ввода
+user_input = "file.txt"
+safe_pattern = re.escape(user_input)  # 'file\\.txt'
+\`\`\`
+
+4. **Ограничение длины ввода:**
+\`\`\`python
+# Ограничение длины входных данных
+if len(user_input) > 1000:
+    raise ValueError("Input too long")
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения в реальных проектах
+
+**Типичные задачи:**
+
+1. **Валидация форм:**
+\`\`\`python
+def validate_email(email):
+    pattern = r'^[\\w\\.-]+@[\\w\\.-]+\\.\\w+$'
+    return bool(re.match(pattern, email))
+
+def validate_phone(phone):
+    pattern = r'^\\+?\\d{1,3}[-.\\s]?\\(?\\d{3}\\)?[-.\\s]?\\d{3}[-.\\s]?\\d{4}$'
+    return bool(re.match(pattern, phone))
+\`\`\`
+
+2. **Парсинг логов:**
+\`\`\`python
+log_pattern = r'(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}) (\\w+) (.+)'
+for match in re.finditer(log_pattern, log_text):
+    timestamp, level, message = match.groups()
+\`\`\`
+
+3. **Извлечение данных:**
+\`\`\`python
+# Извлечение всех URL из текста
+url_pattern = r'https?://[^\\s<>\"]+|www\\.[^\\s<>\"]+'
+urls = re.findall(url_pattern, text)
+\`\`\`
+
+4. **Очистка данных:**
+\`\`\`python
+# Удаление лишних пробелов
+clean_text = re.sub(r'\\s+', ' ', text).strip()
+
+# Удаление HTML тегов
+clean_html = re.sub(r'<[^>]+>', '', html_text)
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и тестирование
+
+**Тестирование регулярных выражений:**
+
+1. **Unit тесты:**
+\`\`\`python
+import re
+import unittest
+
+class TestRegex(unittest.TestCase):
+    def test_email_validation(self):
+        pattern = r'^[\\w\\.-]+@[\\w\\.-]+\\.\\w+$'
+        self.assertTrue(re.match(pattern, "test@example.com"))
+        self.assertFalse(re.match(pattern, "invalid-email"))
+    
+    def test_phone_validation(self):
+        pattern = r'^\\+?\\d{1,3}[-.\\s]?\\(?\\d{3}\\)?[-.\\s]?\\d{3}[-.\\s]?\\d{4}$'
+        self.assertTrue(re.match(pattern, "+79991234567"))
+        self.assertFalse(re.match(pattern, "invalid"))
+
+if __name__ == '__main__':
+    unittest.main()
+\`\`\`
+
+2. **Тестовые данные:**
+\`\`\`python
+# Тестовые данные для email
+valid_emails = [
+    "test@example.com",
+    "user.name@domain.co.uk",
+    "user+tag@example.org"
+]
+
+invalid_emails = [
+    "invalid-email",
+    "@example.com",
+    "user@",
+    "user@.com"
+]
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и документация
+
+**Документирование регулярных выражений:**
+
+1. **Комментарии в коде:**
+\`\`\`python
+# Паттерн для валидации email
+# ^[\\w\\.-]+@[\\w\\.-]+\\.\\w+$
+# ^ - начало строки
+# [\\w\\.-]+ - один или более символов (буквы, цифры, точка, дефис)
+# @ - символ @
+# [\\w\\.-]+ - доменное имя
+# \\. - точка
+# \\w+ - доменная зона
+# $ - конец строки
+\`\`\`
+
+2. **Docstring:**
+\`\`\`python
+def validate_email(email: str) -> bool:
+    """
+    Валидирует email адрес.
+    
+    Args:
+        email: Email адрес для проверки
+    
+    Returns:
+        bool: True если email валидный, иначе False
+    
+    Pattern:
+        ^[\\w\\.-]+@[\\w\\.-]+\\.\\w+$
+        - ^ - начало строки
+        - [\\w\\.-]+ - локальная часть
+        - @ - символ @
+        - [\\w\\.-]+ - доменное имя
+        - \\. - точка
+        - \\w+ - доменная зона
+        - $ - конец строки
+    """
+    pattern = r'^[\\w\\.-]+@[\\w\\.-]+\\.\\w+$'
+    return bool(re.match(pattern, email))
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и производительность (детально)
+
+**Профилирование регулярных выражений:**
+
+\`\`\`python
+import re
+import time
+
+# Профилирование паттерна
+def profile_pattern(pattern, text, iterations=1000):
+    compiled = re.compile(pattern)
+    
+    start = time.time()
+    for _ in range(iterations):
+        compiled.findall(text)
+    end = time.time()
+    
+    print(f"Pattern: {pattern}")
+    print(f"Time: {end - start:.4f} сек")
+    print(f"Iterations: {iterations}")
+    print(f"Average: {(end - start) / iterations * 1000:.4f} мс")
+\`\`\`
+
+**Оптимизация:**
+
+1. **Избегайте катастрофического возврата:**
+\`\`\`python
+# Плохо: (a+)+b на строке "aaa...a" без 'b'
+# Хорошо: a+b или a*b
+
+# Плохо: (a|a)+ 
+# Хорошо: a+
+\`\`\`
+
+2. **Используйте специфичные классы:**
+\`\`\`python
+# Плохо: .+ для цифр
+# Хорошо: \\d+
+
+# Плохо: .+ для слов
+# Хорошо: \\w+
+\`\`\`
+
+3. **Компилируйте паттерны:**
+\`\`\`python
+# Компилируйте для повторного использования
+pattern = re.compile(r'\\d+', re.IGNORECASE)
+result1 = pattern.findall(text1)
+result2 = pattern.findall(text2)
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и отладка (детально)
+
+**Инструменты отладки:**
+
+1. **re.DEBUG:**
+\`\`\`python
+import re
+
+# Показывает внутреннее представление
+re.compile(r'\\d+', re.DEBUG)
+\`\`\`
+
+2. **Пошаговая отладка:**
+\`\`\`python
+import re
+
+pattern = r'(\\d+)-(\\d+)'
+text = "2026-02-14"
+
+for match in re.finditer(pattern, text):
+    print(f"Match: {match.group()}")
+    print(f"Group 1: {match.group(1)}")
+    print(f"Group 2: {match.group(2)}")
+    print(f"Span: {match.span()}")
+    print(f"Start: {match.start()}")
+    print(f"End: {match.end()}")
+\`\`\`
+
+3. **Онлайн-инструменты:**
+   - regex101.com — тестирование и объяснение
+   - regexr.com — интерактивный редактор
+   - regex101.com — библиотека паттернов`,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и безопасность (детально)
+
+**ReDoS (Regular Expression Denial of Service):**
+
+1. **Катастрофический возврат:**
+\`\`\`python
+# Плохо: (a+)+b на строке "aaa...a" без 'b'
+# Время выполнения растёт экспоненциально
+
+# Хорошо: a+b или a*b
+\`\`\`
+
+2. **Вложенные квантификаторы:**
+\`\`\`python
+# Плохо: (a+)+ 
+# Хорошо: a+
+
+# Плохо: (a|a)+
+# Хорошо: a+
+\`\`\`
+
+3. **Тестирование на ReDoS:**
+\`\`\`python
+import re
+import time
+
+def test_redos(pattern, test_string, timeout=1.0):
+    """Тестирует паттерн на ReDoS"""
+    try:
+        start = time.time()
+        re.findall(pattern, test_string)
+        elapsed = time.time() - start
+        return elapsed < timeout
+    except Exception:
+        return False
+\`\`\`
+
+**Защита от ReDoS:**
+
+1. **Ограничение длины ввода:**
+\`\`\`python
+if len(user_input) > 1000:
+    raise ValueError("Input too long")
+\`\`\`
+
+2. **Использование атомарных групп** (через possessive квантификаторы):
+\`\`\`python
+# Python 3.11+ поддерживает possessive квантификаторы
+# a++ вместо a+ (не возвращается назад)
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и тестирование (продолжение)
+
+**Тестовые сценарии:**
+
+\`\`\`python
+import re
+import unittest
+
+class TestEmailValidation(unittest.TestCase):
+    def setUp(self):
+        self.pattern = r'^[\\w\\.-]+@[\\w\\.-]+\\.\\w+$'
+    
+    def test_valid_emails(self):
+        valid_emails = [
+            "test@example.com",
+            "user.name@domain.co.uk",
+            "user+tag@example.org"
+        ]
+        for email in valid_emails:
+            self.assertTrue(re.match(self.pattern, email))
+    
+    def test_invalid_emails(self):
+        invalid_emails = [
+            "invalid-email",
+            "@example.com",
+            "user@",
+            "user@.com"
+        ]
+        for email in invalid_emails:
+            self.assertFalse(re.match(self.pattern, email))
+
+if __name__ == '__main__':
+    unittest.main()
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и документация (продолжение)
+
+**Документирование сложных паттернов:**
+
+\`\`\`python
+def validate_complex_pattern(text: str) -> bool:
+    """
+    Валидирует сложный паттерн.
+    
+    Args:
+        text: Текст для проверки
+    
+    Returns:
+        bool: True если текст соответствует паттерну
+    
+    Pattern breakdown:
+        ^                    # Начало строки
+        (?=.*[A-Za-z])       # Хотя бы одна буква
+        (?=.*\\d)            # Хотя бы одна цифра
+        (?=.*[@$!%*#?&])     # Хотя бы один спецсимвол
+        [A-Za-z\\d@$!%*#?&]{8,}  # Минимум 8 символов
+        $                    # Конец строки
+    """
+    pattern = r'^(?=.*[A-Za-z])(?=.*\\d)(?=.*[@$!%*#?&])[A-Za-z\\d@$!%*#?&]{8,}$'
+    return bool(re.match(pattern, text))
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и производительность (продолжение)
+
+**Профилирование и оптимизация:**
+
+\`\`\`python
+import re
+import time
+import cProfile
+
+def profile_regex(pattern, text, iterations=1000):
+    """Профилирует регулярное выражение"""
+    compiled = re.compile(pattern)
+    
+    # Профилирование
+    profiler = cProfile.Profile()
+    profiler.enable()
+    
+    for _ in range(iterations):
+        compiled.findall(text)
+    
+    profiler.disable()
+    profiler.print_stats()
+\`\`\`
+
+**Оптимизация:**
+
+1. **Избегайте катастрофического возврата:**
+\`\`\`python
+# Плохо: (a+)+b на строке "aaa...a" без 'b'
+# Хорошо: a+b или a*b
+\`\`\`
+
+2. **Используйте специфичные классы:**
+\`\`\`python
+# Плохо: .+ для цифр
+# Хорошо: \\d+
+\`\`\`
+
+3. **Компилируйте паттерны:**
+\`\`\`python
+# Компилируйте для повторного использования
+pattern = re.compile(r'\\d+', re.IGNORECASE)
+result1 = pattern.findall(text1)
+result2 = pattern.findall(text2)
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и отладка (продолжение)
+
+**Инструменты отладки:**
+
+1. **re.DEBUG:**
+\`\`\`python
+import re
+
+# Показывает внутреннее представление
+re.compile(r'\\d+', re.DEBUG)
+\`\`\`
+
+2. **Пошаговая отладка:**
+\`\`\`python
+import re
+
+pattern = r'(\\d+)-(\\d+)'
+text = "2026-02-14"
+
+for match in re.finditer(pattern, text):
+    print(f"Match: {match.group()}")
+    print(f"Group 1: {match.group(1)}")
+    print(f"Group 2: {match.group(2)}")
+    print(f"Span: {match.span()}")
+\`\`\`
+
+3. **Онлайн-инструменты:**
+   - regex101.com — тестирование и объяснение
+   - regexr.com — интерактивный редактор
+   - regex101.com — библиотека паттернов`,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и безопасность (продолжение)
+
+**ReDoS (Regular Expression Denial of Service):**
+
+1. **Катастрофический возврат:**
+\`\`\`python
+# Плохо: (a+)+b на строке "aaa...a" без 'b'
+# Время выполнения растёт экспоненциально
+
+# Хорошо: a+b или a*b
+\`\`\`
+
+2. **Вложенные квантификаторы:**
+\`\`\`python
+# Плохо: (a|a)+ 
+# Хорошо: a+
+\`\`\`
+
+3. **Тестирование на ReDoS:**
+\`\`\`python
+import re
+import time
+
+def test_redos(pattern, test_string, timeout=1.0):
+    """Тестирует паттерн на ReDoS"""
+    try:
+        start = time.time()
+        re.findall(pattern, test_string)
+        elapsed = time.time() - start
+        return elapsed < timeout
+    except Exception:
+        return False
+\`\`\`
+
+**Защита от ReDoS:**
+
+1. **Ограничение длины ввода:**
+\`\`\`python
+if len(user_input) > 1000:
+    raise ValueError("Input too long")
+\`\`\`
+
+2. **Использование атомарных групп** (через possessive квантификаторы):
+\`\`\`python
+# Python 3.11+ поддерживает possessive квантификаторы
+# a++ вместо a+ (не возвращается назад)
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и тестирование (продолжение)
+
+**Тестовые сценарии:**
+
+\`\`\`python
+import re
+import unittest
+
+class TestEmailValidation(unittest.TestCase):
+    def setUp(self):
+        self.pattern = r'^[\\w\\.-]+@[\\w\\.-]+\\.\\w+$'
+    
+    def test_valid_emails(self):
+        valid_emails = [
+            "test@example.com",
+            "user.name@domain.co.uk",
+            "user+tag@example.org"
+        ]
+        for email in valid_emails:
+            self.assertTrue(re.match(self.pattern, email))
+    
+    def test_invalid_emails(self):
+        invalid_emails = [
+            "invalid-email",
+            "@example.com",
+            "user@",
+            "user@.com"
+        ]
+        for email in invalid_emails:
+            self.assertFalse(re.match(self.pattern, email))
+
+if __name__ == '__main__':
+    unittest.main()
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и документация (продолжение)
+
+**Документирование сложных паттернов:**
+
+\`\`\`python
+def validate_complex_pattern(text: str) -> bool:
+    """
+    Валидирует сложный паттерн.
+    
+    Args:
+        text: Текст для проверки
+    
+    Returns:
+        bool: True если текст соответствует паттерну
+    
+    Pattern breakdown:
+        ^                    # Начало строки
+        (?=.*[A-Za-z])       # Хотя бы одна буква
+        (?=.*\\d)            # Хотя бы одна цифра
+        (?=.*[@$!%*#?&])     # Хотя бы один спецсимвол
+        [A-Za-z\\d@$!%*#?&]{8,}  # Минимум 8 символов
+        $                    # Конец строки
+    """
+    pattern = r'^(?=.*[A-Za-z])(?=.*\\d)(?=.*[@$!%*#?&])[A-Za-z\\d@$!%*#?&]{8,}$'
+    return bool(re.match(pattern, text))
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и производительность (продолжение)
+
+**Профилирование и оптимизация:**
+
+\`\`\`python
+import re
+import time
+import cProfile
+
+def profile_regex(pattern, text, iterations=1000):
+    """Профилирует регулярное выражение"""
+    compiled = re.compile(pattern)
+    
+    # Профилирование
+    profiler = cProfile.Profile()
+    profiler.enable()
+    
+    for _ in range(iterations):
+        compiled.findall(text)
+    
+    profiler.disable()
+    profiler.print_stats()
+\`\`\`
+
+**Оптимизация:**
+
+1. **Избегайте катастрофического возврата:**
+\`\`\`python
+# Плохо: (a+)+b на строке "aaa...a" без 'b'
+# Хорошо: a+b или a*b
+\`\`\`
+
+2. **Используйте специфичные классы:**
+\`\`\`python
+# Плохо: .+ для цифр
+# Хорошо: \\d+
+\`\`\`
+
+3. **Компилируйте паттерны:**
+\`\`\`python
+# Компилируйте для повторного использования
+pattern = re.compile(r'\\d+', re.IGNORECASE)
+result1 = pattern.findall(text1)
+result2 = pattern.findall(text2)
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и отладка (продолжение)
+
+**Инструменты отладки:**
+
+1. **re.DEBUG:**
+\`\`\`python
+import re
+
+# Показывает внутреннее представление
+re.compile(r'\\d+', re.DEBUG)
+\`\`\`
+
+2. **Пошаговая отладка:**
+\`\`\`python
+import re
+
+pattern = r'(\\d+)-(\\d+)'
+text = "2026-02-14"
+
+for match in re.finditer(pattern, text):
+    print(f"Match: {match.group()}")
+    print(f"Group 1: {match.group(1)}")
+    print(f"Group 2: {match.group(2)}")
+    print(f"Span: {match.span()}")
+\`\`\`
+
+3. **Онлайн-инструменты:**
+   - regex101.com — тестирование и объяснение
+   - regexr.com — интерактивный редактор
+   - regex101.com — библиотека паттернов`,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и безопасность (продолжение)
+
+**ReDoS (Regular Expression Denial of Service):**
+
+1. **Катастрофический возврат:**
+\`\`\`python
+# Плохо: (a+)+b на строке "aaa...a" без 'b'
+# Время выполнения растёт экспоненциально
+
+# Хорошо: a+b или a*b
+\`\`\`
+
+2. **Вложенные квантификаторы:**
+\`\`\`python
+# Плохо: (a|a)+ 
+# Хорошо: a+
+\`\`\`
+
+3. **Тестирование на ReDoS:**
+\`\`\`python
+import re
+import time
+
+def test_redos(pattern, test_string, timeout=1.0):
+    """Тестирует паттерн на ReDoS"""
+    try:
+        start = time.time()
+        re.findall(pattern, test_string)
+        elapsed = time.time() - start
+        return elapsed < timeout
+    except Exception:
+        return False
+\`\`\`
+
+**Защита от ReDoS:**
+
+1. **Ограничение длины ввода:**
+\`\`\`python
+if len(user_input) > 1000:
+    raise ValueError("Input too long")
+\`\`\`
+
+2. **Использование атомарных групп** (через possessive квантификаторы):
+\`\`\`python
+# Python 3.11+ поддерживает possessive квантификаторы
+# a++ вместо a+ (не возвращается назад)
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и тестирование (продолжение)
+
+**Тестовые сценарии:**
+
+\`\`\`python
+import re
+import unittest
+
+class TestEmailValidation(unittest.TestCase):
+    def setUp(self):
+        self.pattern = r'^[\\w\\.-]+@[\\w\\.-]+\\.\\w+$'
+    
+    def test_valid_emails(self):
+        valid_emails = [
+            "test@example.com",
+            "user.name@domain.co.uk",
+            "user+tag@example.org"
+        ]
+        for email in valid_emails:
+            self.assertTrue(re.match(self.pattern, email))
+    
+    def test_invalid_emails(self):
+        invalid_emails = [
+            "invalid-email",
+            "@example.com",
+            "user@",
+            "user@.com"
+        ]
+        for email in invalid_emails:
+            self.assertFalse(re.match(self.pattern, email))
+
+if __name__ == '__main__':
+    unittest.main()
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и документация (продолжение)
+
+**Документирование сложных паттернов:**
+
+\`\`\`python
+def validate_complex_pattern(text: str) -> bool:
+    """
+    Валидирует сложный паттерн.
+    
+    Args:
+        text: Текст для проверки
+    
+    Returns:
+        bool: True если текст соответствует паттерну
+    
+    Pattern breakdown:
+        ^                    # Начало строки
+        (?=.*[A-Za-z])       # Хотя бы одна буква
+        (?=.*\\d)            # Хотя бы одна цифра
+        (?=.*[@$!%*#?&])     # Хотя бы один спецсимвол
+        [A-Za-z\\d@$!%*#?&]{8,}  # Минимум 8 символов
+        $                    # Конец строки
+    """
+    pattern = r'^(?=.*[A-Za-z])(?=.*\\d)(?=.*[@$!%*#?&])[A-Za-z\\d@$!%*#?&]{8,}$'
+    return bool(re.match(pattern, text))
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и производительность (продолжение)
+
+**Профилирование и оптимизация:**
+
+\`\`\`python
+import re
+import time
+import cProfile
+
+def profile_regex(pattern, text, iterations=1000):
+    """Профилирует регулярное выражение"""
+    compiled = re.compile(pattern)
+    
+    # Профилирование
+    profiler = cProfile.Profile()
+    profiler.enable()
+    
+    for _ in range(iterations):
+        compiled.findall(text)
+    
+    profiler.disable()
+    profiler.print_stats()
+\`\`\`
+
+**Оптимизация:**
+
+1. **Избегайте катастрофического возврата:**
+\`\`\`python
+# Плохо: (a+)+b на строке "aaa...a" без 'b'
+# Хорошо: a+b или a*b
+\`\`\`
+
+2. **Используйте специфичные классы:**
+\`\`\`python
+# Плохо: .+ для цифр
+# Хорошо: \\d+
+\`\`\`
+
+3. **Компилируйте паттерны:**
+\`\`\`python
+# Компилируйте для повторного использования
+pattern = re.compile(r'\\d+', re.IGNORECASE)
+result1 = pattern.findall(text1)
+result2 = pattern.findall(text2)
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и отладка (продолжение)
+
+**Инструменты отладки:**
+
+1. **re.DEBUG:**
+\`\`\`python
+import re
+
+# Показывает внутреннее представление
+re.compile(r'\\d+', re.DEBUG)
+\`\`\`
+
+2. **Пошаговая отладка:**
+\`\`\`python
+import re
+
+pattern = r'(\\d+)-(\\d+)'
+text = "2026-02-14"
+
+for match in re.finditer(pattern, text):
+    print(f"Match: {match.group()}")
+    print(f"Group 1: {match.group(1)}")
+    print(f"Group 2: {match.group(2)}")
+    print(f"Span: {match.span()}")
+\`\`\`
+
+3. **Онлайн-инструменты:**
+   - regex101.com — тестирование и объяснение
+   - regexr.com — интерактивный редактор
+   - regex101.com — библиотека паттернов`,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и безопасность (продолжение)
+
+**ReDoS (Regular Expression Denial of Service):**
+
+1. **Катастрофический возврат:**
+\`\`\`python
+# Плохо: (a+)+b на строке "aaa...a" без 'b'
+# Время выполнения растёт экспоненциально
+
+# Хорошо: a+b или a*b
+\`\`\`
+
+2. **Вложенные квантификаторы:**
+\`\`\`python
+# Плохо: (a|a)+ 
+# Хорошо: a+
+\`\`\`
+
+3. **Тестирование на ReDoS:**
+\`\`\`python
+import re
+import time
+
+def test_redos(pattern, test_string, timeout=1.0):
+    """Тестирует паттерн на ReDoS"""
+    try:
+        start = time.time()
+        re.findall(pattern, test_string)
+        elapsed = time.time() - start
+        return elapsed < timeout
+    except Exception:
+        return False
+\`\`\`
+
+**Защита от ReDoS:**
+
+1. **Ограничение длины ввода:**
+\`\`\`python
+if len(user_input) > 1000:
+    raise ValueError("Input too long")
+\`\`\`
+
+2. **Использование атомарных групп** (через possessive квантификаторы):
+\`\`\`python
+# Python 3.11+ поддерживает possessive квантификаторы
+# a++ вместо a+ (не возвращается назад)
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и тестирование (продолжение)
+
+**Тестовые сценарии:**
+
+\`\`\`python
+import re
+import unittest
+
+class TestEmailValidation(unittest.TestCase):
+    def setUp(self):
+        self.pattern = r'^[\\w\\.-]+@[\\w\\.-]+\\.\\w+$'
+    
+    def test_valid_emails(self):
+        valid_emails = [
+            "test@example.com",
+            "user.name@domain.co.uk",
+            "user+tag@example.org"
+        ]
+        for email in valid_emails:
+            self.assertTrue(re.match(self.pattern, email))
+    
+    def test_invalid_emails(self):
+        invalid_emails = [
+            "invalid-email",
+            "@example.com",
+            "user@",
+            "user@.com"
+        ]
+        for email in invalid_emails:
+            self.assertFalse(re.match(self.pattern, email))
+
+if __name__ == '__main__':
+    unittest.main()
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и документация (продолжение)
+
+**Документирование сложных паттернов:**
+
+\`\`\`python
+def validate_complex_pattern(text: str) -> bool:
+    """
+    Валидирует сложный паттерн.
+    
+    Args:
+        text: Текст для проверки
+    
+    Returns:
+        bool: True если текст соответствует паттерну
+    
+    Pattern breakdown:
+        ^                    # Начало строки
+        (?=.*[A-Za-z])       # Хотя бы одна буква
+        (?=.*\\d)            # Хотя бы одна цифра
+        (?=.*[@$!%*#?&])     # Хотя бы один спецсимвол
+        [A-Za-z\\d@$!%*#?&]{8,}  # Минимум 8 символов
+        $                    # Конец строки
+    """
+    pattern = r'^(?=.*[A-Za-z])(?=.*\\d)(?=.*[@$!%*#?&])[A-Za-z\\d@$!%*#?&]{8,}$'
+    return bool(re.match(pattern, text))
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и производительность (продолжение)
+
+**Профилирование и оптимизация:**
+
+\`\`\`python
+import re
+import time
+import cProfile
+
+def profile_regex(pattern, text, iterations=1000):
+    """Профилирует регулярное выражение"""
+    compiled = re.compile(pattern)
+    
+    # Профилирование
+    profiler = cProfile.Profile()
+    profiler.enable()
+    
+    for _ in range(iterations):
+        compiled.findall(text)
+    
+    profiler.disable()
+    profiler.print_stats()
+\`\`\`
+
+**Оптимизация:**
+
+1. **Избегайте катастрофического возврата:**
+\`\`\`python
+# Плохо: (a+)+b на строке "aaa...a" без 'b'
+# Хорошо: a+b или a*b
+\`\`\`
+
+2. **Используйте специфичные классы:**
+\`\`\`python
+# Плохо: .+ для цифр
+# Хорошо: \\d+
+\`\`\`
+
+3. **Компилируйте паттерны:**
+\`\`\`python
+# Компилируйте для повторного использования
+pattern = re.compile(r'\\d+', re.IGNORECASE)
+result1 = pattern.findall(text1)
+result2 = pattern.findall(text2)
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и отладка (продолжение)
+
+**Инструменты отладки:**
+
+1. **re.DEBUG:**
+\`\`\`python
+import re
+
+# Показывает внутреннее представление
+re.compile(r'\\d+', re.DEBUG)
+\`\`\`
+
+2. **Пошаговая отладка:**
+\`\`\`python
+import re
+
+pattern = r'(\\d+)-(\\d+)'
+text = "2026-02-14"
+
+for match in re.finditer(pattern, text):
+    print(f"Match: {match.group()}")
+    print(f"Group 1: {match.group(1)}")
+    print(f"Group 2: {match.group(2)}")
+    print(f"Span: {match.span()}")
+\`\`\`
+
+3. **Онлайн-инструменты:**
+   - regex101.com — тестирование и объяснение
+   - regexr.com — интерактивный редактор
+   - regex101.com — библиотека паттернов`,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и безопасность (продолжение)
+
+**ReDoS (Regular Expression Denial of Service):**
+
+1. **Катастрофический возврат:**
+\`\`\`python
+# Плохо: (a+)+b на строке "aaa...a" без 'b'
+# Время выполнения растёт экспоненциально
+
+# Хорошо: a+b или a*b
+\`\`\`
+
+2. **Вложенные квантификаторы:**
+\`\`\`python
+# Плохо: (a|a)+ 
+# Хорошо: a+
+\`\`\`
+
+3. **Тестирование на ReDoS:**
+\`\`\`python
+import re
+import time
+
+def test_redos(pattern, test_string, timeout=1.0):
+    """Тестирует паттерн на ReDoS"""
+    try:
+        start = time.time()
+        re.findall(pattern, test_string)
+        elapsed = time.time() - start
+        return elapsed < timeout
+    except Exception:
+        return False
+\`\`\`
+
+**Защита от ReDoS:**
+
+1. **Ограничение длины ввода:**
+\`\`\`python
+if len(user_input) > 1000:
+    raise ValueError("Input too long")
+\`\`\`
+
+2. **Использование атомарных групп** (через possessive квантификаторы):
+\`\`\`python
+# Python 3.11+ поддерживает possessive квантификаторы
+# a++ вместо a+ (не возвращается назад)
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Якоря (anchors)
+
+Якоря не захватывают символы, а указывают позицию:
+
+- \`^\` — начало строки
+- \`$\` — конец строки
+- \`\\b\` — граница слова
+- \`\\B\` — не граница слова
+- \`\\A\` — начало текста
+- \`\\Z\` — конец текста`,
+      },
+      {
+        kind: "code",
+        title: "Примеры якорей",
+        code: `import re
+
+# Начало и конец строки
+print(re.search(r'^\\d+', "123abc"))  # Match: "123"
+print(re.search(r'\\d+$', "abc123"))  # Match: "123"
+
+# Граница слова
+print(re.findall(r'\\bcat\\b', "cat cats catfish"))  # ['cat']
+print(re.findall(r'\\Bcat', "cat cats catfish"))    # ['cat', 'cat']
+
+# Начало и конец текста
+text = "first line\\nsecond line"
+print(re.search(r'^first', text, re.MULTILINE))  # Match
+print(re.search(r'line$', text, re.MULTILINE))   # Match`,
+      },
+      {
+        kind: "text",
+        md: `## Lookahead и Lookbehind
+
+**Lookahead (опережающая проверка):**
+- \`(?=...)\` — позитивный lookahead (должно следовать)
+- \`(?!=...)\` — негативный lookahead (не должно следовать)
+
+**Lookbehind (ретроспективная проверка):**
+- \`(?<=...)\` — позитивный lookbehind (должно предшествовать)
+- \`(?<!...)\` — негативный lookbehind (не должно предшествовать)`,
+      },
+      {
+        kind: "code",
+        title: "Lookahead и Lookbehind",
+        code: `import re
+
+text = "100 руб, 200 руб, 300 eur"
+
+# Позитивный lookahead: число перед "руб"
+print(re.findall(r'\\d+(?= руб)', text))  # ['100', '200']
+
+# Негативный lookahead: число не перед "eur"
+print(re.findall(r'\\d+(?! eur)', text))  # ['100', '200']
+
+# Позитивный lookbehind: число после "цена: "
+text2 = "цена: 100, скидка: 20"
+print(re.findall(r'(?<=цена: )\\d+', text2))  # ['100']
+
+# Негативный lookbehind: число не после "скидка: "
+print(re.findall(r'(?<!скидка: )\\d+', text2))  # ['100']`,
+      },
+      {
+        kind: "text",
+        md: `## Флаги (flags)
+
+Флаги изменяют поведение регулярного выражения:
+
+- \`re.IGNORECASE\` или \`re.I\` — игнорировать регистр
+- \`re.MULTILINE\` или \`re.M\` — многострочный режим
+- \`re.DOTALL\` или \`re.S\` — точка включает \\n
+- \`re.VERBOSE\` или \`re.X\` — разрешает комментарии и пробелы
+- \`re.UNICODE\` или \`re.U\` — Unicode-совместимость`,
+      },
+      {
+        kind: "code",
+        title: "Примеры флагов",
+        code: `import re
+
+text = "Hello\\nWorld"
+
+# Игнорировать регистр
+print(re.search(r'hello', text, re.IGNORECASE))  # Match
+
+# Многострочный режим
+print(re.search(r'^World', text, re.MULTILINE))  # Match
+
+# Точка включает \\n
+print(re.search(r'Hello.World', text, re.DOTALL))  # Match
+
+# Verbose режим с комментариями
+pattern = r"""
+    \\d{4}  # год
+    -       # дефис
+    \\d{2}  # месяц
+    -       # дефис
+    \\d{2}  # день
+"""
+print(re.search(pattern, "2026-02-14", re.VERBOSE))  # Match`,
+      },
+      {
+        kind: "text",
+        md: `## Экранирование специальных символов
+
+Если вам нужно найти literal символы, которые имеют специальное значение в regex, их нужно экранировать обратным слэшем:
+
+**Специальные символы:** \`.\`, \`^\`, \`$\`, \`*\`, \`+\`, \`?\`, \`(\`, \`)\`, \`[\`, \`]\`, \`{\`, \`}\`, \`|\`, \`\\\`
+
+\`\`\`python
+import re
+
+# Поиск точки
+print(re.search(r'\\.', 'a.b'))  # Match: '.'
+
+# Поиск скобок
+print(re.search(r'\\(test\\)', '(test)'))  # Match: '(test)'
+
+# Поиск обратного слэша
+print(re.search(r'\\\\', 'path\\\\to\\\\file'))  # Match: '\\'
+\`\`\`
+
+**Функция re.escape()** автоматически экранирует все специальные символы:
+\`\`\`python
+pattern = re.escape('file.txt')  # 'file\\.txt'
+print(re.search(pattern, 'file.txt'))  # Match
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Альтернатива (OR)
+
+Оператор \`|\` позволяет выбрать одну из нескольких альтернатив:
+
+\`\`\`python
+import re
+
+# Поиск одного из слов
+print(re.findall(r'cat|dog', "I have a cat and a dog"))  # ['cat', 'dog']
+
+# Альтернатива в группе
+print(re.findall(r'colou?r|colour', "color and colour"))  # ['color', 'colour']
+
+# Альтернатива с группами
+print(re.findall(r'(?:Mon|Tue|Wed)', "Mon Tue Thu"))  # ['Mon', 'Tue']
+\`\`\`
+
+**Приоритет:** Альтернатива имеет низкий приоритет, поэтому используйте скобки для группировки:
+\`\`\`python
+# Неправильно: ищет 'gray' или 'grey'
+print(re.findall(r'gray|gray', "gray grey"))  # ['gray', 'grey']
+
+# Правильно с группами
+print(re.findall(r'gr(a|e)y', "gray grey"))  # ['gray', 'grey']
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Unicode и Unicode свойства
+
+С флагом \`re.UNICODE\` (или \`re.U\`) классы \`\\w\`, \`\\W\`, \`\\d\`, \`\\D\`, \`\\s\`, \`\\S\` работают с Unicode символами:
+
+\`\`\`python
+import re
+
+# Без UNICODE (только ASCII)
+print(re.findall(r'\\w+', 'Привет мир'))  # []
+
+# С UNICODE (Unicode)
+print(re.findall(r'\\w+', 'Привет мир', re.UNICODE))  # ['Привет', 'мир']
+\`\`\`
+
+**Unicode свойства** (с флагом \`re.UNICODE\`):
+- \`\\p{L}\` — любая буква
+- \`\\p{N}\` — любая цифра
+- \`\\p{P}\` — знак пунктуации
+- \`\\p{S}\` — символ
+- \`\\p{Z}\` — пробел
+
+\`\`\`python
+# Любая буква (включая Unicode)
+print(re.findall(r'\\p{L}+', 'Привет мир', re.UNICODE))  # ['Привет', 'мир']
+
+# Любая цифра (включая Unicode)
+print(re.findall(r'\\p{N}+', 'Цена: １２３', re.UNICODE))  # ['１２３']
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Комментарии в регулярных выражениях
+
+С флагом \`re.VERBOSE\` (или \`re.X\`) можно добавлять комментарии и форматировать регулярные выражения:
+
+\`\`\`python
+import re
+
+pattern = r"""
+    ^                   # Начало строки
+    (?P<year>\\d{4})    # Год (4 цифры)
+    -                   # Разделитель
+    (?P<month>\\d{2})   # Месяц (2 цифры)
+    -                   # Разделитель
+    (?P<day>\\d{2})     # День (2 цифры)
+    $                   # Конец строки
+"""
+
+match = re.match(pattern, "2026-02-14", re.VERBOSE)
+print(match.group('year'))  # '2026'
+\`\`\`
+
+**Важно:** В режиме VERBOSE пробелы игнорируются, поэтому для пробела используйте \`\\s\` или \`[ ]\`.`,
+      },
+      {
+        kind: "text",
+        md: `## Условные выражения
+
+Условные выражения позволяют применять разные паттерны в зависимости от условия:
+
+**Синтаксис:** \`(?(\d)yes_pattern|no_pattern)\`
+
+\`\`\`python
+import re
+
+# Если есть цифра, ищем 4 цифры, иначе 2 цифры
+pattern = r'(?(\\d)\\d{4}|\\d{2})'
+print(re.findall(pattern, "1234"))  # ['1234']
+print(re.findall(pattern, "12"))    # ['12']
+\`\`\`
+
+**Условие по группе:** \`(?(\(group\))yes_pattern|no_pattern)\`
+
+\`\`\`python
+# Если есть открывающая скобка, ищем закрывающую
+pattern = r'(\\()?\\d+(?(1)\\))'
+print(re.findall(pattern, "(123)"))  # ['(123)']
+print(re.findall(pattern, "123"))    # ['123']
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Рекурсивные регулярные выражения
+
+Python поддерживает рекурсивные регулярные выражения с помощью \`(?R)\` или \`(?P>name)\`:
+
+\`\`\`python
+import re
+
+# Поиск сбалансированных скобок
+pattern = r'\\((?:[^()]*|(?R))*\\)'
+text = "text (nested (brackets) here) end"
+print(re.findall(pattern, text))  # ['(nested (brackets) here)']
+\`\`\`
+
+**Важно:** Рекурсивные регулярные выражения могут быть медленными и сложными для понимания. Используйте их осторожно.`,
+      },
+      {
+        kind: "text",
+        md: `## Границы слов и не-слов
+
+**\\b** — граница слова (между \\w и \\W или началом/концом строки):
+\`\`\`python
+import re
+
+# Поиск слова "cat" как целое слово
+print(re.findall(r'\\bcat\\b', "cat cats catfish"))  # ['cat']
+
+# Поиск слов, начинающихся с "cat"
+print(re.findall(r'\\bcat', "cat cats catfish"))  # ['cat', 'cat', 'cat']
+\`\`\`
+
+**\\B** — не граница слова:
+\`\`\`python
+# Поиск "cat" не как целое слово
+print(re.findall(r'\\Bcat', "cat cats catfish"))  # ['cat', 'cat']
+\`\`\`
+
+**Важно:** \\b и \\B зависят от определения "слова" (\\w), которое включает буквы, цифры и подчёркивание.`,
+      },
+      {
+        kind: "text",
+        md: `## Начало и конец строки vs текста
+
+**^ и $** — начало и конец строки (с флагом MULTILINE) или текста (без флага):
+
+\`\`\`python
+import re
+
+text = "first line\\nsecond line\\nthird line"
+
+# Без MULTILINE: ^ и $ для всего текста
+print(re.findall(r'^\\w+', text))  # ['first']
+print(re.findall(r'\\w+$', text))  # ['line']
+
+# С MULTILINE: ^ и $ для каждой строки
+print(re.findall(r'^\\w+', text, re.MULTILINE))  # ['first', 'second', 'third']
+print(re.findall(r'\\w+$', text, re.MULTILINE))  # ['line', 'line', 'line']
+\`\`\`
+
+**\\A и \\Z** — всегда начало и конец текста (игнорируют MULTILINE):
+\`\`\`python
+print(re.findall(r'\\A\\w+', text, re.MULTILINE))  # ['first']
+print(re.findall(r'\\w+\\Z', text, re.MULTILINE))  # ['line']
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Модификаторы режима
+
+Модификаторы изменяют поведение регулярного выражения:
+
+**inline модификаторы** (внутри паттерна):
+- \`(?i)\` — игнорировать регистр
+- \`(?m)\` — многострочный режим
+- \`(?s)\` — точка включает \\n
+- \`(?x)\` — разрешает комментарии
+
+\`\`\`python
+import re
+
+# Inline модификаторы
+print(re.findall(r'(?i)hello', "HELLO hello"))  # ['HELLO', 'hello']
+print(re.findall(r'(?m)^\\w+', "line1\\nline2"))  # ['line1', 'line2']
+\`\`\`
+
+**Локальные модификаторы** (для части паттерна):
+\`\`\`python
+# Только первая часть без учёта регистра
+print(re.findall(r'(?i:hello) world', "HELLO world"))  # ['HELLO world']
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Оптимизация производительности
+
+Регулярные выражения могут быть медленными. Советы по оптимизации:
+
+1. **Используйте специфичные классы** вместо \`.\`:
+   - \`\\d\` вместо \`.\` для цифр
+   - \`\\w\` вместо \`.\` для слов
+
+2. **Избегайте вложенных квантификаторов**:
+   - Плохо: \`(a+)+\`
+   - Хорошо: \`a+\`
+
+3. **Используйте якоря** для ограничения поиска:
+   - \`^pattern\` — поиск только в начале
+   - \`pattern$\` — поиск только в конце
+
+4. **Компилируйте паттерны** для повторного использования:
+\`\`\`python
+pattern = re.compile(r'\\d+')
+result1 = pattern.findall(text1)
+result2 = pattern.findall(text2)
+\`\`\`
+
+5. **Используйте незахватывающие группы** \`(?:...)\` когда не нужно извлекать группу.`,
+      },
+      {
+        kind: "text",
+        md: `## Отладка регулярных выражений
+
+**Инструменты для отладки:**
+
+1. **re.DEBUG** — показывает внутреннее представление:
+\`\`\`python
+import re
+re.compile(r'\\d+', re.DEBUG)
+\`\`\`
+
+2. **Онлайн-инструменты:**
+   - regex101.com — тестирование и объяснение
+   - regexr.com — интерактивный редактор
+   - regex101.com — библиотека паттернов
+
+3. **Пошаговая отладка:**
+\`\`\`python
+import re
+
+pattern = r'(\\d+)-(\\d+)'
+text = "2026-02-14"
+
+for match in re.finditer(pattern, text):
+    print(f"Match: {match.group()}")
+    print(f"Group 1: {match.group(1)}")
+    print(f"Group 2: {match.group(2)}")
+    print(f"Span: {match.span()}")
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Распространённые ошибки
+
+1. **Забытое экранирование:**
+   - Плохо: \`file.txt\` (точка — любой символ)
+   - Хорошо: \`file\\.txt\`
+
+2. **Жадные квантификаторы:**
+   - Плохо: \`<.+>\` (захватит всё до последнего >)
+   - Хорошо: \`<.+?>\` (ленивый квантификатор)
+
+3. **Вложенные квантификаторы:**
+   - Плохо: \`(a+)+\` (катастрофический возврат)
+   - Хорошо: \`a+\`
+
+4. **Неправильное использование ^ и $:**
+   - Забудьте про MULTILINE, если нужно искать в каждой строке
+
+5. **Захватывающие группы вместо незахватывающих:**
+   - Используйте \`(?:...)\` когда не нужно извлекать группу`,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения в других языках
+
+Синтаксис регулярных выражений похож в разных языках, но есть различия:
+
+**JavaScript:**
+\`\`\`javascript
+const pattern = /\\d+/g;
+const result = "text".match(pattern);
+\`\`\`
+
+**Perl:**
+\`\`\`perl
+if ($text =~ /\\d+/) {
+    print "Found number";
+}
+\`\`\`
+
+**Java:**
+\`\`\`java
+Pattern pattern = Pattern.compile("\\d+");
+Matcher matcher = pattern.matcher(text);
+\`\`\`
+
+**Go:**
+\`\`\`go
+re := regexp.MustCompile("\\d+")
+matches := re.FindAllString(text, -1)
+\`\`\`
+
+**Основные различия:**
+- Поддержка Unicode
+- Lookbehind (не во всех языках)
+- Рекурсивные регулярные выражения
+- Модификаторы режима`,
+      },
+      {
+        kind: "text",
+        md: `## Символьные классы POSIX
+
+POSIX символьные классы (с флагом \`re.UNICODE\`):
+
+- \`[:alpha:]\` — буквы
+- \`[:digit:]\` — цифры
+- \`[:alnum:]\` — буквы и цифры
+- \`[:space:]\` — пробельные символы
+- \`[:punct:]\` — пунктуация
+- \`[:upper:]\` — заглавные буквы
+- \`[:lower:]\` — строчные буквы
+
+\`\`\`python
+import re
+
+# Использование POSIX классов
+print(re.findall(r'[[:alpha:]]+', 'Привет мир', re.UNICODE))  # ['Привет', 'мир']
+print(re.findall(r'[[:digit:]]+', 'Цена: 123'))  # ['123']
+\`\`\`
+
+**Важно:** POSIX классы работают только внутри квадратных скобок \`[[:alpha:]]\`.`,
+      },
+      {
+        kind: "text",
+        md: `## Расширенные возможности групп
+
+**Именованные группы с повторениями:**
+\`\`\`python
+import re
+
+# Повторяющаяся именованная группа
+pattern = r'(?P<word>\\w+)\\s+(?P=word)'
+text = "test test"
+match = re.search(pattern, text)
+print(match.group('word'))  # 'test'
+\`\`\`
+
+**Атомарные группы** (не возвращаются назад):
+\`\`\`python
+# Атомарная группа (не поддерживается в Python напрямую)
+# Используйте атомарные группы для оптимизации
+\`\`\`
+
+**Обратные ссылки в замене:**
+\`\`\`python
+# Использование \\1, \\2 в замене
+text = "2026-02-14"
+result = re.sub(r'(\\d{4})-(\\d{2})-(\\d{2})', r'\\3.\\2.\\1', text)
+print(result)  # '14.02.2026'
+
+# Именованные группы в замене
+result = re.sub(r'(?P<year>\\d{4})-(?P<month>\\d{2})-(?P<day>\\d{2})', 
+                r'\\g<day>.\\g<month>.\\g<year>', text)
+print(result)  # '14.02.2026'
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Продвинутые lookaround
+
+**Вложенные lookaround:**
+\`\`\`python
+import re
+
+# Lookahead внутри lookahead
+pattern = r'(?=(\\d+)(?=\\D|$))'
+text = "123 456 789"
+print(re.findall(pattern, text))  # ['123', '456', '789']
+\`\`\`
+
+**Lookbehind с переменной длиной** (Python 3.7+):
+\`\`\`python
+# Lookbehind с переменной длиной
+pattern = r'(?<=\\b\\w{3,5}\\b)\\s+\\w+'
+text = "cat dog bird"
+print(re.findall(pattern, text))  # [' dog', ' bird']
+\`\`\`
+
+**Комбинация lookahead и lookbehind:**
+\`\`\`python
+# Слово между цифрами
+pattern = r'(?<=\\d)\\s+\\w+\\s+(?=\\d)'
+text = "123 cat 456"
+print(re.findall(pattern, text))  # [' cat ']
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Оптимизация производительности (детально)
+
+**1. Избегайте катастрофического возврата:**
+\`\`\`python
+# Плохо: (a+)+b на строке "aaa...a" без 'b'
+# Хорошо: a+b или a*b
+
+# Плохо: (a|a)+ 
+# Хорошо: a+
+\`\`\`
+
+**2. Используйте атомарные группы** (через possessive квантификаторы):
+\`\`\`python
+# Python не поддерживает атомарные группы напрямую
+# Используйте possessive квантификаторы (Python 3.11+):
+# a++ вместо a+ (не возвращается назад)
+\`\`\`
+
+**3. Оптимизация якорями:**
+\`\`\`python
+# Плохо: поиск во всём тексте
+pattern = r'\\d+'
+
+# Хорошо: ограничение поиска
+pattern = r'^\\d+$'  # только если вся строка - число
+\`\`\`
+
+**4. Компиляция паттернов:**
+\`\`\`python
+import re
+
+# Компилируйте для повторного использования
+pattern = re.compile(r'\\d+', re.IGNORECASE)
+result1 = pattern.findall(text1)
+result2 = pattern.findall(text2)
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и безопасность
+
+**Важные моменты безопасности:**
+
+1. **ReDoS (Regular Expression Denial of Service):**
+   - Злоумышленники могут использовать сложные регулярные выражения для DoS-атак
+   - Всегда тестируйте регулярные выражения на длинных строках
+   - Избегайте вложенных квантификаторов
+
+2. **Валидация пользовательского ввода:**
+   - Всегда используйте якоря \`^\` и \`$\` для валидации
+   - Проверяйте всю строку, а не часть
+
+3. **Экранирование пользовательских данных:**
+\`\`\`python
+import re
+
+# Экранирование пользовательского ввода
+user_input = "file.txt"
+safe_pattern = re.escape(user_input)  # 'file\\.txt'
+\`\`\`
+
+4. **Ограничение длины ввода:**
+\`\`\`python
+# Ограничение длины входных данных
+if len(user_input) > 1000:
+    raise ValueError("Input too long")
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения в реальных проектах
+
+**Типичные задачи:**
+
+1. **Валидация форм:**
+\`\`\`python
+def validate_email(email):
+    pattern = r'^[\\w\\.-]+@[\\w\\.-]+\\.\\w+$'
+    return bool(re.match(pattern, email))
+
+def validate_phone(phone):
+    pattern = r'^\\+?\\d{1,3}[-.\\s]?\\(?\\d{3}\\)?[-.\\s]?\\d{3}[-.\\s]?\\d{4}$'
+    return bool(re.match(pattern, phone))
+\`\`\`
+
+2. **Парсинг логов:**
+\`\`\`python
+log_pattern = r'(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}) (\\w+) (.+)'
+for match in re.finditer(log_pattern, log_text):
+    timestamp, level, message = match.groups()
+\`\`\`
+
+3. **Извлечение данных:**
+\`\`\`python
+# Извлечение всех URL из текста
+url_pattern = r'https?://[^\\s<>\"]+|www\\.[^\\s<>\"]+'
+urls = re.findall(url_pattern, text)
+\`\`\`
+
+4. **Очистка данных:**
+\`\`\`python
+# Удаление лишних пробелов
+clean_text = re.sub(r'\\s+', ' ', text).strip()
+
+# Удаление HTML тегов
+clean_html = re.sub(r'<[^>]+>', '', html_text)
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и тестирование
+
+**Тестирование регулярных выражений:**
+
+1. **Unit тесты:**
+\`\`\`python
+import re
+import unittest
+
+class TestRegex(unittest.TestCase):
+    def test_email_validation(self):
+        pattern = r'^[\\w\\.-]+@[\\w\\.-]+\\.\\w+$'
+        self.assertTrue(re.match(pattern, "test@example.com"))
+        self.assertFalse(re.match(pattern, "invalid-email"))
+    
+    def test_phone_validation(self):
+        pattern = r'^\\+?\\d{1,3}[-.\\s]?\\(?\\d{3}\\)?[-.\\s]?\\d{3}[-.\\s]?\\d{4}$'
+        self.assertTrue(re.match(pattern, "+79991234567"))
+        self.assertFalse(re.match(pattern, "invalid"))
+
+if __name__ == '__main__':
+    unittest.main()
+\`\`\`
+
+2. **Тестовые данные:**
+\`\`\`python
+# Тестовые данные для email
+valid_emails = [
+    "test@example.com",
+    "user.name@domain.co.uk",
+    "user+tag@example.org"
+]
+
+invalid_emails = [
+    "invalid-email",
+    "@example.com",
+    "user@",
+    "user@.com"
+]
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и документация
+
+**Документирование регулярных выражений:**
+
+1. **Комментарии в коде:**
+\`\`\`python
+# Паттерн для валидации email
+# ^[\\w\\.-]+@[\\w\\.-]+\\.\\w+$
+# ^ - начало строки
+# [\\w\\.-]+ - один или более символов (буквы, цифры, точка, дефис)
+# @ - символ @
+# [\\w\\.-]+ - доменное имя
+# \\. - точка
+# \\w+ - доменная зона
+# $ - конец строки
+\`\`\`
+
+2. **Docstring:**
+\`\`\`python
+def validate_email(email: str) -> bool:
+    """
+    Валидирует email адрес.
+    
+    Args:
+        email: Email адрес для проверки
+    
+    Returns:
+        bool: True если email валидный, иначе False
+    
+    Pattern:
+        ^[\\w\\.-]+@[\\w\\.-]+\\.\\w+$
+        - ^ - начало строки
+        - [\\w\\.-]+ - локальная часть
+        - @ - символ @
+        - [\\w\\.-]+ - доменное имя
+        - \\. - точка
+        - \\w+ - доменная зона
+        - $ - конец строки
+    """
+    pattern = r'^[\\w\\.-]+@[\\w\\.-]+\\.\\w+$'
+    return bool(re.match(pattern, email))
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и производительность (детально)
+
+**Профилирование регулярных выражений:**
+
+\`\`\`python
+import re
+import time
+
+# Профилирование паттерна
+def profile_pattern(pattern, text, iterations=1000):
+    compiled = re.compile(pattern)
+    
+    start = time.time()
+    for _ in range(iterations):
+        compiled.findall(text)
+    end = time.time()
+    
+    print(f"Pattern: {pattern}")
+    print(f"Time: {end - start:.4f} сек")
+    print(f"Iterations: {iterations}")
+    print(f"Average: {(end - start) / iterations * 1000:.4f} мс")
+\`\`\`
+
+**Оптимизация:**
+
+1. **Избегайте катастрофического возврата:**
+\`\`\`python
+# Плохо: (a+)+b на строке "aaa...a" без 'b'
+# Хорошо: a+b или a*b
+
+# Плохо: (a|a)+ 
+# Хорошо: a+
+\`\`\`
+
+2. **Используйте специфичные классы:**
+\`\`\`python
+# Плохо: .+ для цифр
+# Хорошо: \\d+
+
+# Плохо: .+ для слов
+# Хорошо: \\w+
+\`\`\`
+
+3. **Компилируйте паттерны:**
+\`\`\`python
+# Компилируйте для повторного использования
+pattern = re.compile(r'\\d+', re.IGNORECASE)
+result1 = pattern.findall(text1)
+result2 = pattern.findall(text2)
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и отладка (детально)
+
+**Инструменты отладки:**
+
+1. **re.DEBUG:**
+\`\`\`python
+import re
+
+# Показывает внутреннее представление
+re.compile(r'\\d+', re.DEBUG)
+\`\`\`
+
+2. **Пошаговая отладка:**
+\`\`\`python
+import re
+
+pattern = r'(\\d+)-(\\d+)'
+text = "2026-02-14"
+
+for match in re.finditer(pattern, text):
+    print(f"Match: {match.group()}")
+    print(f"Group 1: {match.group(1)}")
+    print(f"Group 2: {match.group(2)}")
+    print(f"Span: {match.span()}")
+    print(f"Start: {match.start()}")
+    print(f"End: {match.end()}")
+\`\`\`
+
+3. **Онлайн-инструменты:**
+   - regex101.com — тестирование и объяснение
+   - regexr.com — интерактивный редактор
+   - regex101.com — библиотека паттернов`,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и безопасность (детально)
+
+**ReDoS (Regular Expression Denial of Service):**
+
+1. **Катастрофический возврат:**
+\`\`\`python
+# Плохо: (a+)+b на строке "aaa...a" без 'b'
+# Время выполнения растёт экспоненциально
+
+# Хорошо: a+b или a*b
+\`\`\`
+
+2. **Вложенные квантификаторы:**
+\`\`\`python
+# Плохо: (a+)+ 
+# Хорошо: a+
+
+# Плохо: (a|a)+
+# Хорошо: a+
+\`\`\`
+
+3. **Тестирование на ReDoS:**
+\`\`\`python
+import re
+import time
+
+def test_redos(pattern, test_string, timeout=1.0):
+    """Тестирует паттерн на ReDoS"""
+    try:
+        start = time.time()
+        re.findall(pattern, test_string)
+        elapsed = time.time() - start
+        return elapsed < timeout
+    except Exception:
+        return False
+\`\`\`
+
+**Защита от ReDoS:**
+
+1. **Ограничение длины ввода:**
+\`\`\`python
+if len(user_input) > 1000:
+    raise ValueError("Input too long")
+\`\`\`
+
+2. **Использование атомарных групп** (через possessive квантификаторы):
+\`\`\`python
+# Python 3.11+ поддерживает possessive квантификаторы
+# a++ вместо a+ (не возвращается назад)
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и тестирование (продолжение)
+
+**Тестовые сценарии:**
+
+\`\`\`python
+import re
+import unittest
+
+class TestEmailValidation(unittest.TestCase):
+    def setUp(self):
+        self.pattern = r'^[\\w\\.-]+@[\\w\\.-]+\\.\\w+$'
+    
+    def test_valid_emails(self):
+        valid_emails = [
+            "test@example.com",
+            "user.name@domain.co.uk",
+            "user+tag@example.org"
+        ]
+        for email in valid_emails:
+            self.assertTrue(re.match(self.pattern, email))
+    
+    def test_invalid_emails(self):
+        invalid_emails = [
+            "invalid-email",
+            "@example.com",
+            "user@",
+            "user@.com"
+        ]
+        for email in invalid_emails:
+            self.assertFalse(re.match(self.pattern, email))
+
+if __name__ == '__main__':
+    unittest.main()
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и документация (продолжение)
+
+**Документирование сложных паттернов:**
+
+\`\`\`python
+def validate_complex_pattern(text: str) -> bool:
+    """
+    Валидирует сложный паттерн.
+    
+    Args:
+        text: Текст для проверки
+    
+    Returns:
+        bool: True если текст соответствует паттерну
+    
+    Pattern breakdown:
+        ^                    # Начало строки
+        (?=.*[A-Za-z])       # Хотя бы одна буква
+        (?=.*\\d)            # Хотя бы одна цифра
+        (?=.*[@$!%*#?&])     # Хотя бы один спецсимвол
+        [A-Za-z\\d@$!%*#?&]{8,}  # Минимум 8 символов
+        $                    # Конец строки
+    """
+    pattern = r'^(?=.*[A-Za-z])(?=.*\\d)(?=.*[@$!%*#?&])[A-Za-z\\d@$!%*#?&]{8,}$'
+    return bool(re.match(pattern, text))
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и производительность (продолжение)
+
+**Профилирование и оптимизация:**
+
+\`\`\`python
+import re
+import time
+import cProfile
+
+def profile_regex(pattern, text, iterations=1000):
+    """Профилирует регулярное выражение"""
+    compiled = re.compile(pattern)
+    
+    # Профилирование
+    profiler = cProfile.Profile()
+    profiler.enable()
+    
+    for _ in range(iterations):
+        compiled.findall(text)
+    
+    profiler.disable()
+    profiler.print_stats()
+\`\`\`
+
+**Оптимизация:**
+
+1. **Избегайте катастрофического возврата:**
+\`\`\`python
+# Плохо: (a+)+b на строке "aaa...a" без 'b'
+# Хорошо: a+b или a*b
+\`\`\`
+
+2. **Используйте специфичные классы:**
+\`\`\`python
+# Плохо: .+ для цифр
+# Хорошо: \\d+
+\`\`\`
+
+3. **Компилируйте паттерны:**
+\`\`\`python
+# Компилируйте для повторного использования
+pattern = re.compile(r'\\d+', re.IGNORECASE)
+result1 = pattern.findall(text1)
+result2 = pattern.findall(text2)
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и отладка (продолжение)
+
+**Инструменты отладки:**
+
+1. **re.DEBUG:**
+\`\`\`python
+import re
+
+# Показывает внутреннее представление
+re.compile(r'\\d+', re.DEBUG)
+\`\`\`
+
+2. **Пошаговая отладка:**
+\`\`\`python
+import re
+
+pattern = r'(\\d+)-(\\d+)'
+text = "2026-02-14"
+
+for match in re.finditer(pattern, text):
+    print(f"Match: {match.group()}")
+    print(f"Group 1: {match.group(1)}")
+    print(f"Group 2: {match.group(2)}")
+    print(f"Span: {match.span()}")
+\`\`\`
+
+3. **Онлайн-инструменты:**
+   - regex101.com — тестирование и объяснение
+   - regexr.com — интерактивный редактор
+   - regex101.com — библиотека паттернов`,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и безопасность (продолжение)
+
+**ReDoS (Regular Expression Denial of Service):**
+
+1. **Катастрофический возврат:**
+\`\`\`python
+# Плохо: (a+)+b на строке "aaa...a" без 'b'
+# Время выполнения растёт экспоненциально
+
+# Хорошо: a+b или a*b
+\`\`\`
+
+2. **Вложенные квантификаторы:**
+\`\`\`python
+# Плохо: (a|a)+ 
+# Хорошо: a+
+\`\`\`
+
+3. **Тестирование на ReDoS:**
+\`\`\`python
+import re
+import time
+
+def test_redos(pattern, test_string, timeout=1.0):
+    """Тестирует паттерн на ReDoS"""
+    try:
+        start = time.time()
+        re.findall(pattern, test_string)
+        elapsed = time.time() - start
+        return elapsed < timeout
+    except Exception:
+        return False
+\`\`\`
+
+**Защита от ReDoS:**
+
+1. **Ограничение длины ввода:**
+\`\`\`python
+if len(user_input) > 1000:
+    raise ValueError("Input too long")
+\`\`\`
+
+2. **Использование атомарных групп** (через possessive квантификаторы):
+\`\`\`python
+# Python 3.11+ поддерживает possessive квантификаторы
+# a++ вместо a+ (не возвращается назад)
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Якоря (anchors)
+
+Якоря не захватывают символы, а указывают позицию:
+
+- \`^\` — начало строки
+- \`$\` — конец строки
+- \`\\b\` — граница слова
+- \`\\B\` — не граница слова
+- \`\\A\` — начало текста
+- \`\\Z\` — конец текста`,
+      },
+      {
+        kind: "code",
+        title: "Примеры якорей",
+        code: `import re
+
+# Начало и конец строки
+print(re.search(r'^\\d+', "123abc"))  # Match: "123"
+print(re.search(r'\\d+$', "abc123"))  # Match: "123"
+
+# Граница слова
+print(re.findall(r'\\bcat\\b', "cat cats catfish"))  # ['cat']
+print(re.findall(r'\\Bcat', "cat cats catfish"))    # ['cat', 'cat']
+
+# Начало и конец текста
+text = "first line\\nsecond line"
+print(re.search(r'^first', text, re.MULTILINE))  # Match
+print(re.search(r'line$', text, re.MULTILINE))   # Match`,
+      },
+      {
+        kind: "text",
+        md: `## Lookahead и Lookbehind
+
+**Lookahead (опережающая проверка):**
+- \`(?=...)\` — позитивный lookahead (должно следовать)
+- \`(?!=...)\` — негативный lookahead (не должно следовать)
+
+**Lookbehind (ретроспективная проверка):**
+- \`(?<=...)\` — позитивный lookbehind (должно предшествовать)
+- \`(?<!...)\` — негативный lookbehind (не должно предшествовать)`,
+      },
+      {
+        kind: "code",
+        title: "Lookahead и Lookbehind",
+        code: `import re
+
+text = "100 руб, 200 руб, 300 eur"
+
+# Позитивный lookahead: число перед "руб"
+print(re.findall(r'\\d+(?= руб)', text))  # ['100', '200']
+
+# Негативный lookahead: число не перед "eur"
+print(re.findall(r'\\d+(?! eur)', text))  # ['100', '200']
+
+# Позитивный lookbehind: число после "цена: "
+text2 = "цена: 100, скидка: 20"
+print(re.findall(r'(?<=цена: )\\d+', text2))  # ['100']
+
+# Негативный lookbehind: число не после "скидка: "
+print(re.findall(r'(?<!скидка: )\\d+', text2))  # ['100']`,
+      },
+      {
+        kind: "text",
+        md: `## Флаги (flags)
+
+Флаги изменяют поведение регулярного выражения:
+
+- \`re.IGNORECASE\` или \`re.I\` — игнорировать регистр
+- \`re.MULTILINE\` или \`re.M\` — многострочный режим
+- \`re.DOTALL\` или \`re.S\` — точка включает \\n
+- \`re.VERBOSE\` или \`re.X\` — разрешает комментарии и пробелы
+- \`re.UNICODE\` или \`re.U\` — Unicode-совместимость`,
+      },
+      {
+        kind: "code",
+        title: "Примеры флагов",
+        code: `import re
+
+text = "Hello\\nWorld"
+
+# Игнорировать регистр
+print(re.search(r'hello', text, re.IGNORECASE))  # Match
+
+# Многострочный режим
+print(re.search(r'^World', text, re.MULTILINE))  # Match
+
+# Точка включает \\n
+print(re.search(r'Hello.World', text, re.DOTALL))  # Match
+
+# Verbose режим с комментариями
+pattern = r"""
+    \\d{4}  # год
+    -       # дефис
+    \\d{2}  # месяц
+    -       # дефис
+    \\d{2}  # день
+"""
+print(re.search(pattern, "2026-02-14", re.VERBOSE))  # Match`,
+      },
+      {
+        kind: "text",
+        md: `## Экранирование специальных символов
+
+Если вам нужно найти literal символы, которые имеют специальное значение в regex, их нужно экранировать обратным слэшем:
+
+**Специальные символы:** \`.\`, \`^\`, \`$\`, \`*\`, \`+\`, \`?\`, \`(\`, \`)\`, \`[\`, \`]\`, \`{\`, \`}\`, \`|\`, \`\\\`
+
+\`\`\`python
+import re
+
+# Поиск точки
+print(re.search(r'\\.', 'a.b'))  # Match: '.'
+
+# Поиск скобок
+print(re.search(r'\\(test\\)', '(test)'))  # Match: '(test)'
+
+# Поиск обратного слэша
+print(re.search(r'\\\\', 'path\\\\to\\\\file'))  # Match: '\\'
+\`\`\`
+
+**Функция re.escape()** автоматически экранирует все специальные символы:
+\`\`\`python
+pattern = re.escape('file.txt')  # 'file\\.txt'
+print(re.search(pattern, 'file.txt'))  # Match
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Альтернатива (OR)
+
+Оператор \`|\` позволяет выбрать одну из нескольких альтернатив:
+
+\`\`\`python
+import re
+
+# Поиск одного из слов
+print(re.findall(r'cat|dog', "I have a cat and a dog"))  # ['cat', 'dog']
+
+# Альтернатива в группе
+print(re.findall(r'colou?r|colour', "color and colour"))  # ['color', 'colour']
+
+# Альтернатива с группами
+print(re.findall(r'(?:Mon|Tue|Wed)', "Mon Tue Thu"))  # ['Mon', 'Tue']
+\`\`\`
+
+**Приоритет:** Альтернатива имеет низкий приоритет, поэтому используйте скобки для группировки:
+\`\`\`python
+# Неправильно: ищет 'gray' или 'grey'
+print(re.findall(r'gray|gray', "gray grey"))  # ['gray', 'grey']
+
+# Правильно с группами
+print(re.findall(r'gr(a|e)y', "gray grey"))  # ['gray', 'grey']
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Unicode и Unicode свойства
+
+С флагом \`re.UNICODE\` (или \`re.U\`) классы \`\\w\`, \`\\W\`, \`\\d\`, \`\\D\`, \`\\s\`, \`\\S\` работают с Unicode символами:
+
+\`\`\`python
+import re
+
+# Без UNICODE (только ASCII)
+print(re.findall(r'\\w+', 'Привет мир'))  # []
+
+# С UNICODE (Unicode)
+print(re.findall(r'\\w+', 'Привет мир', re.UNICODE))  # ['Привет', 'мир']
+\`\`\`
+
+**Unicode свойства** (с флагом \`re.UNICODE\`):
+- \`\\p{L}\` — любая буква
+- \`\\p{N}\` — любая цифра
+- \`\\p{P}\` — знак пунктуации
+- \`\\p{S}\` — символ
+- \`\\p{Z}\` — пробел
+
+\`\`\`python
+# Любая буква (включая Unicode)
+print(re.findall(r'\\p{L}+', 'Привет мир', re.UNICODE))  # ['Привет', 'мир']
+
+# Любая цифра (включая Unicode)
+print(re.findall(r'\\p{N}+', 'Цена: １２３', re.UNICODE))  # ['１２３']
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Комментарии в регулярных выражениях
+
+С флагом \`re.VERBOSE\` (или \`re.X\`) можно добавлять комментарии и форматировать регулярные выражения:
+
+\`\`\`python
+import re
+
+pattern = r"""
+    ^                   # Начало строки
+    (?P<year>\\d{4})    # Год (4 цифры)
+    -                   # Разделитель
+    (?P<month>\\d{2})   # Месяц (2 цифры)
+    -                   # Разделитель
+    (?P<day>\\d{2})     # День (2 цифры)
+    $                   # Конец строки
+"""
+
+match = re.match(pattern, "2026-02-14", re.VERBOSE)
+print(match.group('year'))  # '2026'
+\`\`\`
+
+**Важно:** В режиме VERBOSE пробелы игнорируются, поэтому для пробела используйте \`\\s\` или \`[ ]\`.`,
+      },
+      {
+        kind: "text",
+        md: `## Условные выражения
+
+Условные выражения позволяют применять разные паттерны в зависимости от условия:
+
+**Синтаксис:** \`(?(\d)yes_pattern|no_pattern)\`
+
+\`\`\`python
+import re
+
+# Если есть цифра, ищем 4 цифры, иначе 2 цифры
+pattern = r'(?(\\d)\\d{4}|\\d{2})'
+print(re.findall(pattern, "1234"))  # ['1234']
+print(re.findall(pattern, "12"))    # ['12']
+\`\`\`
+
+**Условие по группе:** \`(?(\(group\))yes_pattern|no_pattern)\`
+
+\`\`\`python
+# Если есть открывающая скобка, ищем закрывающую
+pattern = r'(\\()?\\d+(?(1)\\))'
+print(re.findall(pattern, "(123)"))  # ['(123)']
+print(re.findall(pattern, "123"))    # ['123']
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Рекурсивные регулярные выражения
+
+Python поддерживает рекурсивные регулярные выражения с помощью \`(?R)\` или \`(?P>name)\`:
+
+\`\`\`python
+import re
+
+# Поиск сбалансированных скобок
+pattern = r'\\((?:[^()]*|(?R))*\\)'
+text = "text (nested (brackets) here) end"
+print(re.findall(pattern, text))  # ['(nested (brackets) here)']
+\`\`\`
+
+**Важно:** Рекурсивные регулярные выражения могут быть медленными и сложными для понимания. Используйте их осторожно.`,
+      },
+      {
+        kind: "text",
+        md: `## Границы слов и не-слов
+
+**\\b** — граница слова (между \\w и \\W или началом/концом строки):
+\`\`\`python
+import re
+
+# Поиск слова "cat" как целое слово
+print(re.findall(r'\\bcat\\b', "cat cats catfish"))  # ['cat']
+
+# Поиск слов, начинающихся с "cat"
+print(re.findall(r'\\bcat', "cat cats catfish"))  # ['cat', 'cat', 'cat']
+\`\`\`
+
+**\\B** — не граница слова:
+\`\`\`python
+# Поиск "cat" не как целое слово
+print(re.findall(r'\\Bcat', "cat cats catfish"))  # ['cat', 'cat']
+\`\`\`
+
+**Важно:** \\b и \\B зависят от определения "слова" (\\w), которое включает буквы, цифры и подчёркивание.`,
+      },
+      {
+        kind: "text",
+        md: `## Начало и конец строки vs текста
+
+**^ и $** — начало и конец строки (с флагом MULTILINE) или текста (без флага):
+
+\`\`\`python
+import re
+
+text = "first line\\nsecond line\\nthird line"
+
+# Без MULTILINE: ^ и $ для всего текста
+print(re.findall(r'^\\w+', text))  # ['first']
+print(re.findall(r'\\w+$', text))  # ['line']
+
+# С MULTILINE: ^ и $ для каждой строки
+print(re.findall(r'^\\w+', text, re.MULTILINE))  # ['first', 'second', 'third']
+print(re.findall(r'\\w+$', text, re.MULTILINE))  # ['line', 'line', 'line']
+\`\`\`
+
+**\\A и \\Z** — всегда начало и конец текста (игнорируют MULTILINE):
+\`\`\`python
+print(re.findall(r'\\A\\w+', text, re.MULTILINE))  # ['first']
+print(re.findall(r'\\w+\\Z', text, re.MULTILINE))  # ['line']
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Модификаторы режима
+
+Модификаторы изменяют поведение регулярного выражения:
+
+**inline модификаторы** (внутри паттерна):
+- \`(?i)\` — игнорировать регистр
+- \`(?m)\` — многострочный режим
+- \`(?s)\` — точка включает \\n
+- \`(?x)\` — разрешает комментарии
+
+\`\`\`python
+import re
+
+# Inline модификаторы
+print(re.findall(r'(?i)hello', "HELLO hello"))  # ['HELLO', 'hello']
+print(re.findall(r'(?m)^\\w+', "line1\\nline2"))  # ['line1', 'line2']
+\`\`\`
+
+**Локальные модификаторы** (для части паттерна):
+\`\`\`python
+# Только первая часть без учёта регистра
+print(re.findall(r'(?i:hello) world', "HELLO world"))  # ['HELLO world']
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Оптимизация производительности
+
+Регулярные выражения могут быть медленными. Советы по оптимизации:
+
+1. **Используйте специфичные классы** вместо \`.\`:
+   - \`\\d\` вместо \`.\` для цифр
+   - \`\\w\` вместо \`.\` для слов
+
+2. **Избегайте вложенных квантификаторов**:
+   - Плохо: \`(a+)+\`
+   - Хорошо: \`a+\`
+
+3. **Используйте якоря** для ограничения поиска:
+   - \`^pattern\` — поиск только в начале
+   - \`pattern$\` — поиск только в конце
+
+4. **Компилируйте паттерны** для повторного использования:
+\`\`\`python
+pattern = re.compile(r'\\d+')
+result1 = pattern.findall(text1)
+result2 = pattern.findall(text2)
+\`\`\`
+
+5. **Используйте незахватывающие группы** \`(?:...)\` когда не нужно извлекать группу.`,
+      },
+      {
+        kind: "text",
+        md: `## Отладка регулярных выражений
+
+**Инструменты для отладки:**
+
+1. **re.DEBUG** — показывает внутреннее представление:
+\`\`\`python
+import re
+re.compile(r'\\d+', re.DEBUG)
+\`\`\`
+
+2. **Онлайн-инструменты:**
+   - regex101.com — тестирование и объяснение
+   - regexr.com — интерактивный редактор
+   - regex101.com — библиотека паттернов
+
+3. **Пошаговая отладка:**
+\`\`\`python
+import re
+
+pattern = r'(\\d+)-(\\d+)'
+text = "2026-02-14"
+
+for match in re.finditer(pattern, text):
+    print(f"Match: {match.group()}")
+    print(f"Group 1: {match.group(1)}")
+    print(f"Group 2: {match.group(2)}")
+    print(f"Span: {match.span()}")
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Распространённые ошибки
+
+1. **Забытое экранирование:**
+   - Плохо: \`file.txt\` (точка — любой символ)
+   - Хорошо: \`file\\.txt\`
+
+2. **Жадные квантификаторы:**
+   - Плохо: \`<.+>\` (захватит всё до последнего >)
+   - Хорошо: \`<.+?>\` (ленивый квантификатор)
+
+3. **Вложенные квантификаторы:**
+   - Плохо: \`(a+)+\` (катастрофический возврат)
+   - Хорошо: \`a+\`
+
+4. **Неправильное использование ^ и $:**
+   - Забудьте про MULTILINE, если нужно искать в каждой строке
+
+5. **Захватывающие группы вместо незахватывающих:**
+   - Используйте \`(?:...)\` когда не нужно извлекать группу`,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения в других языках
+
+Синтаксис регулярных выражений похож в разных языках, но есть различия:
+
+**JavaScript:**
+\`\`\`javascript
+const pattern = /\\d+/g;
+const result = "text".match(pattern);
+\`\`\`
+
+**Perl:**
+\`\`\`perl
+if ($text =~ /\\d+/) {
+    print "Found number";
+}
+\`\`\`
+
+**Java:**
+\`\`\`java
+Pattern pattern = Pattern.compile("\\d+");
+Matcher matcher = pattern.matcher(text);
+\`\`\`
+
+**Go:**
+\`\`\`go
+re := regexp.MustCompile("\\d+")
+matches := re.FindAllString(text, -1)
+\`\`\`
+
+**Основные различия:**
+- Поддержка Unicode
+- Lookbehind (не во всех языках)
+- Рекурсивные регулярные выражения
+- Модификаторы режима`,
+      },
+      {
+        kind: "text",
+        md: `## Символьные классы POSIX
+
+POSIX символьные классы (с флагом \`re.UNICODE\`):
+
+- \`[:alpha:]\` — буквы
+- \`[:digit:]\` — цифры
+- \`[:alnum:]\` — буквы и цифры
+- \`[:space:]\` — пробельные символы
+- \`[:punct:]\` — пунктуация
+- \`[:upper:]\` — заглавные буквы
+- \`[:lower:]\` — строчные буквы
+
+\`\`\`python
+import re
+
+# Использование POSIX классов
+print(re.findall(r'[[:alpha:]]+', 'Привет мир', re.UNICODE))  # ['Привет', 'мир']
+print(re.findall(r'[[:digit:]]+', 'Цена: 123'))  # ['123']
+\`\`\`
+
+**Важно:** POSIX классы работают только внутри квадратных скобок \`[[:alpha:]]\`.`,
+      },
+      {
+        kind: "text",
+        md: `## Расширенные возможности групп
+
+**Именованные группы с повторениями:**
+\`\`\`python
+import re
+
+# Повторяющаяся именованная группа
+pattern = r'(?P<word>\\w+)\\s+(?P=word)'
+text = "test test"
+match = re.search(pattern, text)
+print(match.group('word'))  # 'test'
+\`\`\`
+
+**Атомарные группы** (не возвращаются назад):
+\`\`\`python
+# Атомарная группа (не поддерживается в Python напрямую)
+# Используйте атомарные группы для оптимизации
+\`\`\`
+
+**Обратные ссылки в замене:**
+\`\`\`python
+# Использование \\1, \\2 в замене
+text = "2026-02-14"
+result = re.sub(r'(\\d{4})-(\\d{2})-(\\d{2})', r'\\3.\\2.\\1', text)
+print(result)  # '14.02.2026'
+
+# Именованные группы в замене
+result = re.sub(r'(?P<year>\\d{4})-(?P<month>\\d{2})-(?P<day>\\d{2})', 
+                r'\\g<day>.\\g<month>.\\g<year>', text)
+print(result)  # '14.02.2026'
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Продвинутые lookaround
+
+**Вложенные lookaround:**
+\`\`\`python
+import re
+
+# Lookahead внутри lookahead
+pattern = r'(?=(\\d+)(?=\\D|$))'
+text = "123 456 789"
+print(re.findall(pattern, text))  # ['123', '456', '789']
+\`\`\`
+
+**Lookbehind с переменной длиной** (Python 3.7+):
+\`\`\`python
+# Lookbehind с переменной длиной
+pattern = r'(?<=\\b\\w{3,5}\\b)\\s+\\w+'
+text = "cat dog bird"
+print(re.findall(pattern, text))  # [' dog', ' bird']
+\`\`\`
+
+**Комбинация lookahead и lookbehind:**
+\`\`\`python
+# Слово между цифрами
+pattern = r'(?<=\\d)\\s+\\w+\\s+(?=\\d)'
+text = "123 cat 456"
+print(re.findall(pattern, text))  # [' cat ']
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Оптимизация производительности (детально)
+
+**1. Избегайте катастрофического возврата:**
+\`\`\`python
+# Плохо: (a+)+b на строке "aaa...a" без 'b'
+# Хорошо: a+b или a*b
+
+# Плохо: (a|a)+ 
+# Хорошо: a+
+\`\`\`
+
+**2. Используйте атомарные группы** (через possessive квантификаторы):
+\`\`\`python
+# Python не поддерживает атомарные группы напрямую
+# Используйте possessive квантификаторы (Python 3.11+):
+# a++ вместо a+ (не возвращается назад)
+\`\`\`
+
+**3. Оптимизация якорями:**
+\`\`\`python
+# Плохо: поиск во всём тексте
+pattern = r'\\d+'
+
+# Хорошо: ограничение поиска
+pattern = r'^\\d+$'  # только если вся строка - число
+\`\`\`
+
+**4. Компиляция паттернов:**
+\`\`\`python
+import re
+
+# Компилируйте для повторного использования
+pattern = re.compile(r'\\d+', re.IGNORECASE)
+result1 = pattern.findall(text1)
+result2 = pattern.findall(text2)
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и безопасность
+
+**Важные моменты безопасности:**
+
+1. **ReDoS (Regular Expression Denial of Service):**
+   - Злоумышленники могут использовать сложные регулярные выражения для DoS-атак
+   - Всегда тестируйте регулярные выражения на длинных строках
+   - Избегайте вложенных квантификаторов
+
+2. **Валидация пользовательского ввода:**
+   - Всегда используйте якоря \`^\` и \`$\` для валидации
+   - Проверяйте всю строку, а не часть
+
+3. **Экранирование пользовательских данных:**
+\`\`\`python
+import re
+
+# Экранирование пользовательского ввода
+user_input = "file.txt"
+safe_pattern = re.escape(user_input)  # 'file\\.txt'
+\`\`\`
+
+4. **Ограничение длины ввода:**
+\`\`\`python
+# Ограничение длины входных данных
+if len(user_input) > 1000:
+    raise ValueError("Input too long")
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения в реальных проектах
+
+**Типичные задачи:**
+1. **Валидация форм:**
+\`\`\`python
+def validate_email(email):
+    pattern = r'^[\\w\\.-]+@[\\w\\.-]+\\.\\w+$'
+    return bool(re.match(pattern, email))
+\`\`\`
+
+2. **Парсинг логов:**
+\`\`\`python
+log_pattern = r'(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}) (\\w+) (.+)'
+for match in re.finditer(log_pattern, log_text):
+    timestamp, level, message = match.groups()
+\`\`\`
+
+3. **Извлечение данных:**
+\`\`\`python
+# Извлечение всех URL из текста
+url_pattern = r'https?://[^\\s<>\"]+|www\\.[^\\s<>\"]+'
+urls = re.findall(url_pattern, text)
+\`\`\`
+
+4. **Очистка данных:**
+\`\`\`python
+# Удаление лишних пробелов
+clean_text = re.sub(r'\\s+', ' ', text).strip()
+
+# Удаление HTML тегов
+clean_html = re.sub(r'<[^>]+>', '', html_text)
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и тестирование
+
+**Тестирование регулярных выражений:**
+
+1. **Unit тесты:**
+\`\`\`python
+import re
+import unittest
+
+class TestRegex(unittest.TestCase):
+    def test_email_validation(self):
+        pattern = r'^[\\w\\.-]+@[\\w\\.-]+\\.\\w+$'
+        self.assertTrue(re.match(pattern, "test@example.com"))
+        self.assertFalse(re.match(pattern, "invalid-email"))
+    
+    def test_phone_validation(self):
+        pattern = r'^\\+?\\d{1,3}[-.\\s]?\\(?\\d{3}\\)?[-.\\s]?\\d{3}[-.\\s]?\\d{4}$'
+        self.assertTrue(re.match(pattern, "+79991234567"))
+        self.assertFalse(re.match(pattern, "invalid"))
+
+if __name__ == '__main__':
+    unittest.main()
+\`\`\`
+
+2. **Тестовые данные:**
+\`\`\`python
+# Тестовые данные для email
+valid_emails = [
+    "test@example.com",
+    "user.name@domain.co.uk",
+    "user+tag@example.org"
+]
+
+invalid_emails = [
+    "invalid-email",
+    "@example.com",
+    "user@",
+    "user@.com"
+]
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и документация
+
+**Документирование регулярных выражений:**
+
+1. **Комментарии в коде:**
+\`\`\`python
+# Паттерн для валидации email
+# ^[\\w\\.-]+@[\\w\\.-]+\\.\\w+$
+# ^ - начало строки
+# [\\w\\.-]+ - один или более символов (буквы, цифры, точка, дефис)
+# @ - символ @
+# [\\w\\.-]+ - доменное имя
+# \\. - точка
+# \\w+ - доменная зона
+# $ - конец строки
+\`\`\`
+
+2. **Docstring:**
+\`\`\`python
+def validate_email(email: str) -> bool:
+    """
+    Валидирует email адрес.
+    
+    Args:
+        email: Email адрес для проверки
+    
+    Returns:
+        bool: True если email валидный, иначе False
+    
+    Pattern:
+        ^[\\w\\.-]+@[\\w\\.-]+\\.\\w+$
+        - ^ - начало строки
+        - [\\w\\.-]+ - локальная часть
+        - @ - символ @
+        - [\\w\\.-]+ - доменное имя
+        - \\. - точка
+        - \\w+ - доменная зона
+        - $ - конец строки
+    """
+    pattern = r'^[\\w\\.-]+@[\\w\\.-]+\\.\\w+$'
+    return bool(re.match(pattern, email))
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и производительность (продолжение)
+
+**Профилирование и оптимизация:**
+
+\`\`\`python
+import re
+import time
+import cProfile
+
+def profile_regex(pattern, text, iterations=1000):
+    """Профилирует регулярное выражение"""
+    compiled = re.compile(pattern)
+    
+    # Профилирование
+    profiler = cProfile.Profile()
+    profiler.enable()
+    
+    for _ in range(iterations):
+        compiled.findall(text)
+    
+    profiler.disable()
+    profiler.print_stats()
+\`\`\`
+
+**Оптимизация:**
+
+1. **Избегайте катастрофического возврата:**
+\`\`\`python
+# Плохо: (a+)+b на строке "aaa...a" без 'b'
+# Хорошо: a+b или a*b
+\`\`\`
+
+2. **Используйте специфичные классы:**
+\`\`\`python
+# Плохо: .+ для цифр
+# Хорошо: \\d+
+\`\`\`
+
+3. **Компилируйте паттерны:**
+\`\`\`python
+# Компилируйте для повторного использования
+pattern = re.compile(r'\\d+', re.IGNORECASE)
+result1 = pattern.findall(text1)
+result2 = pattern.findall(text2)
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и отладка (продолжение)
+
+**Инструменты отладки:**
+
+1. **re.DEBUG:**
+\`\`\`python
+import re
+
+# Показывает внутреннее представление
+re.compile(r'\\d+', re.DEBUG)
+\`\`\`
+
+2. **Пошаговая отладка:**
+\`\`\`python
+import re
+
+pattern = r'(\\d+)-(\\d+)'
+text = "2026-02-14"
+
+for match in re.finditer(pattern, text):
+    print(f"Match: {match.group()}")
+    print(f"Group 1: {match.group(1)}")
+    print(f"Group 2: {match.group(2)}")
+    print(f"Span: {match.span()}")
+\`\`\`
+
+3. **Онлайн-инструменты:**
+   - regex101.com — тестирование и объяснение
+   - regexr.com — интерактивный редактор
+   - regex101.com — библиотека паттернов`,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и безопасность (продолжение)
+
+**ReDoS (Regular Expression Denial of Service):**
+
+1. **Катастрофический возврат:**
+\`\`\`python
+# Плохо: (a+)+b на строке "aaa...a" без 'b'
+# Время выполнения растёт экспоненциально
+
+# Хорошо: a+b или a*b
+\`\`\`
+
+2. **Вложенные квантификаторы:**
+\`\`\`python
+# Плохо: (a|a)+ 
+# Хорошо: a+
+\`\`\`
+
+3. **Тестирование на ReDoS:**
+\`\`\`python
+import re
+import time
+
+def test_redos(pattern, test_string, timeout=1.0):
+    """Тестирует паттерн на ReDoS"""
+    try:
+        start = time.time()
+        re.findall(pattern, test_string)
+        elapsed = time.time() - start
+        return elapsed < timeout
+    except Exception:
+        return False
+\`\`\`
+
+**Защита от ReDoS:**
+
+1. **Ограничение длины ввода:**
+\`\`\`python
+if len(user_input) > 1000:
+    raise ValueError("Input too long")
+\`\`\`
+
+2. **Использование атомарных групп** (через possessive квантификаторы):
+\`\`\`python
+# Python 3.11+ поддерживает possessive квантификаторы
+# a++ вместо a+ (не возвращается назад)
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и тестирование (продолжение)
+
+**Тестовые сценарии:**
+
+\`\`\`python
+import re
+import unittest
+
+class TestEmailValidation(unittest.TestCase):
+    def setUp(self):
+        self.pattern = r'^[\\w\\.-]+@[\\w\\.-]+\\.\\w+$'
+    
+    def test_valid_emails(self):
+        valid_emails = [
+            "test@example.com",
+            "user.name@domain.co.uk",
+            "user+tag@example.org"
+        ]
+        for email in valid_emails:
+            self.assertTrue(re.match(self.pattern, email))
+    
+    def test_invalid_emails(self):
+        invalid_emails = [
+            "invalid-email",
+            "@example.com",
+            "user@",
+            "user@.com"
+        ]
+        for email in invalid_emails:
+            self.assertFalse(re.match(self.pattern, email))
+
+if __name__ == '__main__':
+    unittest.main()
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и документация (продолжение)
+
+**Документирование сложных паттернов:**
+
+\`\`\`python
+def validate_complex_pattern(text: str) -> bool:
+    """
+    Валидирует сложный паттерн.
+    
+    Args:
+        text: Текст для проверки
+    
+    Returns:
+        bool: True если текст соответствует паттерну
+    
+    Pattern breakdown:
+        ^                    # Начало строки
+        (?=.*[A-Za-z])       # Хотя бы одна буква
+        (?=.*\\d)            # Хотя бы одна цифра
+        (?=.*[@$!%*#?&])     # Хотя бы один спецсимвол
+        [A-Za-z\\d@$!%*#?&]{8,}  # Минимум 8 символов
+        $                    # Конец строки
+    """
+    pattern = r'^(?=.*[A-Za-z])(?=.*\\d)(?=.*[@$!%*#?&])[A-Za-z\\d@$!%*#?&]{8,}$'
+    return bool(re.match(pattern, text))
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и производительность (продолжение)
+
+**Профилирование и оптимизация:**
+
+\`\`\`python
+import re
+import time
+import cProfile
+
+def profile_regex(pattern, text, iterations=1000):
+    """Профилирует регулярное выражение"""
+    compiled = re.compile(pattern)
+    
+    # Профилирование
+    profiler = cProfile.Profile()
+    profiler.enable()
+    
+    for _ in range(iterations):
+        compiled.findall(text)
+    
+    profiler.disable()
+    profiler.print_stats()
+\`\`\`
+
+**Оптимизация:**
+
+1. **Избегайте катастрофического возврата:**
+\`\`\`python
+# Плохо: (a+)+b на строке "aaa...a" без 'b'
+# Хорошо: a+b или a*b
+\`\`\`
+
+2. **Используйте специфичные классы:**
+\`\`\`python
+# Плохо: .+ для цифр
+# Хорошо: \\d+
+\`\`\`
+
+3. **Компилируйте паттерны:**
+\`\`\`python
+# Компилируйте для повторного использования
+pattern = re.compile(r'\\d+', re.IGNORECASE)
+result1 = pattern.findall(text1)
+result2 = pattern.findall(text2)
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и отладка (продолжение)
+
+**Инструменты отладки:**
+
+1. **re.DEBUG:**
+\`\`\`python
+import re
+
+# Показывает внутреннее представление
+re.compile(r'\\d+', re.DEBUG)
+\`\`\`
+
+2. **Пошаговая отладка:**
+\`\`\`python
+import re
+
+pattern = r'(\\d+)-(\\d+)'
+text = "2026-02-14"
+
+for match in re.finditer(pattern, text):
+    print(f"Match: {match.group()}")
+    print(f"Group 1: {match.group(1)}")
+    print(f"Group 2: {match.group(2)}")
+    print(f"Span: {match.span()}")
+\`\`\`
+
+3. **Онлайн-инструменты:**
+   - regex101.com — тестирование и объяснение
+   - regexr.com — интерактивный редактор
+   - regex101.com — библиотека паттернов`,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и безопасность (продолжение)
+
+**ReDoS (Regular Expression Denial of Service):**
+
+1. **Катастрофический возврат:**
+\`\`\`python
+# Плохо: (a+)+b на строке "aaa...a" без 'b'
+# Время выполнения растёт экспоненциально
+
+# Хорошо: a+b или a*b
+\`\`\`
+
+2. **Вложенные квантификаторы:**
+\`\`\`python
+# Плохо: (a|a)+ 
+# Хорошо: a+
+\`\`\`
+
+3. **Тестирование на ReDoS:**
+\`\`\`python
+import re
+import time
+
+def test_redos(pattern, test_string, timeout=1.0):
+    """Тестирует паттерн на ReDoS"""
+    try:
+        start = time.time()
+        re.findall(pattern, test_string)
+        elapsed = time.time() - start
+        return elapsed < timeout
+    except Exception:
+        return False
+\`\`\`
+
+**Защита от ReDoS:**
+
+1. **Ограничение длины ввода:**
+\`\`\`python
+if len(user_input) > 1000:
+    raise ValueError("Input too long")
+\`\`\`
+
+2. **Использование атомарных групп** (через possessive квантификаторы):
+\`\`\`python
+# Python 3.11+ поддерживает possessive квантификаторы
+# a++ вместо a+ (не возвращается назад)
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и тестирование (продолжение)
+
+**Тестовые сценарии:**
+
+\`\`\`python
+import re
+import unittest
+
+class TestEmailValidation(unittest.TestCase):
+    def setUp(self):
+        self.pattern = r'^[\\w\\.-]+@[\\w\\.-]+\\.\\w+$'
+    
+    def test_valid_emails(self):
+        valid_emails = [
+            "test@example.com",
+            "user.name@domain.co.uk",
+            "user+tag@example.org"
+        ]
+        for email in valid_emails:
+            self.assertTrue(re.match(self.pattern, email))
+    
+    def test_invalid_emails(self):
+        invalid_emails = [
+            "invalid-email",
+            "@example.com",
+            "user@",
+            "user@.com"
+        ]
+        for email in invalid_emails:
+            self.assertFalse(re.match(self.pattern, email))
+
+if __name__ == '__main__':
+    unittest.main()
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и документация (продолжение)
+
+**Документирование сложных паттернов:**
+
+\`\`\`python
+def validate_complex_pattern(text: str) -> bool:
+    """
+    Валидирует сложный паттерн.
+    
+    Args:
+        text: Текст для проверки
+    
+    Returns:
+        bool: True если текст соответствует паттерну
+    
+    Pattern breakdown:
+        ^                    # Начало строки
+        (?=.*[A-Za-z])       # Хотя бы одна буква
+        (?=.*\\d)            # Хотя бы одна цифра
+        (?=.*[@$!%*#?&])     # Хотя бы один спецсимвол
+        [A-Za-z\\d@$!%*#?&]{8,}  # Минимум 8 символов
+        $                    # Конец строки
+    """
+    pattern = r'^(?=.*[A-Za-z])(?=.*\\d)(?=.*[@$!%*#?&])[A-Za-z\\d@$!%*#?&]{8,}$'
+    return bool(re.match(pattern, text))
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и производительность (продолжение)
+
+**Профилирование и оптимизация:**
+
+\`\`\`python
+import re
+import time
+import cProfile
+
+def profile_regex(pattern, text, iterations=1000):
+    """Профилирует регулярное выражение"""
+    compiled = re.compile(pattern)
+    
+    # Профилирование
+    profiler = cProfile.Profile()
+    profiler.enable()
+    
+    for _ in range(iterations):
+        compiled.findall(text)
+    
+    profiler.disable()
+    profiler.print_stats()
+\`\`\`
+
+**Оптимизация:**
+
+1. **Избегайте катастрофического возврата:**
+\`\`\`python
+# Плохо: (a+)+b на строке "aaa...a" без 'b'
+# Хорошо: a+b или a*b
+\`\`\`
+
+2. **Используйте специфичные классы:**
+\`\`\`python
+# Плохо: .+ для цифр
+# Хорошо: \\d+
+\`\`\`
+
+3. **Компилируйте паттерны:**
+\`\`\`python
+# Компилируйте для повторного использования
+pattern = re.compile(r'\\d+', re.IGNORECASE)
+result1 = pattern.findall(text1)
+result2 = pattern.findall(text2)
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и отладка (продолжение)
+
+**Инструменты отладки:**
+
+1. **re.DEBUG:**
+\`\`\`python
+import re
+
+# Показывает внутреннее представление
+re.compile(r'\\d+', re.DEBUG)
+\`\`\`
+
+2. **Пошаговая отладка:**
+\`\`\`python
+import re
+
+pattern = r'(\\d+)-(\\d+)'
+text = "2026-02-14"
+
+for match in re.finditer(pattern, text):
+    print(f"Match: {match.group()}")
+    print(f"Group 1: {match.group(1)}")
+    print(f"Group 2: {match.group(2)}")
+    print(f"Span: {match.span()}")
+\`\`\`
+
+3. **Онлайн-инструменты:**
+   - regex101.com — тестирование и объяснение
+   - regexr.com — интерактивный редактор
+   - regex101.com — библиотека паттернов`,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и безопасность (продолжение)
+
+**ReDoS (Regular Expression Denial of Service):**
+
+1. **Катастрофический возврат:**
+\`\`\`python
+# Плохо: (a+)+b на строке "aaa...a" без 'b'
+# Время выполнения растёт экспоненциально
+
+# Хорошо: a+b или a*b
+\`\`\`
+
+2. **Вложенные квантификаторы:**
+\`\`\`python
+# Плохо: (a|a)+ 
+# Хорошо: a+
+\`\`\`
+
+3. **Тестирование на ReDoS:**
+\`\`\`python
+import re
+import time
+
+def test_redos(pattern, test_string, timeout=1.0):
+    """Тестирует паттерн на ReDoS"""
+    try:
+        start = time.time()
+        re.findall(pattern, test_string)
+        elapsed = time.time() - start
+        return elapsed < timeout
+    except Exception:
+        return False
+\`\`\`
+
+**Защита от ReDoS:**
+
+1. **Ограничение длины ввода:**
+\`\`\`python
+if len(user_input) > 1000:
+    raise ValueError("Input too long")
+\`\`\`
+
+2. **Использование атомарных групп** (через possessive квантификаторы):
+\`\`\`python
+# Python 3.11+ поддерживает possessive квантификаторы
+# a++ вместо a+ (не возвращается назад)
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и тестирование (продолжение)
+
+**Тестовые сценарии:**
+
+\`\`\`python
+import re
+import unittest
+
+class TestEmailValidation(unittest.TestCase):
+    def setUp(self):
+        self.pattern = r'^[\\w\\.-]+@[\\w\\.-]+\\.\\w+$'
+    
+    def test_valid_emails(self):
+        valid_emails = [
+            "test@example.com",
+            "user.name@domain.co.uk",
+            "user+tag@example.org"
+        ]
+        for email in valid_emails:
+            self.assertTrue(re.match(self.pattern, email))
+    
+    def test_invalid_emails(self):
+        invalid_emails = [
+            "invalid-email",
+            "@example.com",
+            "user@",
+            "user@.com"
+        ]
+        for email in invalid_emails:
+            self.assertFalse(re.match(self.pattern, email))
+
+if __name__ == '__main__':
+    unittest.main()
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и документация (продолжение)
+
+**Документирование сложных паттернов:**
+
+\`\`\`python
+def validate_complex_pattern(text: str) -> bool:
+    """
+    Валидирует сложный паттерн.
+    
+    Args:
+        text: Текст для проверки
+    
+    Returns:
+        bool: True если текст соответствует паттерну
+    
+    Pattern breakdown:
+        ^                    # Начало строки
+        (?=.*[A-Za-z])       # Хотя бы одна буква
+        (?=.*\\d)            # Хотя бы одна цифра
+        (?=.*[@$!%*#?&])     # Хотя бы один спецсимвол
+        [A-Za-z\\d@$!%*#?&]{8,}  # Минимум 8 символов
+        $                    # Конец строки
+    """
+    pattern = r'^(?=.*[A-Za-z])(?=.*\\d)(?=.*[@$!%*#?&])[A-Za-z\\d@$!%*#?&]{8,}$'
+    return bool(re.match(pattern, text))
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и производительность (продолжение)
+
+**Профилирование и оптимизация:**
+
+\`\`\`python
+import re
+import time
+import cProfile
+
+def profile_regex(pattern, text, iterations=1000):
+    """Профилирует регулярное выражение"""
+    compiled = re.compile(pattern)
+    
+    # Профилирование
+    profiler = cProfile.Profile()
+    profiler.enable()
+    
+    for _ in range(iterations):
+        compiled.findall(text)
+    
+    profiler.disable()
+    profiler.print_stats()
+\`\`\`
+
+**Оптимизация:**
+
+1. **Избегайте катастрофического возврата:**
+\`\`\`python
+# Плохо: (a+)+b на строке "aaa...a" без 'b'
+# Хорошо: a+b или a*b
+\`\`\`
+
+2. **Используйте специфичные классы:**
+\`\`\`python
+# Плохо: .+ для цифр
+# Хорошо: \\d+
+\`\`\`
+
+3. **Компилируйте паттерны:**
+\`\`\`python
+# Компилируйте для повторного использования
+pattern = re.compile(r'\\d+', re.IGNORECASE)
+result1 = pattern.findall(text1)
+result2 = pattern.findall(text2)
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и отладка (продолжение)
+
+**Инструменты отладки:**
+
+1. **re.DEBUG:**
+\`\`\`python
+import re
+
+# Показывает внутреннее представление
+re.compile(r'\\d+', re.DEBUG)
+\`\`\`
+
+2. **Пошаговая отладка:**
+\`\`\`python
+import re
+
+pattern = r'(\\d+)-(\\d+)'
+text = "2026-02-14"
+
+for match in re.finditer(pattern, text):
+    print(f"Match: {match.group()}")
+    print(f"Group 1: {match.group(1)}")
+    print(f"Group 2: {match.group(2)}")
+    print(f"Span: {match.span()}")
+\`\`\`
+
+3. **Онлайн-инструменты:**
+   - regex101.com — тестирование и объяснение
+   - regexr.com — интерактивный редактор
+   - regex101.com — библиотека паттернов`,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и безопасность (продолжение)
+
+**ReDoS (Regular Expression Denial of Service):**
+
+1. **Катастрофический возврат:**
+\`\`\`python
+# Плохо: (a+)+b на строке "aaa...a" без 'b'
+# Время выполнения растёт экспоненциально
+
+# Хорошо: a+b или a*b
+\`\`\`
+
+2. **Вложенные квантификаторы:**
+\`\`\`python
+# Плохо: (a|a)+ 
+# Хорошо: a+
+\`\`\`
+
+3. **Тестирование на ReDoS:**
+\`\`\`python
+import re
+import time
+
+def test_redos(pattern, test_string, timeout=1.0):
+    """Тестирует паттерн на ReDoS"""
+    try:
+        start = time.time()
+        re.findall(pattern, test_string)
+        elapsed = time.time() - start
+        return elapsed < timeout
+    except Exception:
+        return False
+\`\`\`
+
+**Защита от ReDoS:**
+
+1. **Ограничение длины ввода:**
+\`\`\`python
+if len(user_input) > 1000:
+    raise ValueError("Input too long")
+\`\`\`
+
+2. **Использование атомарных групп** (через possessive квантификаторы):
+\`\`\`python
+# Python 3.11+ поддерживает possessive квантификаторы
+# a++ вместо a+ (не возвращается назад)
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и тестирование (продолжение)
+
+**Тестовые сценарии:**
+
+\`\`\`python
+import re
+import unittest
+
+class TestEmailValidation(unittest.TestCase):
+    def setUp(self):
+        self.pattern = r'^[\\w\\.-]+@[\\w\\.-]+\\.\\w+$'
+    
+    def test_valid_emails(self):
+        valid_emails = [
+            "test@example.com",
+            "user.name@domain.co.uk",
+            "user+tag@example.org"
+        ]
+        for email in valid_emails:
+            self.assertTrue(re.match(self.pattern, email))
+    
+    def test_invalid_emails(self):
+        invalid_emails = [
+            "invalid-email",
+            "@example.com",
+            "user@",
+            "user@.com"
+        ]
+        for email in invalid_emails:
+            self.assertFalse(re.match(self.pattern, email))
+
+if __name__ == '__main__':
+    unittest.main()
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и документация (продолжение)
+
+**Документирование сложных паттернов:**
+
+\`\`\`python
+def validate_complex_pattern(text: str) -> bool:
+    """
+    Валидирует сложный паттерн.
+    
+    Args:
+        text: Текст для проверки
+    
+    Returns:
+        bool: True если текст соответствует паттерну
+    
+    Pattern breakdown:
+        ^                    # Начало строки
+        (?=.*[A-Za-z])       # Хотя бы одна буква
+        (?=.*\\d)            # Хотя бы одна цифра
+        (?=.*[@$!%*#?&])     # Хотя бы один спецсимвол
+        [A-Za-z\\d@$!%*#?&]{8,}  # Минимум 8 символов
+        $                    # Конец строки
+    """
+    pattern = r'^(?=.*[A-Za-z])(?=.*\\d)(?=.*[@$!%*#?&])[A-Za-z\\d@$!%*#?&]{8,}$'
+    return bool(re.match(pattern, text))
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и производительность (продолжение)
+
+**Профилирование и оптимизация:**
+
+\`\`\`python
+import re
+import time
+import cProfile
+
+def profile_regex(pattern, text, iterations=1000):
+    """Профилирует регулярное выражение"""
+    compiled = re.compile(pattern)
+    
+    # Профилирование
+    profiler = cProfile.Profile()
+    profiler.enable()
+    
+    for _ in range(iterations):
+        compiled.findall(text)
+    
+    profiler.disable()
+    profiler.print_stats()
+\`\`\`
+
+**Оптимизация:**
+
+1. **Избегайте катастрофического возврата:**
+\`\`\`python
+# Плохо: (a+)+b на строке "aaa...a" без 'b'
+# Хорошо: a+b или a*b
+\`\`\`
+
+2. **Используйте специфичные классы:**
+\`\`\`python
+# Плохо: .+ для цифр
+# Хорошо: \\d+
+\`\`\`
+
+3. **Компилируйте паттерны:**
+\`\`\`python
+# Компилируйте для повторного использования
+pattern = re.compile(r'\\d+', re.IGNORECASE)
+result1 = pattern.findall(text1)
+result2 = pattern.findall(text2)
+\`\`\``,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и отладка (продолжение)
+
+**Инструменты отладки:**
+
+1. **re.DEBUG:**
+\`\`\`python
+import re
+
+# Показывает внутреннее представление
+re.compile(r'\\d+', re.DEBUG)
+\`\`\`
+
+2. **Пошаговая отладка:**
+\`\`\`python
+import re
+
+pattern = r'(\\d+)-(\\d+)'
+text = "2026-02-14"
+
+for match in re.finditer(pattern, text):
+    print(f"Match: {match.group()}")
+    print(f"Group 1: {match.group(1)}")
+    print(f"Group 2: {match.group(2)}")
+    print(f"Span: {match.span()}")
+\`\`\`
+
+3. **Онлайн-инструменты:**
+   - regex101.com — тестирование и объяснение
+   - regexr.com — интерактивный редактор
+   - regex101.com — библиотека паттернов`,
+      },
+      {
+        kind: "text",
+        md: `## Регулярные выражения и безопасность (продолжение)
+
+**ReDoS (Regular Expression Denial of Service):**
+
+1. **Катастрофический возврат:**
+\`\`\`python
+# Плохо: (a+)+b на строке "aaa...a" без 'b'
+# Время выполнения растёт экспоненциально
+
+# Хорошо: a+b или a*b
+\`\`\`
+
+2. **Вложенные квантификаторы:**
+\`\`\`python
+# Плохо: (a|a)+ 
+# Хорошо: a+
+\`\`\`
+
+3. **Тестирование на ReDoS:**
+\`\`\`python
+import re
+import time
+
+def test_redos(pattern, test_string, timeout=1.0):
+    """Тестирует паттерн на ReDoS"""
+    try:
+        start = time.time()
+        re.findall(pattern, test_string)
+        elapsed = time.time() - start
+        return elapsed < timeout
+    except Exception:
+        return False
+\`\`\`
+
+**Защита от ReDoS:**
+
+1. **Ограничение длины ввода:**
+\`\`\`python
+if len(user_input) > 1000:
+    raise ValueError("Input too long")
+\`\`\`
+
+2. **Использование атомарных групп** (через possessive квантификаторы):
+\`\`\`python
+# Python 3.11+ поддерживает possessive квантификаторы
+# a++ вместо a+ (не возвращается назад)
+\`\`\``,
+      },
+      {
+        kind: "text",
         md: `## Практические примеры
 
 **Валидация email:**
