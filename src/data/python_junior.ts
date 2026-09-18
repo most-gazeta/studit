@@ -5038,4 +5038,4 @@ __test("even_indices([]) → []", lambda: even_indices([]), [])`,
     ],
   },
 
-  {
+];
