@@ -1,3 +1,7 @@
+import type { Lesson } from "../lib/types";
+
+export const pythonLessons: Lesson[] = [
+  {
     id: "py6",
     language: "python",
     title: "Словари, множества, кортежи",
@@ -849,7 +853,8 @@ else:
         answer: 0,
         explain: "defaultdict автоматически создаёт значение по умолчанию при обращении к несуществующему ключу.",
       },
-    ],
+    ]
+  },
     tasks: [
       {
         id: "py6t1",
@@ -1057,7 +1062,8 @@ __test("глубокая вложенность", lambda: get_nested({"a": {"b":
             return default
     return current`,
       },
-    ],
+    ]
+  },
   },
 
   {
@@ -1824,7 +1830,8 @@ def is_palindrome(s):
     return cleaned == cleaned[::-1]
 \`\`\``,
       },
-    ],
+    ]
+  },
     quiz: [
       {
         q: "Что вернёт '-'.join(['a', 'b'])?",
@@ -1937,7 +1944,8 @@ def is_palindrome(s):
         answer: 0,
         explain: "split() без аргументов разделяет строку по пробелам, игнорируя множественные пробелы.",
       },
-    ],
+    ]
+  },
     tasks: [
       {
         id: "py7t1",
@@ -2153,7 +2161,8 @@ __test("всё есть", lambda: is_strong_password("MyPassword1"), True)`,
         return False
     return True`,
       },
-    ],
+    ]
+  },
   },
 
   {
@@ -2861,7 +2870,8 @@ class Date:
 d = Date.from_string('2024-01-15')
 \`\`\``,
       },
-    ],
+    ]
+  },
     quiz: [
       {
         q: "Что будет без nonlocal при count += 1 внутри inc()?",
@@ -2913,7 +2923,8 @@ d = Date.from_string('2024-01-15')
         answer: 1,
         explain: "Декоратор принимает функцию и возвращает новую функцию-обёртку, которая расширяет поведение оригинала.",
       },
-    ],
+    ]
+  },
     tasks: [
       {
         id: "py8t1",
@@ -3084,7 +3095,8 @@ __test("независимые фабрики", lambda: (make_power(2)(3), make_
         return base ** exponent
     return power`,
       },
-    ],
+    ]
+  },
   },
 
   {
@@ -3911,7 +3923,8 @@ class MyClass(metaclass=ValidatedMeta):
     def method2(self):
         pass  # Warning: method2 has no docstring`,
       },
-    ],
+    ]
+  },
     quiz: [
       {
         q: "Что такое self в методах класса?",
@@ -4002,7 +4015,8 @@ class MyClass(metaclass=ValidatedMeta):
         answer: 0,
         explain: "__contains__ определяет поведение оператора 'in' для проверки наличия элемента в контейнере.",
       },
-    ],
+    ]
+  },
     tasks: [
       {
         id: "py9t1",
@@ -4401,7 +4415,6 @@ class Temperature:
     def __lt__(self, other):
         return self.celsius < other.celsius`,
       },
-    ],
+    ]
   },
-
-  {
+];
